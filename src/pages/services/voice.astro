@@ -1,0 +1,154 @@
+---
+import Base from '../../layouts/Base.astro';
+import PageHero from '../../components/PageHero.astro';
+import AnchorNav from '../../components/AnchorNav.astro';
+import Section from '../../components/Section.astro';
+import SectionHeading from '../../components/SectionHeading.astro';
+import SplitSection from '../../components/SplitSection.astro';
+import FeatureCard from '../../components/FeatureCard.astro';
+import CheckList from '../../components/CheckList.astro';
+import Button from '../../components/Button.astro';
+import Icon from '../../components/Icon.astro';
+import ContactForm from '../../components/ContactForm.astro';
+import RoutePanel from '../../components/voice/RoutePanel.astro';
+
+// Copy source: content/source/voice.md (Voice Business) and home-current-site.md (DID/Toll-Free blurb).
+const nav = [
+  { label: 'Wholesale Voice', href: '#wholesale-voice' },
+  { label: 'DID & Toll-Free', href: '#did-toll-free' },
+  { label: 'Fraud Management', href: '#fraud-management' },
+  { label: 'Contact', href: '#contact' },
+];
+
+const overview = [
+  { icon: 'phone', title: 'Wholesale Voice', text: 'Seamless voice termination across global destinations with optimized routing, premium quality, and competitive rates.', href: '#wholesale-voice' },
+  { icon: 'hash', title: 'DID & Toll-Free Solutions', text: 'Local DIDs, Toll-Free, and International Toll-Free Numbers available in more than 25 countries, enabling businesses to establish a global presence.', href: '#did-toll-free' },
+  { icon: 'activity', title: 'Fraud Management System', text: 'State-of-the-art fraud detection and revenue assurance platform designed to protect networks and maximize profitability.', href: '#fraud-management' },
+] as const;
+
+const wholesale = [
+  { icon: 'globe', title: 'Global route coverage' },
+  { icon: 'phone', title: 'High-quality voice termination' },
+  { icon: 'dollar', title: 'Competitive wholesale rates' },
+  { icon: 'zap', title: 'Low latency routing' },
+  { icon: 'shield', title: 'Carrier-grade reliability' },
+] as const;
+
+const fraud = [
+  { icon: 'eye', title: 'Real-time fraud detection' },
+  { icon: 'bot', title: 'Intelligent automation' },
+  { icon: 'phone', title: 'Test call generation' },
+  { icon: 'dollar', title: 'Revenue leakage prevention' },
+] as const;
+---
+
+<Base title="Voice" description="Wholesale voice aggregation, DID and toll-free numbers in 25+ countries, and fraud management with revenue assurance, through one trusted global telecom aggregator.">
+  <PageHero
+    eyebrow="Voice Business"
+    title="Global Connectivity. Local Presence."
+    highlight="One Platform."
+    lede="Acmetel is a trusted global telecom aggregator, empowering operators, service providers, enterprises, and resellers with seamless access to worldwide voice solutions through a unified platform."
+    crumbs={[{ label: 'Services', href: '/#services' }, { label: 'Voice' }]}
+  >
+    <Button href="#contact" size="lg">Contact Us</Button>
+    <Button href="#wholesale-voice" variant="outline" size="lg" arrow={false}>Explore voice solutions</Button>
+    <RoutePanel slot="visual" />
+  </PageHero>
+
+  <AnchorNav items={nav} />
+
+  <!-- Positioning -->
+  <Section>
+    <SplitSection>
+      <SectionHeading eyebrow="Why Acmetel voice" title="One dependable partner," highlight="not many carriers">
+        <p class="mt-6 leading-relaxed text-ink-muted">
+          Backed by a robust network of Tier-1 carriers and strategic partners, we simplify global connectivity by delivering reliable voice termination, DID services and advanced fraud management capabilities all through a single, dependable partner.
+        </p>
+        <p class="mt-4 leading-relaxed text-ink-muted">
+          Eliminate the complexity of managing multiple carrier relationships and fragmented networks. With Acmetel, gain access to global coverage, flexible commercial models, carrier-grade reliability, and the technical expertise needed to scale your business with confidence.
+        </p>
+      </SectionHeading>
+      <ul slot="visual" class="grid gap-4" data-stagger>
+        {['Global coverage', 'Flexible commercial models', 'Carrier-grade reliability', 'Technical expertise to scale'].map((t, i) => (
+          <li class:list={['glass spotlight flex items-center gap-4 p-5', i % 2 === 1 && 'sm:ml-10']}>
+            <span class="grid size-11 shrink-0 place-items-center rounded-xl border border-teal-500/30 bg-teal-500/10 text-teal-300"><Icon name={(['globe', 'layers', 'shield', 'users'] as const)[i]} /></span>
+            <span class="font-display font-semibold text-ink">{t}</span>
+          </li>
+        ))}
+      </ul>
+    </SplitSection>
+  </Section>
+
+  <!-- Three pillars -->
+  <Section tone="glow">
+    <SectionHeading eyebrow="What we offer" title="Three solutions," highlight="one platform" align="center" />
+    <div class="mt-14 grid gap-5 md:grid-cols-3" data-stagger>
+      {overview.map((o) => <FeatureCard icon={o.icon} title={o.title} text={o.text} href={o.href} linkLabel="See details" />)}
+    </div>
+  </Section>
+
+  <!-- Wholesale -->
+  <Section id="wholesale-voice" tone="raised">
+    <div class="grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-20">
+      <SectionHeading eyebrow="Wholesale Voice" title="Wholesale Voice" highlight="Aggregation" lede="Acmetel provides seamless global voice termination through an extensive network of Tier-1 carriers and trusted international partners.">
+        <div class="mt-8"><Button href="#contact">Talk to our voice team</Button></div>
+      </SectionHeading>
+      <div>
+        <h3 class="eyebrow mb-5" data-reveal>Benefits</h3>
+        <ul class="grid gap-4 sm:grid-cols-2" data-stagger>
+          {wholesale.map((w, i) => (
+            <li class:list={['glass spotlight flex items-center gap-4 p-5', i === wholesale.length - 1 && 'sm:col-span-2']}>
+              <span class="grid size-11 shrink-0 place-items-center rounded-xl border border-teal-500/30 bg-gradient-to-br from-teal-500/25 to-green-700/20 text-teal-300"><Icon name={w.icon} /></span>
+              <span class="font-display font-semibold text-ink">{w.title}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  </Section>
+
+  <!-- DID -->
+  <Section id="did-toll-free">
+    <SplitSection reverse>
+      <SectionHeading eyebrow="DID & Toll-Free" title="Establish a local presence" highlight="anywhere in the world" lede="Our extensive portfolio of DIDs and Toll-Free numbers is available across more than 25 countries.">
+        <p class="mt-5 leading-relaxed text-ink-muted">
+          Direct Inward Dialing (DID) seamlessly connects telephone numbers to a company’s PBX system, and can be used with local, premium rate, toll free, and international toll free service numbers.
+        </p>
+        <div class="mt-8"><CheckList items={['Local business presence', 'Easy deployment', 'International accessibility', 'Flexible scalability']} columns={2} /></div>
+      </SectionHeading>
+      <div slot="visual" class="grid gap-4" data-stagger>
+        {[
+          { icon: 'map-pin', t: 'Local DIDs' },
+          { icon: 'phone', t: 'Toll-Free Numbers' },
+          { icon: 'globe', t: 'International Toll-Free Numbers' },
+        ].map((c) => (
+          <div class="glass spotlight flex items-start gap-4 p-6">
+            <span class="grid size-12 shrink-0 place-items-center rounded-xl border border-teal-500/30 bg-gradient-to-br from-teal-500/25 to-green-700/20 text-teal-300"><Icon name={c.icon as any} /></span>
+            <h3 class="self-center text-lg font-semibold text-ink">{c.t}</h3>
+          </div>
+        ))}
+      </div>
+    </SplitSection>
+  </Section>
+
+  <!-- Fraud -->
+  <Section id="fraud-management" tone="glow">
+    <SectionHeading eyebrow="Fraud Management System" title="Fraud Management &" highlight="Revenue Assurance" lede="Protect your network and revenue streams with advanced fraud detection technologies. A state-of-the-art platform designed to protect networks and maximize profitability." />
+    <div class="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4" data-stagger>
+      {fraud.map((f) => (
+        <div class="glass spotlight flex flex-col gap-5 p-6 sm:p-7">
+          <span class="grid size-12 place-items-center rounded-xl border border-teal-500/30 bg-gradient-to-br from-teal-500/25 to-green-700/20 text-teal-300"><Icon name={f.icon} /></span>
+          <h3 class="text-lg font-semibold text-ink">{f.title}</h3>
+        </div>
+      ))}
+    </div>
+  </Section>
+
+  <!-- Contact -->
+  <Section tone="raised">
+    <div class="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
+      <SectionHeading eyebrow="Get started" title="Join a global network of" highlight="trusted telecom partners" lede="Experience the reliability, flexibility, and expertise that drive long-term success." />
+      <ContactForm name="voice-contact" topic="voice" title="Talk to our voice team" />
+    </div>
+  </Section>
+</Base>

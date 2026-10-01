@@ -1,0 +1,195 @@
+---
+import Base from '../../layouts/Base.astro';
+import PageHero from '../../components/PageHero.astro';
+import AnchorNav from '../../components/AnchorNav.astro';
+import Section from '../../components/Section.astro';
+import SectionHeading from '../../components/SectionHeading.astro';
+import SplitSection from '../../components/SplitSection.astro';
+import FeatureCard from '../../components/FeatureCard.astro';
+import CheckList from '../../components/CheckList.astro';
+import Button from '../../components/Button.astro';
+import Icon from '../../components/Icon.astro';
+import ContactForm from '../../components/ContactForm.astro';
+import MessageFlow from '../../components/messaging/MessageFlow.astro';
+
+// Copy source: content/source/messaging.md (Messaging Business) and home-current-site.md (SMS Firewall blurb).
+const nav = [
+  { label: 'A2P', href: '#a2p' },
+  { label: 'SMS Firewall', href: '#firewall' },
+  { label: 'P2A', href: '#p2a' },
+  { label: 'P2P', href: '#p2p' },
+  { label: 'Silent Authentication', href: '#silent-authentication' },
+  { label: 'Probe Testing', href: '#penetration-testing' },
+  { label: 'Managed Services', href: '#managed-services' },
+  { label: 'Why Acmetel', href: '#why-acmetel' },
+];
+
+const a2p = [
+  'Global A2P SMS connectivity for OTP, authentication, transactional, and promotional messaging',
+  'Direct connectivity with leading Mobile Network Operators (MNOs)',
+  'Enterprise messaging and hyperscaler partnerships',
+  'High-delivery, low-latency messaging routes',
+  'Reliable, scalable, and compliant message delivery',
+];
+
+const firewall = [
+  { icon: 'dollar', t: 'End-to-end SMS monetization and network protection' },
+  { icon: 'shield', t: 'SMS, Voice, and Flash Call firewall deployment' },
+  { icon: 'route', t: 'Grey route and international bypass prevention' },
+  { icon: 'bot', t: 'AI-powered fraud detection and traffic filtering' },
+  { icon: 'chart', t: 'Real-time analytics and threat intelligence' },
+  { icon: 'globe', t: 'International revenue assurance' },
+  { icon: 'lock', t: 'Enterprise-grade security and compliance' },
+] as const;
+
+const p2a = ['Two-way SMS communication enablement', 'P2A traffic monetization for mobile operators', 'Enhanced customer engagement', 'Secure enterprise messaging workflows'];
+const p2p = ['Global P2P SMS connectivity', 'Spam and fraud protection', 'Quality-driven traffic management', 'Intelligent routing for optimal performance'];
+
+const silent = [
+  'Frictionless user verification',
+  'Mobile number identity validation',
+  'Secure customer onboarding',
+  'API integration',
+  'Low-latency authentication',
+  'Enhanced security for financial institutions, digital platforms, and enterprises',
+  'Reduced SMS fraud exposure',
+  'Intelligent authentication routing',
+];
+
+const npt = [
+  'SMS route penetration testing',
+  'Grey route identification',
+  'International traffic bypass analysis',
+  'SIM box detection',
+  'Firewall performance validation',
+  'Customized operator security assessments',
+  'Actionable reporting and remediation recommendations',
+];
+
+const managed = [
+  { icon: 'headset', title: '24×7 Network Operations Center (NOC)' },
+  { icon: 'activity', title: 'Service assurance' },
+  { icon: 'users', title: 'Technical account management' },
+  { icon: 'gauge', title: 'SLA-driven support' },
+] as const;
+
+const why = [
+  'Global direct MNO connectivity',
+  'Exclusive operator partnerships',
+  'AI-powered telecom infrastructure',
+  'Trusted by global enterprises and hyperscalers',
+  'Carrier-grade network security',
+  'High availability and low latency',
+  'Scalable, future-ready solutions',
+];
+---
+
+<Base title="Messaging" description="A2P, P2A and P2P messaging, SMS firewall, silent network authentication and network penetration testing with direct MNO connectivity.">
+  <PageHero
+    eyebrow="Messaging Business"
+    title="Secure, reliable messaging"
+    highlight="from enterprise to subscriber"
+    lede="Global A2P, P2A and P2P messaging with direct MNO connectivity, plus the firewall, authentication and security testing that protect operator networks and revenue."
+    crumbs={[{ label: 'Services', href: '/#services' }, { label: 'Messaging' }]}
+  >
+    <!-- PLACEHOLDER: hero headline and lede are a summary written from the section intros in messaging.md; the source has no hero statement. -->
+    <Button href="#contact" size="lg">Contact Us</Button>
+    <Button href="#a2p" variant="outline" size="lg" arrow={false}>Explore messaging</Button>
+    <MessageFlow slot="visual" />
+  </PageHero>
+
+  <AnchorNav items={nav} />
+
+  <!-- A2P -->
+  <Section id="a2p">
+    <SplitSection>
+      <SectionHeading eyebrow="Application-to-Person" title="A2P" highlight="Messaging" lede="Enable secure and reliable enterprise messaging through Acmetel’s global A2P SMS network, connecting businesses with subscribers worldwide.">
+        <div class="mt-8"><Button href="#contact">Talk to our messaging team</Button></div>
+      </SectionHeading>
+      <div slot="visual"><CheckList items={a2p} /></div>
+    </SplitSection>
+  </Section>
+
+  <!-- Firewall -->
+  <Section id="firewall" tone="raised">
+    <div class="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
+      <div>
+        <SectionHeading eyebrow="Product · SMS Firewall" title="Firewall &" highlight="Security Solutions" lede="Protect operator networks while maximizing international messaging revenues through AI-driven security and monetization platforms." />
+        <p class="mt-6 max-w-3xl leading-relaxed text-ink-muted" data-reveal>
+          A comprehensive set of cutting-edge filtering techniques establishes a robust blocking policy, safeguarding revenue and enhancing the customer experience.
+        </p>
+      </div>
+      <ul class="grid gap-4 sm:grid-cols-2" data-stagger>
+        {firewall.map((f, i) => (
+          <li class:list={['glass spotlight flex items-start gap-4 p-5', i === firewall.length - 1 && 'sm:col-span-2']}>
+            <span class="grid size-11 shrink-0 place-items-center rounded-xl border border-teal-500/30 bg-gradient-to-br from-teal-500/25 to-green-700/20 text-teal-300"><Icon name={f.icon} /></span>
+            <span class="self-center text-sm font-medium leading-snug text-ink">{f.t}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </Section>
+
+  <!-- P2A + P2P -->
+  <Section tone="glow">
+    <SectionHeading eyebrow="Person-to-Application · Person-to-Person" title="P2A & P2P" highlight="Messaging" align="center" />
+    <div class="mt-14 grid gap-5 lg:grid-cols-2" data-stagger>
+      <FeatureCard id="p2a" icon="messages" title="P2A Messaging" text="Empower subscribers to interact seamlessly with enterprises through secure two-way messaging." items={p2a} />
+      <FeatureCard id="p2p" icon="users" title="P2P Messaging" text="Deliver trusted person-to-person messaging with a focus on quality, security, and fraud prevention." items={p2p} />
+    </div>
+  </Section>
+
+  <!-- Silent authentication -->
+  <Section id="silent-authentication">
+    <SplitSection reverse>
+      <SectionHeading eyebrow="Network-based identity" title="Silent Network" highlight="Authentication" lede="Enable seamless subscriber authentication without relying on SMS OTPs through network-based identity verification.">
+        <div class="mt-8"><CheckList items={silent} columns={2} /></div>
+      </SectionHeading>
+      <div slot="visual" class="mx-auto max-w-sm" aria-hidden="true">
+        <div class="glass relative p-8 text-center">
+          <div class="absolute inset-4 -z-10 rounded-full bg-teal-500/15 blur-3xl"></div>
+          <span class="mx-auto grid size-24 place-items-center rounded-full border border-teal-500/40 bg-teal-500/10 text-teal-300 shadow-[0_0_48px_-8px_rgb(34_170_161/0.7)]"><Icon name="fingerprint" size={44} /></span>
+          <p class="mt-6 font-display text-lg font-semibold text-ink">No OTP required</p>
+          <p class="mt-1.5 text-sm text-ink-muted">Identity verified by the network</p>
+        </div>
+      </div>
+    </SplitSection>
+  </Section>
+
+  <!-- Penetration testing -->
+  <Section id="penetration-testing" tone="raised">
+    <SectionHeading eyebrow="Product · Probe Testing" title="Network Penetration" highlight="Testing (NPT)" lede="Identify vulnerabilities before fraudsters do through comprehensive telecom security testing." />
+    <ol class="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-stagger>
+      {npt.map((t, i) => (
+        <li class:list={['glass spotlight flex flex-col gap-4 p-6', i === npt.length - 1 && 'sm:col-span-2 lg:col-span-2']}>
+          <span class="font-mono text-sm text-teal-400">{String(i + 1).padStart(2, '0')}</span>
+          <span class="font-display text-base font-semibold leading-snug text-ink">{t}</span>
+        </li>
+      ))}
+    </ol>
+  </Section>
+
+  <!-- Managed services -->
+  <Section id="managed-services" tone="glow">
+    <SectionHeading eyebrow="Operations" title="Managed Telecom" highlight="Services" align="center" />
+    <div class="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4" data-stagger>
+      {managed.map((m) => <FeatureCard icon={m.icon} title={m.title} />)}
+    </div>
+  </Section>
+
+  <!-- Why Acmetel -->
+  <Section id="why-acmetel">
+    <div class="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20">
+      <SectionHeading eyebrow="Why Acmetel" title="Why" highlight="Acmetel?" />
+      <CheckList columns={2} items={why} />
+    </div>
+  </Section>
+
+  <!-- Contact -->
+  <Section tone="raised">
+    <div class="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
+      <SectionHeading eyebrow="Get started" title="Let’s talk about your" highlight="messaging traffic" lede="Tell us about your messaging, security or authentication needs and our team will get back to you." />
+      <ContactForm name="messaging-contact" topic="messaging" title="Talk to our messaging team" />
+    </div>
+  </Section>
+</Base>
