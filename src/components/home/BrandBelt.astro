@@ -1,0 +1,96 @@
+---
+// Two infinite logo rows moving in opposite directions. Speed reacts to scroll velocity.
+// Reduced motion: a static wrapped grid. Logo data: src/data/logos.ts.
+import PauseButton from '../PauseButton.astro';
+import { operators, partners, type BeltLogo } from '../../data/logos';
+
+// Each half of a track repeats its set so one half is wider than any viewport; the track holds two halves.
+const half = (set: BeltLogo[], times: number) => Array.from({ length: times }, () => set).flat();
+const rows = [
+  { id: 'operators', label: 'Operators', unique: operators.length, items: half(operators, 3), dir: -1 },
+  { id: 'partners', label: 'Partners and carriers', unique: partners.length, items: half(partners, 2), dir: 1 },
+];
+const all = [...operators, ...partners];
+---
+
+<div class="brand-belt relative" data-belt>
+  <div class="belt-motion space-y-4">
+    {rows.map((row) => (
+      <div class="relative overflow-hidden [mask-image:linear-gradient(to_right,transparent,#000_10%,#000_90%,transparent)]" aria-label={row.label} role="group">
+        <ul class="belt-track flex w-max gap-4" data-dir={row.dir}>
+          {[...row.items, ...row.items].map((logo, i) => (
+            <li aria-hidden={i >= row.unique ? 'true' : undefined}
+              class="group grid h-18 w-44 shrink-0 place-items-center rounded-2xl border border-line bg-white/[0.03] px-6 transition-colors duration-300 hover:border-teal-500/50 hover:bg-teal-500/[0.06]">
+              {logo.src
+                ? <img src={logo.src} alt={logo.name} width="160" height="48" loading="lazy" class="h-9 w-auto opacity-60 grayscale transition duration-300 group-hover:opacity-100 group-hover:grayscale-0" />
+                : <span class="font-display text-xl font-semibold tracking-tight text-ink-faint transition-colors duration-300 group-hover:text-teal-300">{logo.name}</span>}
+            </li>
+          ))}
+        </ul>
+      </div>
+    ))}
+    <PauseButton class="absolute -top-12 right-0" />
+  </div>
+
+  <!-- Reduced-motion fallback: static grid of every logo once. -->
+  <ul class="belt-static hidden grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
+    {all.map((logo) => (
+      <li class="grid h-16 place-items-center rounded-2xl border border-line bg-white/[0.03] px-4">
+        {logo.src ? <img src={logo.src} alt={logo.name} width="160" height="48" loading="lazy" class="h-8 w-auto opacity-70" /> : <span class="font-display text-lg font-semibold text-ink-muted">{logo.name}</span>}
+      </li>
+    ))}
+  </ul>
+</div>
+
+<style>
+  @media (prefers-reduced-motion: reduce) {
+    .belt-motion { display: none; }
+    .belt-static { display: grid; }
+  }
+</style>
+
+<script>
+  import { gsap, ScrollTrigger, prefersReducedMotion, bindPauseButton } from '../../scripts/motion';
+
+  document.querySelectorAll<HTMLElement>('[data-belt]').forEach((belt) => {
+    if (prefersReducedMotion()) return;
+    const tracks = [...belt.querySelectorAll<HTMLElement>('.belt-track')];
+
+    // Each track holds two identical halves, so moving by 50% loops seamlessly.
+    const tweens = tracks.map((track) => {
+      const dir = Number(track.dataset.dir);
+      return gsap.fromTo(track, { xPercent: dir < 0 ? 0 : -50 }, { xPercent: dir < 0 ? -50 : 0, duration: 45, ease: 'none', repeat: -1 });
+    });
+
+    let userPaused = false;
+    let hoverPaused = false;
+    const apply = () => tweens.forEach((t) => (userPaused || hoverPaused ? t.pause() : t.resume()));
+
+    // Scroll velocity briefly speeds the belts up, then they settle back to 1x.
+    const boost = { v: 1 };
+    ScrollTrigger.create({
+      trigger: belt,
+      start: 'top bottom',
+      end: 'bottom top',
+      onUpdate: (self) => {
+        const target = 1 + Math.min(Math.abs(self.getVelocity()) / 400, 4);
+        gsap.to(boost, {
+          v: target, duration: 0.2, overwrite: true,
+          onUpdate: () => tweens.forEach((t) => t.timeScale(boost.v)),
+          onComplete: () => gsap.to(boost, { v: 1, duration: 1.2, ease: 'power2.out', onUpdate: () => tweens.forEach((t) => t.timeScale(boost.v)) }),
+        });
+      },
+    });
+
+    belt.querySelectorAll('.belt-track').forEach((track) => {
+      track.addEventListener('mouseenter', () => { hoverPaused = true; apply(); });
+      track.addEventListener('mouseleave', () => { hoverPaused = false; apply(); });
+      track.addEventListener('focusin', () => { hoverPaused = true; apply(); });
+      track.addEventListener('focusout', () => { hoverPaused = false; apply(); });
+    });
+    bindPauseButton(belt.querySelector('[data-pause]'), {
+      pause: () => { userPaused = true; apply(); },
+      play: () => { userPaused = false; apply(); },
+    });
+  });
+</script>
