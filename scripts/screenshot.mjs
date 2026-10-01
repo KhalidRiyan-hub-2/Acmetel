@@ -14,7 +14,7 @@ for (const width of [375, 1440]) {
   page.on('console', (m) => m.type() === 'error' && errors.push(`${width} console: ${m.text()}`));
   for (const r of routes) {
     await page.goto(`http://localhost:${process.env.PORT ?? 4321}` + r, { waitUntil: 'networkidle' });
-    await page.addStyleTag({ content: '[data-reveal]{opacity:1!important;transform:none!important}' });
+    await page.addStyleTag({ content: '[data-reveal]{opacity:1!important;transform:none!important;transition:none!important}' });
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     if (overflow > 0) errors.push(`${width} ${r} horizontal overflow ${overflow}px`);
     const name = (r === '/' ? 'home' : r.replace(/^\/|\/$/g, '').replace(/\//g, '_')) + `-${width}.png`;
