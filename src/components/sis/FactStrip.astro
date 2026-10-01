@@ -1,0 +1,14 @@
+---
+// Static fact strip styled like StatStrip, for values that are not plain integers (99.99%, Tier III/IV).
+interface Props { facts: { value: string; label: string }[]; class?: string }
+const { facts, class: className = '' } = Astro.props;
+const cols = facts.length >= 4 ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 sm:grid-cols-3';
+---
+<dl class:list={['grid gap-px overflow-hidden rounded-2xl border border-line bg-line', cols, className]} data-stagger>
+  {facts.map((f) => (
+    <div class="bg-navy-900 px-5 py-7 sm:px-7">
+      <dt class="text-sm text-ink-muted">{f.label}</dt>
+      <dd class="mt-2 font-display text-3xl font-semibold tabular-nums text-ink sm:text-4xl">{f.value}</dd>
+    </div>
+  ))}
+</dl>

@@ -1,0 +1,25 @@
+---
+// Sticky in-page pill nav for long service pages. Highlights the section in view.
+interface Props { items: { label: string; href: string }[] }
+const { items } = Astro.props;
+---
+<nav aria-label="On this page" class="sticky top-18 z-40 border-y border-line bg-navy-900/80 backdrop-blur-xl">
+  <ul class="container-x flex gap-2 overflow-x-auto py-3 [scrollbar-width:none]" data-anchor-nav>
+    {items.map((i) => (
+      <li class="shrink-0"><a href={i.href} class="block rounded-full border border-transparent px-4 py-2 text-sm text-ink-muted transition hover:text-ink aria-[current=true]:border-teal-500/40 aria-[current=true]:bg-teal-500/10 aria-[current=true]:text-teal-300">{i.label}</a></li>
+    ))}
+  </ul>
+</nav>
+<script>
+  document.querySelectorAll('[data-anchor-nav]').forEach((navEl) => {
+    const links = [...navEl.querySelectorAll<HTMLAnchorElement>('a')];
+    const targets = links.map((a) => document.querySelector(a.hash)).filter(Boolean) as Element[];
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => {
+        if (!e.isIntersecting) return;
+        links.forEach((a) => a.setAttribute('aria-current', String(a.hash === '#' + e.target.id)));
+      });
+    }, { rootMargin: '-40% 0px -55% 0px' });
+    targets.forEach((t) => io.observe(t));
+  });
+</script>

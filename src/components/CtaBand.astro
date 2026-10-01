@@ -1,0 +1,22 @@
+---
+import Button from './Button.astro';
+import { contact } from '../data/site';
+interface Props { title: string; text?: string; primary?: { label: string; href: string; external?: boolean }; secondary?: { label: string; href: string; external?: boolean } }
+const { title, text, primary = contact.cta, secondary } = Astro.props;
+---
+<section class="relative py-20 sm:py-24">
+  <div class="container-x">
+    <div class="relative overflow-hidden rounded-3xl border border-teal-500/30 bg-gradient-to-br from-green-700/50 via-navy-800 to-navy-800 px-6 py-14 text-center sm:px-12 sm:py-20" data-reveal>
+      <div aria-hidden="true" class="bg-grid pointer-events-none absolute inset-0 opacity-60"></div>
+      <div aria-hidden="true" class="pointer-events-none absolute -top-24 left-1/2 h-64 w-[40rem] -translate-x-1/2 rounded-full bg-teal-500/25 blur-3xl"></div>
+      <div class="relative mx-auto max-w-2xl">
+        <h2 class="text-3xl font-semibold text-ink sm:text-4xl">{title}</h2>
+        {text && <p class="mt-4 text-ink-muted sm:text-lg">{text}</p>}
+        <div class="mt-8 flex flex-wrap justify-center gap-3">
+          <Button href={primary.href} external={primary.external} size="lg">{primary.label}</Button>
+          {secondary && <Button href={secondary.href} external={secondary.external} variant="outline" size="lg">{secondary.label}</Button>}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,39 @@
+---
+// Interior page hero. Slot "visual" (optional) renders on the right on desktop.
+import Icon from './Icon.astro';
+interface Crumb { label: string; href?: string }
+interface Props { eyebrow?: string; title: string; highlight?: string; lede?: string; crumbs?: Crumb[] }
+const { eyebrow, title, highlight, lede, crumbs = [] } = Astro.props;
+const hasVisual = Astro.slots.has('visual');
+---
+<section class="relative overflow-hidden pt-32 pb-20 sm:pt-40 sm:pb-24">
+  <div aria-hidden="true" class="pointer-events-none absolute inset-0">
+    <div class="bg-grid absolute inset-0"></div>
+    <div class="absolute -left-40 -top-40 h-[32rem] w-[32rem] animate-aurora rounded-full bg-teal-500/20 blur-3xl"></div>
+    <div class="absolute -right-32 top-20 h-[28rem] w-[28rem] animate-aurora rounded-full bg-green-700/30 blur-3xl [animation-delay:-6s]"></div>
+  </div>
+  <div class:list={['container-x relative', hasVisual && 'grid items-center gap-12 lg:grid-cols-[1.1fr_0.9fr]']}>
+    <div>
+      {crumbs.length > 0 && (
+        <nav aria-label="Breadcrumb" class="mb-6" data-reveal>
+          <ol class="flex flex-wrap items-center gap-1.5 text-xs text-ink-faint">
+            <li><a href="/" class="hover:text-ink">Home</a></li>
+            {crumbs.map((c) => (
+              <li class="flex items-center gap-1.5">
+                <Icon name="chevron-down" size={14} class="-rotate-90" />
+                {c.href ? <a href={c.href} class="hover:text-ink">{c.label}</a> : <span aria-current="page" class="text-ink-muted">{c.label}</span>}
+              </li>
+            ))}
+          </ol>
+        </nav>
+      )}
+      {eyebrow && <p class="eyebrow mb-5" data-reveal>{eyebrow}</p>}
+      <h1 class="text-4xl font-bold leading-[1.08] text-ink sm:text-5xl lg:text-6xl" data-reveal style="--reveal-delay:80ms">
+        {title}{highlight && <> <span class="text-gradient">{highlight}</span></>}
+      </h1>
+      {lede && <p class="mt-6 max-w-2xl text-lg leading-relaxed text-ink-muted" data-reveal style="--reveal-delay:160ms">{lede}</p>}
+      {Astro.slots.has('default') && <div class="mt-9 flex flex-wrap gap-3" data-reveal style="--reveal-delay:240ms"><slot /></div>}
+    </div>
+    {hasVisual && <div class="relative" data-reveal style="--reveal-delay:200ms"><slot name="visual" /></div>}
+  </div>
+</section>

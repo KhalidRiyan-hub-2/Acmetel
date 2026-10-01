@@ -1,0 +1,27 @@
+---
+// Glass card with spotlight hover. Pass `href` to make the whole card a link; `items` renders a check list.
+import Icon, { type IconName } from './Icon.astro';
+interface Props { icon?: IconName; title: string; text?: string; items?: string[]; href?: string; linkLabel?: string; id?: string; class?: string }
+const { icon, title, text, items, href, linkLabel = 'Learn more', id, class: className = '' } = Astro.props;
+const Tag = href ? 'a' : 'article';
+---
+<Tag id={id} href={href} class:list={['glass spotlight group flex h-full flex-col p-6 transition-transform duration-300 sm:p-7', href && 'hover:-translate-y-1', className]}>
+  {icon && (
+    <div class="mb-5 grid size-12 place-items-center rounded-xl border border-teal-500/30 bg-gradient-to-br from-teal-500/25 to-green-700/20 text-teal-300 shadow-[0_0_24px_-6px_rgb(34_170_161/0.6)]">
+      <Icon name={icon} />
+    </div>
+  )}
+  <h3 class="text-lg font-semibold text-ink">{title}</h3>
+  {text && <p class="mt-2.5 text-sm leading-relaxed text-ink-muted">{text}</p>}
+  {items && (
+    <ul class="mt-4 space-y-2.5 text-sm text-ink-muted">
+      {items.map((i) => <li class="flex gap-2.5"><Icon name="check" size={18} class="mt-0.5 shrink-0 text-teal-400" />{i}</li>)}
+    </ul>
+  )}
+  <slot />
+  {href && (
+    <span class="mt-auto inline-flex items-center gap-1.5 pt-6 text-sm font-semibold text-teal-300">
+      {linkLabel}<Icon name="arrow-right" size={16} class="transition-transform duration-200 group-hover:translate-x-1" />
+    </span>
+  )}
+</Tag>

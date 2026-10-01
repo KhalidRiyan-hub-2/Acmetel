@@ -1,0 +1,95 @@
+---
+import Logo from './Logo.astro';
+import Icon from './Icon.astro';
+import Button from './Button.astro';
+import { nav, contact } from '../data/site';
+
+const path = Astro.url.pathname.replace(/\/$/, '') || '/';
+const isActive = (href?: string) => !!href && (path === href || path.startsWith(href + '/'));
+---
+
+<header id="site-header" class="fixed inset-x-0 top-0 z-50 transition-[background-color,border-color,backdrop-filter] duration-300 border-b border-transparent data-[scrolled]:bg-navy-900/75 data-[scrolled]:backdrop-blur-xl data-[scrolled]:border-line">
+  <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-full focus:bg-teal-500 focus:px-4 focus:py-2 focus:text-navy-950">Skip to content</a>
+  <div class="container-x flex h-18 items-center justify-between gap-6">
+    <a href="/" class="shrink-0" aria-label="Acmetel home"><Logo class="h-9 w-auto sm:h-10" /></a>
+
+    <nav aria-label="Primary" class="hidden lg:block">
+      <ul class="flex items-center gap-1">
+        {nav.map((item) =>
+          'children' in item ? (
+            <li class="group relative">
+              <button type="button" class:list={['flex items-center gap-1 rounded-full px-4 py-2 text-sm font-medium transition-colors hover:text-teal-300', item.children.some((c) => isActive(c.href.split('#')[0])) ? 'text-teal-300' : 'text-ink-muted']} aria-haspopup="true">
+                {item.label}
+                <Icon name="chevron-down" size={16} class="transition-transform duration-200 group-hover:rotate-180 group-focus-within:rotate-180" />
+              </button>
+              <div class="invisible absolute left-1/2 top-full w-80 -translate-x-1/2 translate-y-2 pt-3 opacity-0 transition duration-200 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100">
+                <ul class="glass bg-navy-800/95! p-2 shadow-2xl shadow-black/40">
+                  {item.children.map((c) => (
+                    <li>
+                      <a href={c.href} class="block rounded-xl px-4 py-3 transition-colors hover:bg-white/5">
+                        <span class="block font-display text-sm font-semibold text-ink">{c.label}</span>
+                        {c.description && <span class="mt-0.5 block text-xs text-ink-muted">{c.description}</span>}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </li>
+          ) : (
+            <li>
+              <a href={item.href} aria-current={isActive(item.href) ? 'page' : undefined} class="rounded-full px-4 py-2 text-sm font-medium text-ink-muted transition-colors hover:text-teal-300 aria-[current=page]:text-teal-300">{item.label}</a>
+            </li>
+          )
+        )}
+      </ul>
+    </nav>
+
+    <div class="flex items-center gap-2">
+      <Button href={contact.cta.href} class="hidden sm:inline-flex" arrow={false}>{contact.cta.label}</Button>
+      <button id="menu-toggle" type="button" class="grid size-11 place-items-center rounded-full text-ink hover:bg-white/5 lg:hidden" aria-controls="mobile-menu" aria-expanded="false" aria-label="Open menu">
+        <Icon name="menu" class="menu-open" /><Icon name="x" class="menu-close hidden" />
+      </button>
+    </div>
+  </div>
+
+  <div id="mobile-menu" class="hidden max-h-[calc(100dvh-4.5rem)] overflow-y-auto border-t border-line bg-navy-900/95 backdrop-blur-xl lg:hidden">
+    <nav aria-label="Mobile" class="container-x py-4">
+      <ul class="space-y-1">
+        {nav.map((item) =>
+          'children' in item ? (
+            <li class="pt-3">
+              <p class="eyebrow px-3 pb-1">{item.label}</p>
+              <ul>
+                {item.children.map((c) => (
+                  <li><a href={c.href} class="block rounded-lg px-3 py-3 text-ink hover:bg-white/5">{c.label}</a></li>
+                ))}
+              </ul>
+            </li>
+          ) : (
+            <li><a href={item.href} class="block rounded-lg px-3 py-3 text-ink hover:bg-white/5">{item.label}</a></li>
+          )
+        )}
+      </ul>
+      <Button href={contact.cta.href} class="mt-4 w-full">{contact.cta.label}</Button>
+    </nav>
+  </div>
+</header>
+
+<script>
+  const header = document.getElementById('site-header')!;
+  const onScroll = () => header.toggleAttribute('data-scrolled', window.scrollY > 8);
+  onScroll();
+  window.addEventListener('scroll', onScroll, { passive: true });
+
+  const toggle = document.getElementById('menu-toggle')!;
+  const menu = document.getElementById('mobile-menu')!;
+  toggle.addEventListener('click', () => {
+    const open = toggle.getAttribute('aria-expanded') !== 'true';
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+    menu.classList.toggle('hidden', !open);
+    toggle.querySelector('.menu-open')!.classList.toggle('hidden', open);
+    toggle.querySelector('.menu-close')!.classList.toggle('hidden', !open);
+    if (open) header.setAttribute('data-scrolled', '');
+  });
+</script>

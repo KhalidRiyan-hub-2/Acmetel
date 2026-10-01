@@ -1,0 +1,13 @@
+---
+// Eyebrow + h2 + lede. Put the highlighted phrase in `highlight` to render it with the brand gradient.
+interface Props { eyebrow?: string; title: string; highlight?: string; lede?: string; align?: 'left' | 'center'; as?: 'h2' | 'h3'; class?: string }
+const { eyebrow, title, highlight, lede, align = 'left', as: Tag = 'h2', class: className = '' } = Astro.props;
+---
+<div class:list={['max-w-3xl', align === 'center' && 'mx-auto text-center', className]} data-reveal>
+  {eyebrow && <p class="eyebrow mb-4">{eyebrow}</p>}
+  <Tag class="text-3xl font-semibold leading-tight text-ink sm:text-4xl lg:text-[2.75rem]">
+    {title}{highlight && <> <span class="text-gradient">{highlight}</span></>}
+  </Tag>
+  {lede && <p class="mt-5 text-base leading-relaxed text-ink-muted sm:text-lg">{lede}</p>}
+  <slot />
+</div>

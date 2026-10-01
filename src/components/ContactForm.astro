@@ -1,0 +1,54 @@
+---
+// Prototype contact form. Submits to Netlify Forms when deployed there; no backend otherwise.
+// `interests` renders a checkbox group (e.g. ACMeSIM partnership types). `topic` preselects context.
+import Icon from './Icon.astro';
+interface Props { name?: string; title?: string; text?: string; interests?: string[]; topic?: string; withCompanyLink?: boolean; id?: string }
+const { name = 'contact', title = 'Get in touch', text = 'Tell us what you need and our team will get back to you.', interests, topic, withCompanyLink = false, id = 'contact' } = Astro.props;
+const field = 'mt-2 block w-full rounded-xl border border-line-strong bg-navy-950/60 px-4 py-3 text-base text-ink placeholder:text-ink-faint transition focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-500/30';
+const label = 'text-sm font-medium text-ink';
+---
+<div id={id} class="glass p-6 sm:p-10" data-reveal>
+  <h2 class="text-2xl font-semibold text-ink sm:text-3xl">{title}</h2>
+  <p class="mt-2 text-ink-muted">{text}</p>
+  <form name={name} method="POST" data-netlify="true" netlify-honeypot="bot-field" class="mt-8 grid gap-5 sm:grid-cols-2" data-proto-form>
+    <input type="hidden" name="form-name" value={name} />
+    {topic && <input type="hidden" name="topic" value={topic} />}
+    <p class="hidden"><label>Leave empty <input name="bot-field" /></label></p>
+    <label class={label}>Full name <span class="text-teal-400">*</span><input class={field} name="name" autocomplete="name" required /></label>
+    <label class={label}>Email address <span class="text-teal-400">*</span><input class={field} type="email" name="email" autocomplete="email" required /></label>
+    <label class={label}>Phone number<input class={field} type="tel" name="phone" autocomplete="tel" /></label>
+    <label class={label}>Company name<input class={field} name="company" autocomplete="organization" /></label>
+    {interests && (
+      <fieldset class="sm:col-span-2">
+        <legend class={label}>Interest</legend>
+        <div class="mt-3 grid gap-3 sm:grid-cols-2">
+          {interests.map((i) => (
+            <label class="flex cursor-pointer items-center gap-3 rounded-xl border border-line-strong bg-navy-950/40 px-4 py-3 text-sm text-ink transition has-[:checked]:border-teal-400 has-[:checked]:bg-teal-500/10">
+              <input type="checkbox" name="interest" value={i} class="size-4 accent-teal-500" />{i}
+            </label>
+          ))}
+        </div>
+      </fieldset>
+    )}
+    {withCompanyLink && <label class:list={[label, 'sm:col-span-2']}>Website / app link<input class={field} type="url" name="website" placeholder="https://" /></label>}
+    <label class:list={[label, 'sm:col-span-2']}>Message<textarea class:list={[field, 'min-h-32 resize-y']} name="message" rows="4"></textarea></label>
+    <div class="flex flex-wrap items-center gap-4 sm:col-span-2">
+      <button type="submit" class="group inline-flex h-12 cursor-pointer items-center gap-2 rounded-full bg-teal-500 px-7 font-display font-semibold text-navy-950 transition hover:bg-teal-400 active:scale-[0.97]">
+        Submit inquiry <Icon name="arrow-right" size={18} class="transition-transform group-hover:translate-x-0.5" />
+      </button>
+      <p class="text-sm text-teal-300" role="status" aria-live="polite" data-form-status></p>
+    </div>
+  </form>
+</div>
+
+<script>
+  // Prototype only: outside Netlify there is no form backend, so confirm locally instead of 404ing.
+  document.querySelectorAll<HTMLFormElement>('[data-proto-form]').forEach((form) => {
+    form.addEventListener('submit', (e) => {
+      if (location.hostname.endsWith('netlify.app')) return;
+      e.preventDefault();
+      form.querySelector('[data-form-status]')!.textContent = 'Thanks — prototype form, nothing was sent.';
+      form.reset();
+    });
+  });
+</script>
