@@ -1,0 +1,103 @@
+---
+// Services as a horizontal rail. Desktop with motion: the section pins and vertical scroll drives the
+// cards sideways (compact: ~2 cards visible, pin lasts roughly the overflow distance).
+// Mobile / reduced motion: native horizontal swipe carousel with scroll-snap.
+import Icon, { type IconName } from '../Icon.astro';
+
+interface Service { icon: IconName; title: string; text: string; href?: string }
+interface Props { services: Service[]; id?: string }
+const { services, id } = Astro.props;
+const total = String(services.length).padStart(2, '0');
+---
+
+<section id={id} class="rail relative overflow-hidden py-16 sm:py-20 lg:pt-28" data-rail>
+  <div aria-hidden="true" class="pointer-events-none absolute left-1/2 top-1/2 h-[36rem] w-[36rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-teal-500/10 blur-3xl"></div>
+  <div class="container-x relative flex flex-wrap items-end justify-between gap-6">
+    <slot />
+    <div class="rail-progress flex items-center gap-4 font-mono text-sm text-ink-muted" aria-hidden="true">
+      <span><span class="rail-current text-ink">01</span> / {total}</span>
+      <span class="relative h-px w-32 bg-line-strong"><span class="rail-bar absolute inset-y-0 left-0 w-full origin-left scale-x-[0.2] bg-teal-400"></span></span>
+    </div>
+  </div>
+
+  <div class="rail-viewport container-x relative mt-10 overflow-x-auto snap-x snap-mandatory scroll-px-4 sm:scroll-px-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <ul class="rail-track flex w-max gap-5 pb-2" role="list">
+      {services.map((s, i) => {
+        const Tag = s.href ? 'a' : 'div';
+        return (
+        <li class="rail-card w-[82vw] shrink-0 snap-start sm:w-[26rem] lg:w-[34rem] transition-[opacity,scale] duration-500">
+          <Tag href={s.href} class="glass spotlight group relative flex h-[min(60vh,30rem)] min-h-[22rem] flex-col overflow-hidden p-7 sm:p-9">
+            <span aria-hidden="true" class="pointer-events-none absolute -right-4 -top-8 font-display text-[9rem] font-bold leading-none text-white/[0.04]">{String(i + 1).padStart(2, '0')}</span>
+            <div class="grid size-14 place-items-center rounded-2xl border border-teal-500/30 bg-gradient-to-br from-teal-500/25 to-green-700/20 text-teal-300 shadow-[0_0_30px_-6px_rgb(34_170_161/0.6)]">
+              <Icon name={s.icon} size={28} />
+            </div>
+            <h3 class="mt-auto text-2xl font-semibold text-ink sm:text-3xl">{s.title}</h3>
+            <p class="mt-3 max-w-md leading-relaxed text-ink-muted">{s.text}</p>
+            {s.href && (
+              <span class="mt-6 inline-flex items-center gap-1.5 text-sm font-semibold text-teal-300">
+                Learn more <Icon name="arrow-right" size={16} class="transition-transform group-hover:translate-x-1" />
+              </span>
+            )}
+          </Tag>
+        </li>
+        );
+      })}
+    </ul>
+  </div>
+</section>
+
+<script>
+  import { gsap, ScrollTrigger, prefersReducedMotion } from '../../scripts/motion';
+
+  document.querySelectorAll<HTMLElement>('[data-rail]').forEach((rail) => {
+    const viewport = rail.querySelector<HTMLElement>('.rail-viewport')!;
+    const track = rail.querySelector<HTMLElement>('.rail-track')!;
+    const cards = [...rail.querySelectorAll<HTMLElement>('.rail-card')];
+    const current = rail.querySelector<HTMLElement>('.rail-current')!;
+    const bar = rail.querySelector<HTMLElement>('.rail-bar')!;
+
+    // Highlight the card nearest the viewport's left content edge; dim the rest.
+    const setActive = (idx: number) => {
+      current.textContent = String(idx + 1).padStart(2, '0');
+      bar.style.transform = `scaleX(${(idx + 1) / cards.length})`;
+      cards.forEach((c, i) => { c.style.opacity = i === idx ? '1' : '0.5'; c.style.scale = i === idx ? '1' : '0.97'; });
+    };
+    const nearest = () => {
+      const left = viewport.getBoundingClientRect().left + parseFloat(getComputedStyle(viewport).paddingLeft);
+      let best = 0, dist = Infinity;
+      cards.forEach((c, i) => { const d = Math.abs(c.getBoundingClientRect().left - left); if (d < dist) { dist = d; best = i; } });
+      return best;
+    };
+    setActive(0);
+
+    // Carousel mode (mobile / reduced motion): follow native scroll.
+    viewport.addEventListener('scroll', () => setActive(nearest()), { passive: true });
+
+    if (prefersReducedMotion()) return;
+    ScrollTrigger.matchMedia({
+      '(min-width: 1024px)': () => {
+        viewport.classList.remove('overflow-x-auto', 'snap-x', 'snap-mandatory');
+        const distance = () => Math.max(0, track.scrollWidth - viewport.clientWidth + parseFloat(getComputedStyle(viewport).paddingRight));
+        const tween = gsap.to(track, {
+          x: () => -distance(),
+          ease: 'none',
+          scrollTrigger: {
+            trigger: rail,
+            start: 'top top',
+            end: () => `+=${distance()}`,
+            pin: true,
+            scrub: 0.6,
+            invalidateOnRefresh: true,
+            onUpdate: () => setActive(nearest()),
+          },
+        });
+        return () => {
+          tween.scrollTrigger?.kill();
+          tween.kill();
+          gsap.set(track, { clearProps: 'transform' });
+          viewport.classList.add('overflow-x-auto', 'snap-x', 'snap-mandatory');
+        };
+      },
+    });
+  });
+</script>
