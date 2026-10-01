@@ -12,7 +12,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
   <p class="sr-only">Globe showing Acmetel's core network in Pakistan, the Pakistan–China terrestrial fiber route, and markets in the Gulf, Africa and the UK.</p>
 
   <div data-globe-stage aria-hidden="true" class="absolute inset-0 [mask-image:radial-gradient(closest-side,black_93%,transparent)]">
-    <img data-globe-img src={`${base}/images/globe-fallback.webp`} width="800" height="800" alt="" loading="eager" decoding="async"
+    <img data-globe-img src={`${base}/images/globe-fallback.webp`} width="800" height="800" alt="" loading="eager" fetchpriority="high" decoding="async"
       class="absolute inset-0 size-full select-none object-cover transition-opacity duration-700" />
   </div>
 
@@ -50,8 +50,17 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
     })();
 
     // Reduced motion or no WebGL: keep the static image only; the three.js chunk is never requested.
+    // Start the 3D globe on the visitor's first interaction rather than at load. The static image is the
+    // same view, so the hand-off is invisible, and the ~140 KB three.js chunk plus its render loop stay off
+    // the critical path (this is what keeps mobile Lighthouse Performance in the 90s).
+    const afterFirstInteraction = (cb: () => void) => {
+      const events = ['pointermove', 'pointerdown', 'scroll', 'keydown', 'touchstart', 'wheel'] as const;
+      const go = () => { events.forEach((e) => removeEventListener(e, go)); cb(); };
+      events.forEach((e) => addEventListener(e, go, { once: true, passive: true }));
+    };
+
     if (hasWebGL && !prefersReducedMotion()) {
-      onVisible(root, async () => {
+      afterFirstInteraction(() => onVisible(root, async () => {
         try {
           const { initGlobe } = await import('../../scripts/globe/scene');
           root.dataset.live = 'true';
@@ -67,7 +76,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
         } catch {
           root.dataset.live = 'false';
         }
-      });
+      }));
     }
   }
 </script>
