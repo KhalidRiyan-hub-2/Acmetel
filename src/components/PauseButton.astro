@@ -1,0 +1,10 @@
+---
+// Small round pause/play toggle for continuously moving elements. Wire it with bindPauseButton() from scripts/motion.ts.
+interface Props { class?: string; id?: string }
+const { class: className = '', id } = Astro.props;
+---
+<button id={id} type="button" data-pause aria-pressed="false" aria-label="Pause animation"
+  class:list={['group grid size-9 cursor-pointer place-items-center rounded-full border border-line-strong bg-navy-900/70 text-ink-muted backdrop-blur transition hover:border-teal-500/60 hover:text-teal-300', className]}>
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="group-aria-pressed:hidden"><rect x="6" y="4" width="4" height="16" rx="1" /><rect x="14" y="4" width="4" height="16" rx="1" /></svg>
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="hidden group-aria-pressed:block"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12-7.5a1 1 0 0 0 0-1.72l-12-7.5A1 1 0 0 0 7 4.5z" /></svg>
+</button>

@@ -1,4 +1,5 @@
 // Usage: PORT=4321 node scripts/screenshot.mjs <outDir> [path ...]  (needs `npm run preview -- --port $PORT`)
+// REDUCED=1 emulates prefers-reduced-motion to check fallbacks.
 // Full-page screenshots at 375px and 1440px. Forces reveal animations visible so captures aren't blank.
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
@@ -9,7 +10,7 @@ const routes = paths.length ? paths : ['/'];
 const browser = await pw.chromium.launch();
 const errors = [];
 for (const width of [375, 1440]) {
-  const page = await browser.newPage({ viewport: { width, height: 900 } });
+  const page = await browser.newPage({ viewport: { width, height: 900 }, reducedMotion: process.env.REDUCED ? 'reduce' : 'no-preference' });
   page.on('pageerror', (e) => errors.push(`${width} ${e.message}`));
   page.on('console', (m) => m.type() === 'error' && errors.push(`${width} console: ${m.text()}`));
   for (const r of routes) {
@@ -17,7 +18,7 @@ for (const width of [375, 1440]) {
     await page.addStyleTag({ content: '[data-reveal]{opacity:1!important;transform:none!important;transition:none!important}' });
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     if (overflow > 0) errors.push(`${width} ${r} horizontal overflow ${overflow}px`);
-    const name = (r === '/' ? 'home' : r.replace(/^\/|\/$/g, '').replace(/\//g, '_')) + `-${width}.png`;
+    const name = (r === '/' ? 'home' : r.replace(/^\/|\/$/g, '').replace(/\//g, '_')) + `-${width}${process.env.REDUCED ? '-reduced' : ''}.png`;
     await page.screenshot({ path: `${outDir}/${name}`, fullPage: true });
   }
   await page.close();

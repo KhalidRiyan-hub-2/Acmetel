@@ -3,7 +3,7 @@
 interface Props { id?: string; tone?: 'base' | 'raised' | 'glow'; class?: string; tight?: boolean }
 const { id, tone = 'base', class: className = '', tight = false } = Astro.props;
 ---
-<section id={id} class:list={['relative', tight ? 'py-14 sm:py-16' : 'py-20 sm:py-28', tone === 'raised' && 'bg-navy-800 border-y border-line', tone === 'glow' && 'overflow-hidden', className]}>
+<section id={id} class:list={['relative', tight ? 'py-12 sm:py-14' : 'py-16 sm:py-20', tone === 'raised' && 'bg-navy-800 border-y border-line', tone === 'glow' && 'overflow-hidden', className]}>
   {tone === 'glow' && (
     <div aria-hidden="true" class="pointer-events-none absolute inset-0">
       <div class="absolute left-1/2 top-1/2 h-[36rem] w-[36rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-teal-500/10 blur-3xl"></div>
