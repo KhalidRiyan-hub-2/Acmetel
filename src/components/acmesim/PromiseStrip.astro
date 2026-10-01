@@ -1,0 +1,15 @@
+---
+// "No roaming. No contracts. No hidden fees." strip shown under the ACMeSIM hero.
+import Icon from '../Icon.astro';
+const nos = ['No roaming', 'No contracts', 'No hidden fees'];
+---
+<div class="glass flex flex-col items-center justify-between gap-5 px-6 py-6 sm:px-8 lg:flex-row" data-reveal>
+  <ul class="flex flex-wrap justify-center gap-3">
+    {nos.map((n) => (
+      <li class="inline-flex items-center gap-2 rounded-full border border-line-strong bg-white/[0.03] px-4 py-2 text-sm font-medium text-ink">
+        <Icon name="x" size={16} class="text-teal-400" />{n}
+      </li>
+    ))}
+  </ul>
+  <p class="inline-flex items-center gap-2 font-display text-lg font-semibold text-gradient"><Icon name="zap" size={20} class="text-teal-400" />Just instant connectivity.</p>
+</div>

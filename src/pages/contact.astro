@@ -1,0 +1,70 @@
+---
+import Base from '../layouts/Base.astro';
+import PageHero from '../components/PageHero.astro';
+import Section from '../components/Section.astro';
+import ContactForm from '../components/ContactForm.astro';
+import Icon from '../components/Icon.astro';
+import { contact } from '../data/site';
+
+// Copy sources: content/source/home-current-site.md (events, 24/7 NOC, three continents).
+const events = [
+  { name: 'Capacity Europe', date: 'October 13–15, 2026', place: 'London, England' },
+  { name: 'GCCM Middle East', date: 'November 1–4, 2026', place: 'Muscat, Oman' },
+  { name: 'Africa Tech Festival', date: 'November 17–19, 2026', place: 'Cape Town, South Africa' },
+];
+---
+
+<Base title="Contact" description="Contact Acmetel about wholesale voice, A2P messaging, the Sovereign Intelligence Stack or ACMeSIM. Our network operations team is available round the clock.">
+  <PageHero
+    eyebrow="Contact"
+    title="Let’s build what’s"
+    highlight="next together"
+    lede="Tell us about your traffic, your network or your next launch. Join a global network of trusted telecom partners."
+    crumbs={[{ label: 'Contact' }]}
+  />
+
+  <Section class="!pt-4 sm:!pt-4">
+    <div class="grid items-start gap-8 lg:grid-cols-[1.25fr_0.75fr] lg:gap-10">
+      <ContactForm
+        name="contact"
+        title="Send us a message"
+        text="Tell us what you need and our team will get back to you."
+        interests={['Voice', 'Messaging', 'Sovereign Intelligence Stack', 'ACMeSIM', 'Other']}
+      />
+
+      <aside class="space-y-5" aria-label="Contact details">
+        <div class="glass spotlight p-6 sm:p-7" data-reveal>
+          <h2 class="text-lg font-semibold text-ink">Reach us directly</h2>
+          <ul class="mt-5 space-y-5 text-sm">
+            <li class="flex gap-4">
+              <span class="grid size-10 shrink-0 place-items-center rounded-xl bg-teal-500/15 text-teal-300"><Icon name="mail" size={20} /></span>
+              <div><p class="text-ink-faint">Email</p><a href={`mailto:${contact.email}`} class="font-medium text-ink transition hover:text-teal-300">{contact.email}</a></div>
+            </li>
+            <li class="flex gap-4">
+              <span class="grid size-10 shrink-0 place-items-center rounded-xl bg-teal-500/15 text-teal-300"><Icon name="headset" size={20} /></span>
+              <div><p class="text-ink-faint">Network operations</p><p class="font-medium text-ink">24/7 NOC, round-the-clock operational support</p></div>
+            </li>
+            <li class="flex gap-4">
+              <span class="grid size-10 shrink-0 place-items-center rounded-xl bg-teal-500/15 text-teal-300"><Icon name="globe" size={20} /></span>
+              <div><p class="text-ink-faint">Presence</p><p class="font-medium text-ink">Global presence across three continents</p></div>
+            </li>
+          </ul>
+          <!-- PLACEHOLDER: office addresses and phone numbers are not in the source copy. Add them once the client supplies them; do not invent. -->
+        </div>
+
+        <div class="glass p-6 sm:p-7" data-reveal>
+          <h2 class="text-lg font-semibold text-ink">Meet us at</h2>
+          <ul class="mt-5 divide-y divide-line">
+            {events.map((e) => (
+              <li class="py-4 first:pt-0 last:pb-0">
+                <p class="font-display font-semibold text-ink">{e.name}</p>
+                <p class="mt-1.5 flex items-center gap-2 text-sm text-ink-muted"><Icon name="calendar" size={16} class="text-teal-400" />{e.date}</p>
+                <p class="mt-1 flex items-center gap-2 text-sm text-ink-muted"><Icon name="map-pin" size={16} class="text-teal-400" />{e.place}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </aside>
+    </div>
+  </Section>
+</Base>

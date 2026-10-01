@@ -1,0 +1,21 @@
+---
+// "What you see is exactly what you pay" receipt-style card. Lines come from the source transparency list; no prices shown.
+import Icon from '../Icon.astro';
+interface Props { lines: string[] }
+const { lines } = Astro.props;
+---
+<div class="glass relative mx-auto max-w-md p-7 sm:p-9">
+  <div class="flex items-center justify-between border-b border-dashed border-line-strong pb-5">
+    <p class="font-display text-lg font-semibold text-ink">Your eSIM order</p>
+    <Icon name="sim" class="text-teal-300" />
+  </div>
+  <ul class="divide-y divide-line">
+    {lines.map((l) => (
+      <li class="flex items-center justify-between gap-4 py-4 text-sm text-ink">
+        <span>{l}</span>
+        <span class="grid size-6 shrink-0 place-items-center rounded-full bg-teal-500/20 text-teal-300"><Icon name="check" size={14} /></span>
+      </li>
+    ))}
+  </ul>
+  <p class="border-t border-dashed border-line-strong pt-5 text-center font-display text-base font-semibold text-gradient">What you see is exactly what you pay.</p>
+</div>
