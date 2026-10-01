@@ -1,0 +1,258 @@
+---
+// "Live network" band: heartbeat panel + radar panel (both SIMULATED, labelled as such), then a default slot
+// for the "Why Acmetel" chip row. Data and the simulated feed live in src/data/live.ts.
+import Section from '../Section.astro';
+import SectionHeading from '../SectionHeading.astro';
+import Icon from '../Icon.astro';
+import PauseButton from '../PauseButton.astro';
+import { acmesimStoreUrl } from '../../data/site';
+import { live, radarLayout } from '../../data/live';
+
+const hb = live.heartbeat;
+const dests = live.radar.destinations;
+const layout = radarLayout();
+const blips = dests.map((d, i) => {
+  const { x, y, angle } = layout[i];
+  return {
+    ...d, x, y, angle, id: `blip-${i}`,
+    h: x < 0.3 ? 'left' : x > 0.7 ? 'right' : 'center',
+    v: y < 0.5 ? 'below' : 'above',
+  };
+});
+---
+
+<Section tone="raised" id="live-network">
+  <div data-live-network>
+    <SectionHeading
+      eyebrow="Network operations"
+      title="Always on,"
+      highlight="always watching"
+      lede="A live-style view of the platform pulse and the destinations ACMeSIM travellers connect to, as a preview of the kind of visibility our network operations team works with."
+    />
+
+    <div class="mt-12 grid items-stretch gap-6 lg:grid-cols-2" data-stagger>
+      <!-- Heartbeat -->
+      <div class="glass flex flex-col p-4 sm:p-6" role="group" aria-label="Network heartbeat, simulated preview" data-panel="heartbeat">
+        <p class="sr-only">Simulated preview of platform health: network status operational, with uptime, average latency and message throughput shown as example values that update every few seconds.</p>
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.18em] text-teal-300"><Icon name="activity" size={16} />Network pulse</p>
+          <div class="flex items-center gap-2">
+            <span class="sim-chip">Simulated preview</span>
+            <PauseButton id="pause-heartbeat" />
+          </div>
+        </div>
+
+        <div class="relative mt-4 min-h-[15rem] flex-1 overflow-hidden rounded-xl border border-line bg-navy-950/70 sm:min-h-[17rem]">
+          <canvas aria-hidden="true" data-heartbeat-canvas class="absolute inset-0 size-full"></canvas>
+        </div>
+
+        <div class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-navy-950/50 px-4 py-3">
+          <p class="flex items-center gap-3 text-sm text-ink-muted">
+            <span class="relative flex size-2.5" aria-hidden="true">
+              <span class="absolute inline-flex size-full animate-ping rounded-full bg-green-700 opacity-75"></span>
+              <span class="relative inline-flex size-2.5 rounded-full bg-teal-400 shadow-[0_0_10px_var(--color-teal-400)]"></span>
+            </span>
+            Network status: <strong class="font-semibold text-ink">{hb.status}</strong>
+          </p>
+          <span class="inline-flex items-center gap-1.5 rounded-full border border-teal-500/40 bg-teal-500/10 px-3 py-1 font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-teal-300">
+            <Icon name="headset" size={14} />24/7 NOC
+          </span>
+        </div>
+
+        <dl class="mt-3 grid grid-cols-3 gap-2 sm:gap-3" aria-live="off">
+          <div class="min-w-0 rounded-xl border border-line bg-navy-950/50 px-3 py-3 sm:px-4">
+            <dt class="font-mono text-[0.625rem] uppercase tracking-[0.06em] text-ink-faint sm:text-[0.6875rem] sm:tracking-[0.12em]">Uptime</dt>
+            <dd class="mt-1 font-display text-xl font-semibold tabular-nums text-ink sm:text-2xl"><span data-uptime>{hb.uptime.base.toFixed(2)}</span><span class="text-teal-300">%</span></dd>
+          </div>
+          <div class="min-w-0 rounded-xl border border-line bg-navy-950/50 px-3 py-3 sm:px-4">
+            <dt class="font-mono text-[0.625rem] uppercase tracking-[0.06em] text-ink-faint sm:text-[0.6875rem] sm:tracking-[0.12em]">Avg latency</dt>
+            <dd class="mt-1 font-display text-xl font-semibold tabular-nums text-ink sm:text-2xl"><span data-latency>{hb.latencyMs.base}</span><span class="ml-0.5 text-sm font-medium text-teal-300">ms</span></dd>
+          </div>
+          <div class="min-w-0 rounded-xl border border-line bg-navy-950/50 px-3 py-3 sm:px-4">
+            <dt class="font-mono text-[0.625rem] uppercase tracking-[0.06em] text-ink-faint sm:text-[0.6875rem] sm:tracking-[0.12em]">Messages/sec</dt>
+            <dd class="mt-1 font-display text-xl font-semibold tabular-nums text-ink sm:text-2xl" data-msgs>{hb.msgsPerSec.base.toLocaleString('en-US')}</dd>
+          </div>
+        </dl>
+      </div>
+
+      <!-- Radar -->
+      <div class="glass flex flex-col p-4 sm:p-6" role="group" aria-label="ACMeSIM travellers by destination, simulated preview" data-panel="radar">
+        <p class="sr-only">Simulated preview of ACMeSIM travellers by destination. Each destination is a button that opens its network, plan and a link to buy an eSIM.</p>
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.18em] text-teal-300"><Icon name="radar" size={16} />Traveller radar</p>
+          <div class="flex items-center gap-2">
+            <span class="sim-chip">Simulated preview</span>
+            <PauseButton id="pause-radar" />
+          </div>
+        </div>
+
+        <div class="relative mx-auto mt-4 aspect-square w-full max-w-[34rem]" data-radar-stage>
+          <canvas aria-hidden="true" data-radar-canvas class="absolute inset-0 size-full"></canvas>
+          {blips.map((b) => (
+            <div class={`blip blip-h-${b.h} blip-v-${b.v}`} data-blip data-x={b.x.toFixed(4)} data-y={b.y.toFixed(4)} data-angle={b.angle.toFixed(4)} style={`left:${(b.x * 100).toFixed(2)}%;top:${(b.y * 100).toFixed(2)}%`}>
+              <button type="button" class="blip-btn" aria-label={`${b.city} · ${b.network}`} aria-describedby={b.id} aria-expanded="false" data-blip-btn>
+                <span class="blip-dot" data-net={b.network}></span>
+              </button>
+              <div class="blip-tip" id={b.id} role="group" aria-label={`${b.city} details`}>
+                <p class="font-display text-sm font-semibold text-ink">{b.city}<span class="font-normal text-ink-muted">, {b.country}</span></p>
+                <p class="mt-1 flex items-center gap-2 font-mono text-xs text-ink-muted"><span class="rounded border border-teal-500/50 px-1.5 py-0.5 text-teal-300">{b.network}</span>{b.plan}</p>
+                <a href={acmesimStoreUrl} target="_blank" rel="noopener" class="mt-2 inline-flex items-center gap-1 text-xs font-medium text-teal-300 underline-offset-4 hover:underline">
+                  Get an eSIM for {b.city}<Icon name="arrow-up-right" size={13} />
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div class="mt-4 flex flex-wrap items-end justify-between gap-x-6 gap-y-2 rounded-xl border border-line bg-navy-950/50 px-4 py-3">
+          <div aria-live="off">
+            <p class="font-mono text-[0.625rem] uppercase tracking-[0.06em] text-ink-faint sm:text-[0.6875rem] sm:tracking-[0.12em]">Active travellers</p>
+            <p class="mt-1 font-display text-2xl font-semibold tabular-nums text-ink" data-travellers>1,240</p>
+          </div>
+          <p class="text-sm text-ink-muted">ACMeSIM travellers by destination</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-10"><slot /></div>
+  </div>
+</Section>
+
+<style>
+  .sim-chip {
+    display: inline-flex; align-items: center; gap: 0.4rem; border-radius: 9999px;
+    border: 1px dashed var(--color-line-strong); background: rgb(14 19 34 / 0.6);
+    padding: 0.25rem 0.65rem; font-family: var(--font-mono); font-size: 0.6875rem;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-ink-muted);
+  }
+  .sim-chip::before { content: ""; width: 0.375rem; height: 0.375rem; border-radius: 9999px; background: var(--color-teal-400); }
+
+  .blip { position: absolute; width: 2.25rem; height: 2.25rem; transform: translate(-50%, -50%); }
+  .blip:hover, .blip:focus-within, .blip[data-open] { z-index: 30; }
+  .blip-btn {
+    display: grid; place-items: center; width: 100%; height: 100%; border-radius: 9999px; cursor: pointer;
+    opacity: var(--o, 1); transition: opacity 200ms;
+  }
+  .blip:focus-within .blip-btn, .blip[data-open] .blip-btn { opacity: 1; }
+  @media (hover: hover) { .blip:hover .blip-btn { opacity: 1; } }
+  .blip-dot {
+    width: 0.625rem; height: 0.625rem; border-radius: 9999px; background: var(--color-teal-300);
+    box-shadow: 0 0 0 2px rgb(14 19 34 / 0.8), 0 0 12px var(--color-teal-300);
+    transition: transform 150ms;
+  }
+  .blip-dot[data-net='4G'] { background: var(--color-teal-500); box-shadow: 0 0 0 2px rgb(14 19 34 / 0.8), 0 0 10px var(--color-teal-500); }
+  .blip:hover .blip-dot, .blip:focus-within .blip-dot, .blip[data-open] .blip-dot { transform: scale(1.5); }
+
+  .blip-tip {
+    position: absolute; width: 14.5rem; padding: 0.75rem 0.875rem; border-radius: 0.75rem;
+    background: var(--color-navy-950); border: 1px solid var(--color-line-strong);
+    box-shadow: 0 12px 32px rgb(0 0 0 / 0.5); text-align: left;
+    visibility: hidden; opacity: 0; pointer-events: none; transform: translateY(4px);
+    transition: opacity 150ms, transform 150ms, visibility 0s linear 150ms;
+  }
+  .blip:focus-within .blip-tip, .blip[data-open] .blip-tip {
+    visibility: visible; opacity: 1; pointer-events: auto; transform: none; transition-delay: 0s;
+  }
+  @media (hover: hover) {
+    .blip:hover .blip-tip { visibility: visible; opacity: 1; pointer-events: auto; transform: none; transition-delay: 0s; }
+  }
+  .blip-v-below .blip-tip { top: 100%; margin-top: -0.25rem; }
+  .blip-v-above .blip-tip { bottom: 100%; margin-bottom: -0.25rem; }
+  .blip-h-left .blip-tip { left: 0; }
+  .blip-h-right .blip-tip { right: 0; }
+  .blip-h-center .blip-tip { left: 50%; margin-left: -7.25rem; }
+</style>
+
+<script>
+  import { onVisible, prefersReducedMotion, bindPauseButton } from '../../scripts/motion';
+  import { subscribe, type LiveSample } from '../../data/live';
+
+  document.querySelectorAll<HTMLElement>('[data-live-network]').forEach((root) => {
+    const section = root.closest('section') ?? root;
+    const reduced = prefersReducedMotion();
+    const q = <T extends HTMLElement>(sel: string) => root.querySelector<T>(sel);
+    const els = {
+      uptime: q('[data-uptime]'), latency: q('[data-latency]'), msgs: q('[data-msgs]'), travellers: q('[data-travellers]'),
+    };
+    const fmt = {
+      uptime: (v: number) => v.toFixed(2),
+      latency: (v: number) => Math.round(v).toString(),
+      msgs: (v: number) => Math.round(v).toLocaleString('en-US'),
+      travellers: (v: number) => Math.round(v).toLocaleString('en-US'),
+    };
+    const cur: Record<string, number> = {};
+    const raf: Record<string, number> = {};
+
+    function set(key: keyof typeof els, to: number, animate: boolean) {
+      const el = els[key];
+      if (!el) return;
+      cancelAnimationFrame(raf[key]);
+      const from = cur[key] ?? to;
+      cur[key] = to;
+      if (!animate || from === to) { el.textContent = fmt[key](to); return; }
+      const t0 = performance.now(), dur = 650;
+      const step = (now: number) => {
+        const p = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+        el.textContent = fmt[key](from + (to - from) * e);
+        if (p < 1) raf[key] = requestAnimationFrame(step);
+      };
+      raf[key] = requestAnimationFrame(step);
+    }
+
+    const paused = { heartbeat: false, radar: false };
+    const apply = (s: LiveSample, animate: boolean) => {
+      if (!paused.heartbeat) { set('uptime', s.uptime, animate); set('latency', s.latencyMs, animate); set('msgs', s.msgsPerSec, animate); }
+      if (!paused.radar) set('travellers', s.activeTravelers, animate);
+    };
+
+    // Blip tooltips: tap/click toggles, Escape or outside tap closes. Hover and focus are handled in CSS.
+    const blips = [...root.querySelectorAll<HTMLElement>('[data-blip]')];
+    const closeAll = (except?: HTMLElement) => blips.forEach((b) => {
+      if (b === except) return;
+      b.removeAttribute('data-open');
+      b.querySelector('[data-blip-btn]')?.setAttribute('aria-expanded', 'false');
+    });
+    blips.forEach((b) => {
+      const btn = b.querySelector<HTMLButtonElement>('[data-blip-btn]')!;
+      btn.addEventListener('click', () => {
+        const open = !b.hasAttribute('data-open');
+        closeAll(b);
+        b.toggleAttribute('data-open', open);
+        btn.setAttribute('aria-expanded', String(open));
+      });
+    });
+    document.addEventListener('pointerdown', (e) => { if (!(e.target as Element).closest('[data-blip]')) closeAll(); });
+    root.addEventListener('keydown', (e) => { if ((e as KeyboardEvent).key === 'Escape') closeAll(); });
+
+    onVisible(section, async () => {
+      const hbCanvas = q<HTMLCanvasElement>('[data-heartbeat-canvas]');
+      const radarCanvas = q<HTMLCanvasElement>('[data-radar-canvas]');
+      const stage = q<HTMLElement>('[data-radar-stage]');
+      const [hb, radar] = await Promise.all([import('../../scripts/live/heartbeat'), import('../../scripts/live/radar')]);
+
+      if (reduced) {
+        if (hbCanvas) hb.drawStatic(hbCanvas);
+        if (radarCanvas && stage) radar.drawStatic(radarCanvas, stage);
+        const off = subscribe((s) => { apply(s, false); off(); }); // one snapshot, no loop, no tween
+        root.querySelectorAll('[data-pause]').forEach((b) => b.setAttribute('hidden', ''));
+        return;
+      }
+
+      const loops: { heartbeat?: ReturnType<typeof hb.initHeartbeat>; radar?: ReturnType<typeof radar.initRadar> } = {};
+      if (hbCanvas) loops.heartbeat = hb.initHeartbeat(hbCanvas);
+      if (radarCanvas && stage) loops.radar = radar.initRadar(radarCanvas, stage);
+      subscribe((s) => apply(s, true));
+
+      const wire = (id: string, key: 'heartbeat' | 'radar') => {
+        const loop = loops[key];
+        if (!loop) return;
+        bindPauseButton(root.querySelector<HTMLButtonElement>(id), {
+          pause() { paused[key] = true; loop.pause(); },
+          play() { paused[key] = false; loop.play(); },
+        });
+      };
+      wire('#pause-heartbeat', 'heartbeat');
+      wire('#pause-radar', 'radar');
+    });
+  });
+</script>
