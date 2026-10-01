@@ -1,0 +1,75 @@
+---
+// "Who we are": copy on the left, four cards that start stacked behind the copy like a deck
+// and are dealt one by one into a 2×2 grid when the section scrolls into view (desktop, motion allowed).
+// Mobile and reduced motion: cards render in place with the standard reveal.
+import Icon, { type IconName } from '../Icon.astro';
+
+interface Card { icon: IconName; title: string; text: string }
+interface Props { cards: Card[] }
+const { cards } = Astro.props;
+---
+
+<div class="deal grid items-center gap-12 lg:grid-cols-2 lg:gap-20" data-deal>
+  <!-- Opaque so the deck is hidden behind it before the deal. -->
+  <div class="deal-copy relative z-20 bg-navy-900 lg:py-6"><slot /></div>
+  <ul class="deal-grid relative z-10 grid gap-4 sm:grid-cols-2" role="list">
+    {cards.map((c, i) => (
+      <li class:list={['deal-card glass spotlight p-6 transition-[translate,rotate,border-color] duration-300 hover:-translate-y-1.5 hover:rotate-[-1.2deg] hover:border-teal-500/40', i % 2 === 1 && 'sm:translate-y-6 sm:hover:translate-y-4.5']} data-reveal>
+        <div class="grid size-11 place-items-center rounded-xl border border-teal-500/30 bg-teal-500/15 text-teal-300"><Icon name={c.icon} /></div>
+        <p class="mt-4 font-display font-semibold text-ink">{c.title}</p>
+        <p class="mt-1 text-sm text-ink-muted">{c.text}</p>
+      </li>
+    ))}
+  </ul>
+</div>
+
+<script>
+  import { gsap, ScrollTrigger, prefersReducedMotion } from '../../scripts/motion';
+
+  document.querySelectorAll<HTMLElement>('[data-deal]').forEach((root) => {
+    if (prefersReducedMotion()) return;
+    const copy = root.querySelector<HTMLElement>('.deal-copy')!;
+    const cards = [...root.querySelectorAll<HTMLElement>('.deal-card')];
+
+    ScrollTrigger.matchMedia({
+      '(min-width: 1024px)': () => {
+        // Take over from the generic reveal so the two don't fight.
+        cards.forEach((c) => { c.removeAttribute('data-reveal'); c.classList.add('is-visible'); });
+
+        // Park every card under the centre of the copy block as a slightly fanned deck.
+        const place = () => {
+          const target = copy.getBoundingClientRect();
+          cards.forEach((card, i) => {
+            gsap.set(card, { clearProps: 'transform' });
+            const r = card.getBoundingClientRect();
+            gsap.set(card, {
+              x: target.left + target.width / 2 - (r.left + r.width / 2) + i * 4,
+              y: target.top + target.height / 2 - (r.top + r.height / 2) - i * 3,
+              rotation: gsap.utils.random(-9, 9),
+              scale: 0.86,
+              opacity: 0,
+            });
+          });
+        };
+        place();
+
+        const tl = gsap.timeline({ paused: true });
+        tl.to(cards, { opacity: 1, duration: 0.2, stagger: 0.22 }, 0)
+          .to(cards, {
+            x: 0, y: 0, rotation: 0, scale: 1,
+            duration: 0.85, ease: 'back.out(1.5)', stagger: 0.22,
+            clearProps: 'transform', // hand transforms back to CSS for hover lift/tilt
+          }, 0.05);
+
+        const st = ScrollTrigger.create({
+          trigger: root,
+          start: 'top 65%',
+          once: true,
+          onEnter: () => tl.play(),
+          onRefresh: () => { if (!tl.isActive() && tl.progress() === 0) place(); },
+        });
+        return () => { st.kill(); tl.kill(); gsap.set(cards, { clearProps: 'all' }); };
+      },
+    });
+  });
+</script>
