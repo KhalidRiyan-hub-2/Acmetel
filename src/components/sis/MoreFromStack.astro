@@ -1,0 +1,19 @@
+---
+// "More from the stack" row: links to the other SIS pillars, excluding the current one(s).
+import Section from '../Section.astro';
+import SectionHeading from '../SectionHeading.astro';
+import FeatureCard from '../FeatureCard.astro';
+import type { IconName } from '../Icon.astro';
+import { pillars } from './layers';
+interface Props { exclude: string | string[]; tone?: 'base' | 'raised' | 'glow' }
+const { exclude, tone = 'base' } = Astro.props;
+const skip = Array.isArray(exclude) ? exclude : [exclude];
+const rest = pillars.filter((p) => !skip.includes(p.href));
+const cols = rest.length >= 4 ? 'sm:grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-3';
+---
+<Section tone={tone}>
+  <SectionHeading eyebrow="Sovereign Intelligence Stack" title="More from" highlight="the stack" />
+  <div class:list={['mt-12 grid gap-5', cols]} data-stagger>
+    {rest.map((p) => <FeatureCard icon={p.icon as IconName} title={p.label} text={p.blurb} href={p.href} />)}
+  </div>
+</Section>

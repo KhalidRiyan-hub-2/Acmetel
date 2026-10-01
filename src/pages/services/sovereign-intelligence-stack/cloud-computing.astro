@@ -1,0 +1,100 @@
+---
+import Base from '../../../layouts/Base.astro';
+import PageHero from '../../../components/PageHero.astro';
+import Section from '../../../components/Section.astro';
+import SectionHeading from '../../../components/SectionHeading.astro';
+import SplitSection from '../../../components/SplitSection.astro';
+import FeatureCard from '../../../components/FeatureCard.astro';
+import Button from '../../../components/Button.astro';
+import Icon from '../../../components/Icon.astro';
+import ContactForm from '../../../components/ContactForm.astro';
+import MoreFromStack from '../../../components/sis/MoreFromStack.astro';
+import { SIS_BASE } from '../../../data/site';
+
+// Copy source: content/source/sovereign-intelligence-stack.md, "Page 3 – Cloud Computing (Overview)".
+const solutions = [
+  { icon: 'cloud', title: 'Private Cloud', text: 'Take full control of your infrastructure with a secure, scalable private cloud built around your requirements. Designed for performance, compliance, and flexibility, so you can run critical workloads with confidence.' },
+  { icon: 'layers', title: 'Cloud Management Platform (CMP)', text: 'Take full control of your environment with a secure, compliant, and fully customizable private cloud, designed for businesses that need visibility, governance, and data sovereignty.' },
+  { icon: 'headset', title: 'Managed Services', text: 'Outsource your cloud monitoring, management and operations and get the freedom you deserve.' },
+  { icon: 'users', title: 'Professional Services', text: 'From discovery to deployment, our experts help you design, build, and scale your cloud infrastructure on optimal cost while ensuring business continuity.' },
+] as const;
+const traits = [
+  { icon: 'lock', t: 'Secure' },
+  { icon: 'layers', t: 'Scalable' },
+  { icon: 'network', t: 'Vendor-neutral' },
+] as const;
+---
+
+<Base title="Cloud Computing" description="Acme CloudHub private cloud: secure, scalable, vendor-neutral cloud with management platform, managed services and professional services.">
+  <PageHero
+    eyebrow="Sovereign Intelligence Stack"
+    title="Private cloud with"
+    highlight="Acme CloudHub"
+    lede="The control, flexibility, and performance your business needs, built for organizations of all sizes."
+    crumbs={[{ label: 'Services' }, { label: 'Sovereign Intelligence Stack', href: SIS_BASE }, { label: 'Cloud Computing' }]}
+  >
+    <Button href="#solutions" size="lg">Our cloud solutions</Button>
+    <Button href="#contact" variant="outline" size="lg" arrow={false}>Get free guidance</Button>
+    <div slot="visual" aria-hidden="true" class="relative mx-auto max-w-md py-4">
+      <div class="absolute inset-[10%] rounded-full bg-teal-500/20 blur-3xl"></div>
+      <div class="glass relative p-6 text-center sm:p-8">
+        <span class="mx-auto grid size-16 place-items-center rounded-2xl border border-teal-500/40 bg-gradient-to-br from-teal-500/30 to-green-700/25 text-teal-300 shadow-[0_0_32px_-6px_rgb(34_170_161/0.7)]"><Icon name="cloud" size={32} /></span>
+        <p class="mt-4 font-display text-xl font-semibold text-ink">Acme CloudHub</p>
+        <div class="mt-6 grid grid-cols-2 gap-3 text-left text-sm">
+          {['Private Cloud', 'CMP', 'Managed Services', 'Professional Services'].map((t) => (
+            <div class="flex items-center gap-2 rounded-xl border border-line bg-white/[0.03] px-3 py-2.5 text-ink"><span class="size-1.5 shrink-0 rounded-full bg-teal-400"></span>{t}</div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </PageHero>
+
+  <!-- Intro -->
+  <Section>
+    <SplitSection>
+      <SectionHeading eyebrow="Overview" title="Innovate faster," highlight="grow with confidence">
+        <p class="mt-6 leading-relaxed text-ink-muted">
+          Acme CloudHub delivers private cloud solutions designed to give you the control, flexibility, and performance your business needs. Built for organizations of all sizes, it provides a secure, scalable, and vendor-neutral environment, so you can innovate faster, optimize workloads, and grow with confidence.
+        </p>
+      </SectionHeading>
+      <div slot="visual" class="grid gap-4 sm:grid-cols-3" data-stagger>
+        {traits.map((c, i) => (
+          <div class:list={['glass spotlight p-6', i === 1 && 'sm:translate-y-6']}>
+            <Icon name={c.icon} class="text-teal-300" />
+            <p class="mt-4 font-display font-semibold text-ink">{c.t}</p>
+          </div>
+        ))}
+      </div>
+    </SplitSection>
+  </Section>
+
+  <!-- Solutions -->
+  <Section id="solutions" tone="raised">
+    <SectionHeading eyebrow="Our cloud solutions" title="A carefully crafted" highlight="portfolio of services" lede="We provide FREE personalized guidance to choose the right Cloud Solution that solves your biggest problems and suits best for your vision and strategy." />
+    <div class="mt-14 grid gap-5 md:grid-cols-6" data-stagger>
+      <FeatureCard class="md:col-span-3" icon={solutions[0].icon} title={solutions[0].title} text={solutions[0].text} />
+      <FeatureCard class="md:col-span-3" icon={solutions[1].icon} title={solutions[1].title} text={solutions[1].text} />
+      <FeatureCard class="md:col-span-2" icon={solutions[2].icon} title={solutions[2].title} text={solutions[2].text} />
+      <FeatureCard class="md:col-span-4" icon={solutions[3].icon} title={solutions[3].title} text={solutions[3].text} />
+    </div>
+  </Section>
+
+  <!-- Free guidance -->
+  <Section tone="glow" tight>
+    <div class="glass mx-auto flex max-w-4xl flex-col items-center gap-6 p-8 text-center sm:p-12" data-reveal>
+      <span class="eyebrow">Free personalized guidance</span>
+      <h2 class="text-2xl font-semibold text-ink sm:text-3xl">Not sure which cloud solution fits? <span class="text-gradient">We’ll help you choose.</span></h2>
+      <Button href="#contact" size="lg">Request guidance</Button>
+    </div>
+  </Section>
+
+  <MoreFromStack exclude={`${SIS_BASE}/cloud-computing`} />
+
+  <!-- Contact -->
+  <Section tone="raised">
+    <div class="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
+      <SectionHeading eyebrow="Contact" title="Take control of" highlight="your cloud" lede="Tell us about your workloads and your vision, and we will guide you to the right solution." />
+      <ContactForm name="sis-cloud-computing" topic="Cloud Computing" title="Talk to our cloud team" />
+    </div>
+  </Section>
+</Base>

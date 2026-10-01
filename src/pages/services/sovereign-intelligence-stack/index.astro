@@ -1,0 +1,79 @@
+---
+import Base from '../../../layouts/Base.astro';
+import PageHero from '../../../components/PageHero.astro';
+import Section from '../../../components/Section.astro';
+import SectionHeading from '../../../components/SectionHeading.astro';
+import SplitSection from '../../../components/SplitSection.astro';
+import FeatureCard from '../../../components/FeatureCard.astro';
+import Button from '../../../components/Button.astro';
+import Icon from '../../../components/Icon.astro';
+import NetworkGlobe from '../../../components/NetworkGlobe.astro';
+import ContactForm from '../../../components/ContactForm.astro';
+import StackLayers from '../../../components/sis/StackLayers.astro';
+import { pillars } from '../../../components/sis/layers';
+import type { IconName } from '../../../components/Icon.astro';
+
+// Copy source: content/source/sovereign-intelligence-stack.md (overview).
+// The source overview lists "DPI Solutions"; Page 5 is titled "Network Intelligence", so that name is used and DPI is mentioned in its description.
+const spans = ['md:col-span-2', 'md:col-span-2', 'md:col-span-2', 'md:col-span-3', 'md:col-span-3'];
+---
+
+<Base title="Sovereign Intelligence Stack" description="Build your sovereign digital foundation: connectivity, data center, cloud computing, intelligent automation and network intelligence from Acmetel.">
+  <PageHero
+    eyebrow="Services"
+    title="Sovereign Intelligence"
+    highlight="Stack"
+    lede="Build your sovereign digital foundation with our end-to-end technology services. From connectivity and cloud to AI-powered automation and network intelligence, we deliver the capabilities needed to secure, scale, and accelerate your digital transformation."
+    crumbs={[{ label: 'Services' }, { label: 'Sovereign Intelligence Stack' }]}
+  >
+    <Button href="#pillars" size="lg">Explore the stack</Button>
+    <Button href="#contact" variant="outline" size="lg" arrow={false}>Talk to our team</Button>
+    <div slot="visual"><NetworkGlobe /></div>
+  </PageHero>
+
+  <!-- Five pillars -->
+  <Section id="pillars" tone="glow">
+    <SectionHeading eyebrow="Five pillars" title="One stack," highlight="five capabilities" align="center" lede="Choose a single layer or build on all five. Each pillar has its own page." />
+    <div class="mt-14 grid gap-5 md:grid-cols-6" data-stagger>
+      {pillars.map((p, i) => (
+        <FeatureCard class={spans[i]} icon={p.icon as IconName} title={p.label} text={p.blurb} href={p.href} />
+      ))}
+    </div>
+  </Section>
+
+  <!-- Stack as layers -->
+  <Section tone="raised">
+    <SplitSection>
+      <SectionHeading eyebrow="How it fits together" title="The stack," highlight="layer by layer">
+        <!-- PLACEHOLDER: layer order follows the source overview (Connectivity, Data Center, Cloud, Automation, Network Intelligence); the "layered" framing is a visual device, not source copy. -->
+        <ol class="mt-8 space-y-5">
+          {pillars.map((p, i) => (
+            <li class="flex gap-4">
+              <span class="mt-0.5 font-mono text-sm text-teal-400">{String(i + 1).padStart(2, '0')}</span>
+              <div>
+                <a href={p.href} class="font-display font-semibold text-ink transition-colors hover:text-teal-300">{p.label}</a>
+                <p class="mt-1 text-sm leading-relaxed text-ink-muted">{p.blurb}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+        <ul class="mt-9 flex flex-wrap gap-3">
+          {[{ i: 'shield', t: 'Secure' }, { i: 'layers', t: 'Scale' }, { i: 'zap', t: 'Accelerate' }].map((c) => (
+            <li class="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-4 py-2 text-sm font-medium text-teal-300">
+              <Icon name={c.i as IconName} size={16} />{c.t}
+            </li>
+          ))}
+        </ul>
+      </SectionHeading>
+      <div slot="visual"><StackLayers /></div>
+    </SplitSection>
+  </Section>
+
+  <!-- Contact -->
+  <Section>
+    <div class="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
+      <SectionHeading eyebrow="Contact" title="Let’s build your" highlight="sovereign foundation" lede="Tell us which layers of the stack you need and our team will get back to you." />
+      <ContactForm name="sis-contact" topic="Sovereign Intelligence Stack" title="Talk to our team" />
+    </div>
+  </Section>
+</Base>
