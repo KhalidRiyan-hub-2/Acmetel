@@ -1,4 +1,4 @@
-// Usage: node scripts/screenshot.mjs <outDir> [path ...]  (needs `npm run preview` on :4321)
+// Usage: PORT=4321 node scripts/screenshot.mjs <outDir> [path ...]  (needs `npm run preview -- --port $PORT`)
 // Full-page screenshots at 375px and 1440px. Forces reveal animations visible so captures aren't blank.
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
@@ -13,7 +13,7 @@ for (const width of [375, 1440]) {
   page.on('pageerror', (e) => errors.push(`${width} ${e.message}`));
   page.on('console', (m) => m.type() === 'error' && errors.push(`${width} console: ${m.text()}`));
   for (const r of routes) {
-    await page.goto('http://localhost:4321' + r, { waitUntil: 'networkidle' });
+    await page.goto(`http://localhost:${process.env.PORT ?? 4321}` + r, { waitUntil: 'networkidle' });
     await page.addStyleTag({ content: '[data-reveal]{opacity:1!important;transform:none!important}' });
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     if (overflow > 0) errors.push(`${width} ${r} horizontal overflow ${overflow}px`);

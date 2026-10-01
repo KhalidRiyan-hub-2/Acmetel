@@ -4,7 +4,7 @@ Astro 7 + Tailwind v4, static output. Dark navy brand site. This is a **prototyp
 
 ## Commands
 - `npm run build` — must pass with zero errors before any commit.
-- `npm run preview` then `node scripts/screenshot.mjs <outDir> /route ...` — full-page screenshots at 375px and 1440px; reports JS errors and horizontal overflow.
+- `npm run preview -- --port 4321` then `PORT=4321 node scripts/screenshot.mjs <outDir> /route ...` — full-page screenshots at 375px and 1440px; reports JS errors and horizontal overflow.
 
 ## Copy rules
 - Page copy comes from `content/source/*.md` (verbatim client copy extracted from their Word docs) and `content/source/home-current-site.md` (live site). Do not invent product claims, numbers, certifications or customers.
