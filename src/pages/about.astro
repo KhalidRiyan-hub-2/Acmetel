@@ -1,0 +1,136 @@
+---
+import Base from '../layouts/Base.astro';
+import PageHero from '../components/PageHero.astro';
+import Section from '../components/Section.astro';
+import SectionHeading from '../components/SectionHeading.astro';
+import FeatureCard from '../components/FeatureCard.astro';
+import CheckList from '../components/CheckList.astro';
+import StatStrip from '../components/StatStrip.astro';
+import SplitSection from '../components/SplitSection.astro';
+import CtaBand from '../components/CtaBand.astro';
+import Icon from '../components/Icon.astro';
+import JourneyTimeline from '../components/about/JourneyTimeline.astro';
+import { SIS_BASE } from '../data/site';
+
+// Copy sources: content/source/about.md (journey, capabilities, portfolio, Why Acmetel) and the About
+// section of content/source/home-current-site.md ("Who are we?" highlights).
+
+const journey = [
+  { icon: 'route', title: 'A humble start as an aggregator', text: 'For Acmetel, the starting point was humble: an aggregator in a fragmented world of connectivity. That foundation didn’t just set us apart; it shaped everything we became.' },
+  { icon: 'layers', title: 'Simplifying a scattered market', text: 'In an era when global communication was scattered and unreliable, we stepped in to simplify. We unified messaging, voice and network services onto one powerful platform, bringing clarity where chaos once reigned.' },
+  { icon: 'eye', title: 'Insight beyond reach', text: 'Our expertise went beyond mere reach. Aggregation granted us a deep understanding of how communication flows, where networks stumble, and what businesses need to thrive and expand.' },
+  { icon: 'sparkles', title: 'Insight became the blueprint', text: 'Those insights became the blueprint for our evolution, taking us from connecting networks to building digital ecosystems.' },
+  { icon: 'globe', title: 'A global digital solutions pioneer', text: 'Today, Acmetel is a global digital solutions pioneer delivering next-gen technologies that empower enterprises worldwide, supported by a robust ecosystem of global partners.' },
+  { icon: 'zap', title: 'The journey is just beginning', text: 'We craft solutions that are reliable, secure and scalable, ready for the future. And with every step, we’re redefining what’s possible.' },
+] as const;
+
+const capabilities = [
+  { icon: 'phone', title: 'Telecom Solutions', text: 'A2P messaging, wholesale voice and SMS firewall services.' },
+  { icon: 'network', title: 'Global Connectivity', text: 'High-capacity terrestrial and cross-border data networks.' },
+  { icon: 'cloud', title: 'Cloud & Data Centers', text: 'Innovative public, private and hybrid cloud infrastructure.' },
+  { icon: 'sparkles', title: 'Digital Innovation', text: 'AI-driven automation, DPI, WMS, next-generation platforms and our revolutionary eSIM app enabling seamless, flexible device connectivity.' },
+] as const;
+
+const services = [
+  { icon: 'phone', title: 'Voice', href: '/services/voice', text: 'Wholesale voice termination, DID and toll-free numbers, and fraud management.' },
+  { icon: 'messages', title: 'Messaging', href: '/services/messaging', text: 'A2P, P2A and P2P messaging, SMS firewall and silent authentication.' },
+  { icon: 'layers', title: 'Sovereign Intelligence Stack', href: SIS_BASE, text: 'Connectivity, data center, cloud, intelligent automation and network intelligence.' },
+] as const;
+
+const products = [
+  { icon: 'shield', title: 'SMS Firewall', href: '/services/messaging#firewall', text: 'Filtering and blocking policy that safeguards revenue and the customer experience.' },
+  { icon: 'radar', title: 'Probe Testing', href: '/services/messaging#penetration-testing', text: 'Testing that finds grey routes, bypass and SIM boxes before fraudsters do.' },
+  { icon: 'sim', title: 'ACMeSIM', href: '/products/acmesim', text: 'Instant eSIM connectivity for travellers, plus bulk and white-label for businesses.' },
+] as const;
+
+const pillars = [
+  { icon: 'layers', title: 'End-to-End Portfolio', text: 'From voice and SMS to eSIM and intelligent automation, we cover the full connectivity stack.' },
+  { icon: 'users', title: 'Built for Partners', text: 'Our solutions are designed for agencies, operators and enterprises, not just end users.' },
+  { icon: 'sparkles', title: 'Innovation-First', text: 'We invest in network intelligence and automation to keep our partners ahead of the curve.' },
+  { icon: 'globe', title: 'Global Reach, Local Reliability', text: 'Trusted by 150+ clients across markets to deliver consistent, secure and scalable services.' },
+] as const;
+
+// PLACEHOLDER: client count conflict. about.md says "150 plus clients"; the live site says "over 100 partners worldwide".
+// Using 150+ (newer document). Confirm with the client before launch.
+const stats = [
+  { value: 150, suffix: '+', label: 'Clients across markets' },
+  { value: 6, suffix: 'B+', label: 'Voice minutes terminated yearly' },
+  { value: 2, suffix: 'B+', label: 'Messages delivered' },
+  { value: 16, label: 'Years in the industry' },
+];
+
+const highlights = [
+  'Renowned paymaster',
+  'Business history of over 16 years',
+  'Connected to well-known telecom operators of the world',
+  'Energetic team helping the business grow',
+  'Experts in wholesale voice and messaging',
+];
+---
+
+<Base title="About" description="Acmetel’s journey from connectivity aggregator to global digital solutions pioneer: telecom, connectivity, cloud and digital innovation for operators and enterprises.">
+  <PageHero
+    eyebrow="Our story"
+    title="Every great journey"
+    highlight="begins somewhere"
+    lede="From an aggregator in a fragmented world of connectivity to a global digital solutions pioneer, delivering next-gen technologies that empower enterprises worldwide."
+    crumbs={[{ label: 'About' }]}
+  >
+    <a href="#journey" class="inline-flex h-11 items-center gap-2 rounded-full bg-teal-500 px-5 font-display text-sm font-semibold text-navy-950 transition hover:bg-teal-400 active:scale-[0.97]">Follow the journey <Icon name="chevron-down" size={18} /></a>
+  </PageHero>
+
+  <!-- Journey -->
+  <Section id="journey" tone="raised">
+    <SectionHeading eyebrow="The journey" title="From aggregator to" highlight="pioneer" align="center" lede="Aggregation set us apart, and what it taught us shaped everything we became." />
+    <div class="mt-16"><JourneyTimeline steps={journey as any} /></div>
+  </Section>
+
+  <!-- Capabilities -->
+  <Section>
+    <SectionHeading eyebrow="Today" title="A global digital solutions pioneer" highlight="across four areas" align="center" lede="Next-gen technologies that empower enterprises worldwide, supported by a robust ecosystem of global partners." />
+    <div class="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4" data-stagger>
+      {capabilities.map((c) => <FeatureCard icon={c.icon} title={c.title} text={c.text} />)}
+    </div>
+  </Section>
+
+  <!-- Portfolio -->
+  <Section tone="raised">
+    <SectionHeading eyebrow="Portfolio" title="Cutting-edge solutions built for" highlight="modern connectivity" lede="A comprehensive portfolio of services and products." />
+    <h3 class="eyebrow mt-14 mb-5" data-reveal>Services</h3>
+    <div class="grid gap-5 md:grid-cols-3" data-stagger>
+      {services.map((s) => <FeatureCard icon={s.icon} title={s.title} text={s.text} href={s.href} linkLabel="Explore" />)}
+    </div>
+    <h3 class="eyebrow mt-12 mb-5" data-reveal>Products</h3>
+    <div class="grid gap-5 md:grid-cols-3" data-stagger>
+      {products.map((p) => <FeatureCard icon={p.icon} title={p.title} text={p.text} href={p.href} linkLabel="Explore" />)}
+    </div>
+  </Section>
+
+  <!-- Why Acmetel -->
+  <Section tone="glow">
+    <SectionHeading eyebrow="Why Acmetel?" title="Four reasons partners" highlight="stay with us" align="center" />
+    <div class="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4" data-stagger>
+      {pillars.map((p, i) => (
+        <article class="glass spotlight relative flex h-full flex-col overflow-hidden p-6 sm:p-7">
+          <span aria-hidden="true" class="absolute right-5 top-3 font-display text-6xl font-bold text-white/[0.04]">{String(i + 1).padStart(2, '0')}</span>
+          <div class="mb-5 grid size-12 place-items-center rounded-xl border border-teal-500/30 bg-gradient-to-br from-teal-500/25 to-green-700/20 text-teal-300"><Icon name={p.icon} /></div>
+          <h3 class="text-lg font-semibold text-ink">{p.title}</h3>
+          <p class="mt-2.5 text-sm leading-relaxed text-ink-muted">{p.text}</p>
+        </article>
+      ))}
+    </div>
+    <div class="mt-12"><StatStrip stats={stats} /></div>
+  </Section>
+
+  <!-- Who are we -->
+  <Section>
+    <SplitSection>
+      <SectionHeading eyebrow="Who are we?" title="A platform where proven ideas" highlight="thrive">
+        <p class="mt-6 leading-relaxed text-ink-muted">At our core, we firmly believe in creating a platform that allows us to put into practice the knowledge and experience we have gained over the years. We are committed to fostering an environment where proven business ideas thrive, ethical practices are upheld, and professional conduct is guaranteed.</p>
+      </SectionHeading>
+      <div slot="visual"><CheckList items={highlights} /></div>
+    </SplitSection>
+  </Section>
+
+  <CtaBand title="Let’s build what’s next together" text="Tell us about your traffic, your network or your next launch." secondary={{ label: 'Explore ACMeSIM', href: '/products/acmesim' }} />
+</Base>
