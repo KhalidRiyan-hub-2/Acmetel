@@ -1,0 +1,116 @@
+---
+import Base from '../../../layouts/Base.astro';
+import PageHero from '../../../components/PageHero.astro';
+import Section from '../../../components/Section.astro';
+import SectionHeading from '../../../components/SectionHeading.astro';
+import FeatureCard from '../../../components/FeatureCard.astro';
+import Button from '../../../components/Button.astro';
+import Icon from '../../../components/Icon.astro';
+import ContactForm from '../../../components/ContactForm.astro';
+import FactStrip from '../../../components/sis/FactStrip.astro';
+import MoreFromStack from '../../../components/sis/MoreFromStack.astro';
+import { SIS_BASE } from '../../../data/site';
+
+// Copy source: content/source/sovereign-intelligence-stack.md, "Page 2 – Data Center (Overview)".
+const facts = [
+  { value: '99.99%', label: 'SLA uptime guarantee' },
+  { value: '150+', label: 'Global carriers' },
+  { value: 'Tier III/IV', label: 'Certified facilities' },
+  { value: '24/7', label: 'Technical expertise' },
+];
+const commitments = [
+  { icon: 'cpu', title: 'High-Density & AI-Ready Architecture', text: 'Deploy next-generation workloads seamlessly and specialized power configurations for AI training and inference.' },
+  { icon: 'activity', title: 'Resilient Uptime Operations', text: 'Protect your business from disruption with an N+1 power and cooling architecture yielding an industry-leading 99.99% SLA uptime guarantee.' },
+  { icon: 'lock', title: 'Fortified Physical & Data Security', text: 'Rest easy knowing your assets are protected by strict ISO/PCI-DSS compliance frameworks, 24/7 on-site physical security, and absolute visitor and asset logging.' },
+  { icon: 'network', title: 'Carrier-Neutral Ecosystem', text: 'Avoid vendor lock-in. Connect directly to a diverse, carrier-neutral ecosystem integrated with 150+ global carrier networks for optimal routing and redundancy.' },
+  { icon: 'headset', title: '24/7 Smart Hands Support', text: 'Minimize your overhead. Leverage our round-the-clock proactive monitoring and expert on-site technical support to handle hardware tasks whenever you need them.' },
+] as const;
+const solutions = [
+  { icon: 'building', title: 'HyperScaler Region Hosting', text: 'Massive-scale deployments engineered for hyperscale operators demanding dedicated, ultra-high-density footprints.' },
+  { icon: 'layers', title: 'Cloud Availability Zone Hosting', text: 'Strategic node isolation and multi-zone deployment spaces to guarantee flawless cloud reliability and continuous application availability.' },
+  { icon: 'globe', title: 'CDN Node Hosting', text: 'Edge-optimized placements designed to house content delivery networks, drastically reducing latency and maximizing content throughput.' },
+  { icon: 'zap', title: 'Professional Gaming Edge Servers Hosting', text: 'Ultra-low latency infrastructure featuring high-performance edge compute environments tailored explicitly for the modern gaming ecosystem.' },
+  { icon: 'server', title: 'Colocation Services', text: 'Secure, flexible, and premium rack-space environments tailored to accommodate everything from single enterprise cabinets to complex private cages.' },
+  { icon: 'shield', title: 'Disaster Recovery Site Hosting', text: 'Comprehensive business continuity solutions featuring dedicated DR/BCP seats to keep your operations active during unforeseen outages.' },
+] as const;
+---
+
+<Base title="Data Center" description="Carrier-neutral, Tier III/IV-certified data center facilities with a 99.99% SLA, 150+ global carriers, AI-ready architecture and 24/7 support.">
+  <PageHero
+    eyebrow="Sovereign Intelligence Stack"
+    title="Enterprise-grade"
+    highlight="data center"
+    lede="Data center solutions engineered to safeguard your critical data, guarantee maximum uptime, and accelerate your digital transformation."
+    crumbs={[{ label: 'Services' }, { label: 'Sovereign Intelligence Stack', href: SIS_BASE }, { label: 'Data Center' }]}
+  >
+    <Button href="#contact" size="lg">Contact us</Button>
+    <Button href="#solutions" variant="outline" size="lg" arrow={false}>Tailored solutions</Button>
+    <div slot="visual" aria-hidden="true" class="glass relative overflow-hidden p-5 sm:p-7">
+      <div class="bg-grid absolute inset-0 opacity-50"></div>
+      <div class="relative space-y-3">
+        {[0, 1, 2, 3, 4].map((r) => (
+          <div class="flex items-center gap-3 rounded-xl border border-line-strong bg-navy-950/60 px-4 py-3.5">
+            <span class="size-2 rounded-full bg-teal-400"></span>
+            <span class="h-1.5 flex-1 rounded-full bg-white/10"><span class="block h-full rounded-full bg-gradient-to-r from-teal-500 to-green-700" style={`width:${[82, 64, 91, 48, 73][r]}%`}></span></span>
+            <span class="flex gap-1">{[0, 1, 2].map((d) => <span class:list={['size-1.5 rounded-full', (r + d) % 3 === 0 ? 'bg-teal-300' : 'bg-white/20']}></span>)}</span>
+          </div>
+        ))}
+        <div class="flex items-center justify-between pt-2 text-xs text-ink-muted">
+          <span class="inline-flex items-center gap-1.5"><Icon name="server" size={16} class="text-teal-400" />Carrier-neutral</span>
+          <span class="font-mono text-teal-300">99.99% SLA</span>
+        </div>
+      </div>
+    </div>
+  </PageHero>
+
+  <!-- Intro + facts -->
+  <Section>
+    <div class="grid gap-10 lg:grid-cols-[1fr_1fr] lg:gap-16">
+      <SectionHeading eyebrow="Overview" title="More than space:" highlight="absolute resilience" />
+      <p class="leading-relaxed text-ink-muted" data-reveal>
+        In an increasingly complex digital landscape, your business infrastructure requires more than just space, it demands absolute resilience, world-class security, and seamless global connectivity. Acmetel provides a robust, carrier-neutral ecosystem backed by Tier III/IV-certified facilities and a network of over 150+ global carriers. Built with an AI-ready architecture, high-density power configurations, and rigorous compliance standards, we deliver the scalable foundation your enterprise needs to innovate with confidence, supported by 24/7 technical expertise every step of the way.
+      </p>
+    </div>
+    <FactStrip class="mt-14" facts={facts} />
+  </Section>
+
+  <!-- Commitment vs benefit -->
+  <Section tone="raised">
+    <SectionHeading eyebrow="What our customers get" title="Our commitment," highlight="your advantage" />
+    <div class="mt-14">
+      <div class="mb-3 hidden grid-cols-[0.8fr_1.2fr] gap-5 px-6 lg:grid" aria-hidden="true">
+        <p class="eyebrow">Our commitment</p>
+        <p class="eyebrow">Why it matters to you</p>
+      </div>
+      <ul class="space-y-4" data-stagger>
+        {commitments.map((c) => (
+          <li class="glass spotlight grid items-center gap-4 p-6 lg:grid-cols-[0.8fr_1.2fr] lg:gap-8">
+            <div class="flex items-center gap-4">
+              <span class="grid size-12 shrink-0 place-items-center rounded-xl border border-teal-500/30 bg-gradient-to-br from-teal-500/25 to-green-700/20 text-teal-300"><Icon name={c.icon} /></span>
+              <h3 class="text-lg font-semibold text-ink">{c.title}</h3>
+            </div>
+            <p class="text-sm leading-relaxed text-ink-muted sm:text-base"><span class="eyebrow mr-2 lg:hidden">Why it matters</span>{c.text}</p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </Section>
+
+  <!-- Solutions -->
+  <Section id="solutions" tone="glow">
+    <SectionHeading eyebrow="Tailored infrastructure" title="Explore our tailored" highlight="infrastructure solutions" align="center" />
+    <div class="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3" data-stagger>
+      {solutions.map((s) => <FeatureCard icon={s.icon} title={s.title} text={s.text} />)}
+    </div>
+  </Section>
+
+  <MoreFromStack exclude={`${SIS_BASE}/data-center`} tone="raised" />
+
+  <!-- Contact -->
+  <Section>
+    <div class="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
+      <SectionHeading eyebrow="Contact" title="Host your infrastructure" highlight="with confidence" lede="Tell us about your footprint, power and connectivity requirements." />
+      <ContactForm name="sis-data-center" topic="Data Center" title="Talk to our data center team" />
+    </div>
+  </Section>
+</Base>

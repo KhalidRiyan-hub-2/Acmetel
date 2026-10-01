@@ -1,0 +1,29 @@
+---
+// Stacked glass slabs: Connectivity at the base, Network Intelligence on top. Each slab links to its pillar.
+import Icon, { type IconName } from '../Icon.astro';
+import { pillars } from './layers';
+interface Props { class?: string; active?: string }
+const { class: className = '', active } = Astro.props;
+const top = [...pillars].reverse(); // render top-down
+const tint = ['from-teal-500/30 to-green-700/25', 'from-teal-500/22 to-green-700/18', 'from-teal-500/15 to-green-700/12', 'from-teal-500/9 to-green-700/7', 'from-white/[0.05] to-white/[0.02]'];
+const inset = ['sm:mx-12', 'sm:mx-8', 'sm:mx-4', 'sm:mx-2', ''];
+---
+<ol class:list={['relative mx-auto flex max-w-lg flex-col gap-3', className]} aria-label="The five layers of the stack, from Network Intelligence at the top to Connectivity at the base">
+  <li aria-hidden="true" class="pointer-events-none absolute inset-x-[18%] -bottom-6 top-8 list-none rounded-full bg-teal-500/15 blur-3xl"></li>
+  {top.map((p, rank) => {
+    const n = pillars.length - rank;
+    return (
+      <li class:list={['relative', inset[rank]]}>
+        <a href={p.href} aria-current={p.href === active ? 'page' : undefined}
+           class:list={['group glass spotlight flex items-center gap-4 bg-gradient-to-r px-5 py-4 transition-transform duration-300 hover:-translate-y-0.5 sm:px-6 sm:py-5', tint[rank], p.href === active && 'border-teal-400/60']}>
+          <span class="grid size-11 shrink-0 place-items-center rounded-xl border border-teal-500/30 bg-navy-950/40 text-teal-300"><Icon name={p.icon as IconName} /></span>
+          <span class="min-w-0 flex-1">
+            <span class="block font-mono text-[0.7rem] tracking-[0.18em] text-ink-faint">LAYER {String(n).padStart(2, '0')}</span>
+            <span class="block font-display text-base font-semibold text-ink sm:text-lg">{p.label}</span>
+          </span>
+          <Icon name="arrow-right" size={18} class="shrink-0 text-teal-300 transition-transform group-hover:translate-x-1" />
+        </a>
+      </li>
+    );
+  })}
+</ol>

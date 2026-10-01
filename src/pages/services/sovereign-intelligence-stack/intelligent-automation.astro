@@ -1,0 +1,109 @@
+---
+import Base from '../../../layouts/Base.astro';
+import PageHero from '../../../components/PageHero.astro';
+import Section from '../../../components/Section.astro';
+import SectionHeading from '../../../components/SectionHeading.astro';
+import SplitSection from '../../../components/SplitSection.astro';
+import FeatureCard from '../../../components/FeatureCard.astro';
+import Button from '../../../components/Button.astro';
+import Icon from '../../../components/Icon.astro';
+import ContactForm from '../../../components/ContactForm.astro';
+import MoreFromStack from '../../../components/sis/MoreFromStack.astro';
+import { SIS_BASE } from '../../../data/site';
+
+// Copy source: content/source/sovereign-intelligence-stack.md, "Page 4 – Intelligent Automation".
+const why = [
+  { icon: 'zap', title: 'Eliminate Operational Friction', text: 'High turnaround times and manual bottlenecks stretch response paths, increase processing errors, and spike operational overhead.' },
+  { icon: 'dollar', title: 'Mitigate Revenue and Churn Risks', text: 'Execution errors and extended system down-times trigger immediate revenue loss and churn. Intelligent workflows insulate operations with proactive safeguards.' },
+  { icon: 'chart', title: 'Achieve Dynamic Scalability', text: 'Legacy infrastructure gaps block rapid scalability and kill project ROI. Automation infuses your core networks with data-driven, self-correcting growth.' },
+  { icon: 'headset', title: 'Resolve Alert and Support Fatigue', text: 'Massive notification volumes overwhelm engineering teams, while limited customer service agent bandwidth creates a critical bottleneck. Intelligence absorbs the routine, freeing human capital for strategy.' },
+] as const;
+const portfolio = [
+  { span: 'md:col-span-2', icon: 'activity', title: 'Automated NOC Management', text: 'Streamline fault management by combining network automation with machine learning for proactive anomaly detection and instantaneous incident response.' },
+  { span: 'md:col-span-2', icon: 'messages', title: 'AI-Driven Customer Service', text: 'Deploy generative AI-powered communication matrices that independently, securely, and accurately resolve up to 60% of customer interactions.' },
+  { span: 'md:col-span-2', icon: 'layers', title: 'Structured AI Initiatives (Capability & Rollout)', text: 'A structured capability maturity framework designed to help organizations plan, build, govern, and scale AI from discovery through enterprise adoption.' },
+  { span: 'md:col-span-3', icon: 'bot', title: 'Agentic Process Automation', text: 'Transform enterprise workflows using secure, specialized digital workers equipped with native document intelligence and advanced reasoning libraries.' },
+  { span: 'md:col-span-3', icon: 'users', title: 'AI Awareness Workshop', text: 'Focused executive and technical alignment sessions built to evaluate technology readiness, identify high-impact use cases, and align business goals.' },
+] as const;
+const flow = [
+  { icon: 'eye', t: 'Perceive data' },
+  { icon: 'search', t: 'Analyze complex patterns' },
+  { icon: 'zap', t: 'Execute high-impact workflows' },
+] as const;
+---
+
+<Base title="Intelligent Automation" description="AI, machine learning and agentic process automation: automated NOC management, AI customer service, structured AI initiatives and workshops.">
+  <PageHero
+    eyebrow="Sovereign Intelligence Stack"
+    title="Intelligent"
+    highlight="Automation"
+    lede="Transform operational friction into scalable outcomes with cognitive workflows and self-evolving digital systems."
+    crumbs={[{ label: 'Services' }, { label: 'Sovereign Intelligence Stack', href: SIS_BASE }, { label: 'Intelligent Automation' }]}
+  >
+    <Button href="#portfolio" size="lg">Explore the portfolio</Button>
+    <Button href="#contact" variant="outline" size="lg" arrow={false}>Contact us</Button>
+    <div slot="visual" aria-hidden="true" class="glass relative overflow-hidden p-6 sm:p-8">
+      <div class="bg-grid absolute inset-0 opacity-50"></div>
+      <ol class="relative">
+        {flow.map((f, i) => (
+          <li>
+            <div class="flex items-center gap-4 rounded-xl border border-line-strong bg-navy-950/60 px-4 py-4">
+              <span class="grid size-11 shrink-0 place-items-center rounded-xl border border-teal-500/30 bg-gradient-to-br from-teal-500/25 to-green-700/20 text-teal-300"><Icon name={f.icon} /></span>
+              <span class="font-mono text-xs text-teal-400">0{i + 1}</span>
+              <span class="font-display font-semibold text-ink">{f.t}</span>
+            </div>
+            {i < flow.length - 1 && <div class="ml-9 h-6 w-px border-l-2 border-dashed border-teal-500/50"></div>}
+          </li>
+        ))}
+      </ol>
+    </div>
+  </PageHero>
+
+  <!-- Intro -->
+  <Section>
+    <SplitSection>
+      <SectionHeading eyebrow="Overview" title="The next frontier of" highlight="organizational efficiency">
+        <p class="mt-6 leading-relaxed text-ink-muted">
+          Intelligent Automation represents the next frontier of organizational efficiency, harmonizing Artificial Intelligence, Machine Learning, and Agentic Process Automation. It goes beyond static scripting to create resilient networks and software layers that perceive data, analyze complex patterns, and execute high-impact workflows with precision.
+        </p>
+        <p class="mt-4 leading-relaxed text-ink-muted">
+          By automating decision-making alongside task execution, enterprises can finally bridge the gap between legacy operational bottlenecks and the speed of modern digital demand.
+        </p>
+      </SectionHeading>
+      <div slot="visual" class="grid gap-4" data-stagger>
+        {[{ i: 'sparkles', t: 'Artificial Intelligence' }, { i: 'cpu', t: 'Machine Learning' }, { i: 'bot', t: 'Agentic Process Automation' }].map((c, k) => (
+          <div class:list={['glass spotlight flex items-center gap-4 p-5', k === 1 && 'sm:ml-10']}>
+            <span class="grid size-12 shrink-0 place-items-center rounded-xl border border-teal-500/30 bg-gradient-to-br from-teal-500/25 to-green-700/20 text-teal-300"><Icon name={c.i as 'cpu'} /></span>
+            <p class="font-display text-lg font-semibold text-ink">{c.t}</p>
+          </div>
+        ))}
+      </div>
+    </SplitSection>
+  </Section>
+
+  <!-- Why deploy -->
+  <Section tone="raised">
+    <SectionHeading eyebrow="The case" title="Why deploy" highlight="Intelligent Automation?" />
+    <div class="mt-14 grid gap-5 sm:grid-cols-2" data-stagger>
+      {why.map((w) => <FeatureCard icon={w.icon} title={w.title} text={w.text} />)}
+    </div>
+  </Section>
+
+  <!-- Portfolio -->
+  <Section id="portfolio" tone="glow">
+    <SectionHeading eyebrow="Portfolio" title="Explore our Intelligent" highlight="Automation portfolio" align="center" />
+    <div class="mt-14 grid gap-5 md:grid-cols-6" data-stagger>
+      {portfolio.map((p) => <FeatureCard class={p.span} icon={p.icon} title={p.title} text={p.text} />)}
+    </div>
+  </Section>
+
+  <MoreFromStack exclude={`${SIS_BASE}/intelligent-automation`} tone="raised" />
+
+  <!-- Contact -->
+  <Section>
+    <div class="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
+      <SectionHeading eyebrow="Contact" title="Put intelligence to" highlight="work" lede="Tell us where manual effort and alert volume are holding your teams back." />
+      <ContactForm name="sis-intelligent-automation" topic="Intelligent Automation" title="Talk to our automation team" />
+    </div>
+  </Section>
+</Base>

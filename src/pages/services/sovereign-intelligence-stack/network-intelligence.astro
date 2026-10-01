@@ -1,0 +1,128 @@
+---
+import Base from '../../../layouts/Base.astro';
+import PageHero from '../../../components/PageHero.astro';
+import Section from '../../../components/Section.astro';
+import SectionHeading from '../../../components/SectionHeading.astro';
+import SplitSection from '../../../components/SplitSection.astro';
+import Button from '../../../components/Button.astro';
+import Icon from '../../../components/Icon.astro';
+import ContactForm from '../../../components/ContactForm.astro';
+import MoreFromStack from '../../../components/sis/MoreFromStack.astro';
+import { SIS_BASE } from '../../../data/site';
+
+// Copy source: content/source/sovereign-intelligence-stack.md, "Page 5 – Network Intelligence".
+// The source overview calls this pillar "DPI Solutions"; the page title is Network Intelligence, so DPI is covered in the portfolio.
+const challenges = [
+  { icon: 'chart', title: 'Exponential Network Traffic & Bandwidth Strain', text: 'Skyrocketing data volumes stretch infrastructure capacities, driving up operational overhead.' },
+  { icon: 'eye', title: 'Encrypted Traffic Blind Spots', text: 'Next-gen protocols diminish visibility, allowing unauthorized applications and security anomalies to pass through uninspected.' },
+  { icon: 'dollar', title: 'OTT Congestion & Revenue Leakage', text: 'Over-the-top applications run unmonitored across carrier lines, driving up infrastructure delivery costs without contributing to monetization.' },
+  { icon: 'server', title: 'Legacy Technological Deadlocks', text: 'Outdated hardware and rigid software configurations struggle to keep pace with dynamic modern traffic profiles.' },
+  { icon: 'lock', title: 'Escalating Compliance & Interception Demands', text: 'Evolving national security standards require robust, high-speed data logging and regulatory policy enforcement.' },
+] as const;
+const modules = [
+  { icon: 'radar', name: 'Deep Packet Inspection (DPI)', tag: 'Premium Packet Inspection & Carrier Monetization', text: 'Elevate network edge security and zero-day threat detection while optimizing application-level visibility. This module provides robust compliance frameworks, structured data governance, and precise granular policy enforcement across deep carrier pipelines.' },
+  { icon: 'search', name: 'Web Management System (WMS)', tag: 'Real-Time Extreme Packet Inspection (xPi) & Regulatory Compliance', text: 'Reclaim complete control and policy enforcement by cleanly identifying, classifying, and filtering hidden OTT, Voice, and live streaming traffic. Effortlessly unmask unauthorized proxy and VPN configurations to secure highly regulated data zones.' },
+  { icon: 'shield', name: 'DDoS Anomaly Detection', tag: 'AI-Powered Security Layer, Real-Time Threat Mitigation', text: 'Shield your infrastructure from service disruptions by autonomously identifying and neutralizing phishing networks, multi-vector scams, hidden malware, and intense volumetric DDoS attacks. Instantly compile valid IPDR/CDR logs to satisfy strict state regulatory mandates.' },
+  { icon: 'gauge', name: 'Core + Enterprise Network Traffic Manager', tag: 'Optimize Cross-Domain Performance & Enforce Dynamic Bandwidth Policies', text: 'Distribute available network bandwidth intelligently by prioritizing critical mission-essential applications. Run custom content management protocols to shape traffic dynamically, automatically throttling torrent spikes, blocking malicious media layers, or executing automated customer upsell matrices.' },
+] as const;
+const pressures = ['TLS 1.3', 'QUIC', 'OTT congestion', 'Cybersecurity threats'];
+---
+
+<Base title="Network Intelligence" description="Deep packet inspection, web management, DDoS anomaly detection and traffic management for carrier-grade visibility, security and compliance.">
+  <PageHero
+    eyebrow="Sovereign Intelligence Stack"
+    title="Network"
+    highlight="Intelligence"
+    lede="Reclaim visibility, optimize capacity, and secure high-density data streams with line-rate intelligence."
+    crumbs={[{ label: 'Services' }, { label: 'Sovereign Intelligence Stack', href: SIS_BASE }, { label: 'Network Intelligence' }]}
+  >
+    <Button href="#portfolio" size="lg">Explore DPI portfolio</Button>
+    <Button href="#contact" variant="outline" size="lg" arrow={false}>Contact us</Button>
+    <div slot="visual" aria-hidden="true" class="relative mx-auto aspect-square w-full max-w-md">
+      <div class="absolute inset-[10%] rounded-full bg-teal-500/20 blur-3xl"></div>
+      <svg viewBox="0 0 400 400" fill="none" class="relative w-full">
+        <defs><radialGradient id="ni-fill" cx="0.5" cy="0.5" r="0.5"><stop stop-color="#22aaa1" stop-opacity="0.25" /><stop offset="1" stop-color="#0e1322" stop-opacity="0.6" /></radialGradient></defs>
+        <circle cx="200" cy="200" r="170" fill="url(#ni-fill)" stroke="#22aaa1" stroke-opacity="0.4" />
+        {[125, 80, 40].map((r) => <circle cx="200" cy="200" r={r} stroke="#4cc6bd" stroke-opacity="0.25" />)}
+        <path d="M200 30 V370 M30 200 H370" stroke="#4cc6bd" stroke-opacity="0.15" />
+        <g class="animate-[spin_9s_linear_infinite]" style="transform-origin:200px 200px"><path d="M200 200 L200 30 A170 170 0 0 1 320 80 Z" fill="#4cc6bd" fill-opacity="0.18" /></g>
+        {[[120, 120], [290, 150], [250, 280], [140, 260]].map(([x, y]) => <circle cx={x} cy={y} r="5" fill="#7fdcd5" />)}
+        <circle cx="200" cy="200" r="6" fill="#2fd39a" />
+      </svg>
+      {[['OTT', 'left-0 top-[14%]'], ['Voice', 'right-0 top-[26%]'], ['Streaming', 'right-[6%] bottom-[14%]'], ['VPN / Proxy', 'left-[2%] bottom-[22%]']].map(([t, pos]) => (
+        <span class:list={['absolute rounded-full border border-teal-500/40 bg-navy-900/90 px-3 py-1.5 font-mono text-xs text-teal-300', pos]}>{t}</span>
+      ))}
+    </div>
+  </PageHero>
+
+  <!-- Intro -->
+  <Section>
+    <SplitSection>
+      <SectionHeading eyebrow="Overview" title="Intelligence-driven," highlight="carrier-grade">
+        <p class="mt-6 leading-relaxed text-ink-muted">
+          As global network traffic and bandwidth demands swell, tier-1 operators and telecommunication authorities face critical visibility gaps. The rapid adoption of next-generation encryption (TLS 1.3, QUIC), the rise of OTT application congestion, and sophisticated cybersecurity threats constantly push legacy inspection tools past their limits.
+        </p>
+        <p class="mt-4 leading-relaxed text-ink-muted">
+          Acmetel delivers a unified, intelligence-driven network matrix engineered to handle intense carrier-grade data loads, ensuring absolute sovereignty, flawless compliance, and optimized monetization across your entire infrastructure footprint.
+        </p>
+      </SectionHeading>
+      <div slot="visual" class="glass p-7 sm:p-9">
+        <p class="eyebrow mb-5">Pushing legacy tools past their limits</p>
+        <ul class="flex flex-wrap gap-3">
+          {pressures.map((p) => <li class="rounded-full border border-teal-500/30 bg-teal-500/10 px-4 py-2 font-mono text-sm text-teal-300">{p}</li>)}
+        </ul>
+        <div class="my-6 h-px bg-line"></div>
+        <p class="flex items-center gap-3 font-display text-lg font-semibold text-ink"><Icon name="radar" class="text-teal-300" />Line-rate intelligence</p>
+        <p class="mt-2 text-sm text-ink-muted">Sovereignty, compliance and monetization across your entire infrastructure footprint.</p>
+      </div>
+    </SplitSection>
+  </Section>
+
+  <!-- Challenges -->
+  <Section tone="raised">
+    <div class="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20">
+      <div class="lg:sticky lg:top-28 lg:self-start">
+        <SectionHeading eyebrow="Challenges" title="The core network challenges" highlight="we resolve" lede="Modern network ecosystems are pressured by operational friction points that erode QoE and compromise security. Our platform directly mitigates these key infrastructure vulnerabilities." />
+      </div>
+      <ol class="space-y-4" data-stagger>
+        {challenges.map((c, i) => (
+          <li class="glass spotlight flex gap-5 p-6">
+            <span class="grid size-12 shrink-0 place-items-center rounded-xl border border-teal-500/30 bg-gradient-to-br from-teal-500/25 to-green-700/20 text-teal-300"><Icon name={c.icon} /></span>
+            <div>
+              <h3 class="text-lg font-semibold text-ink">{c.title}</h3>
+              <p class="mt-1.5 text-sm leading-relaxed text-ink-muted">{c.text}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </Section>
+
+  <!-- Portfolio -->
+  <Section id="portfolio" tone="glow">
+    <SectionHeading eyebrow="Portfolio" title="Explore our Deep Packet" highlight="Inspection portfolio" align="center" />
+    <div class="mt-14 grid gap-5 lg:grid-cols-2" data-stagger>
+      {modules.map((m, i) => (
+        <article class="glass spotlight flex flex-col p-7 sm:p-9">
+          <div class="flex items-center justify-between">
+            <span class="grid size-12 place-items-center rounded-xl border border-teal-500/30 bg-gradient-to-br from-teal-500/25 to-green-700/20 text-teal-300"><Icon name={m.icon} /></span>
+            <span class="font-mono text-sm text-ink-faint">0{i + 1}</span>
+          </div>
+          <h3 class="mt-6 text-xl font-semibold text-ink">{m.name}</h3>
+          <p class="mt-2 text-sm font-semibold text-teal-300">{m.tag}</p>
+          <p class="mt-4 text-sm leading-relaxed text-ink-muted">{m.text}</p>
+        </article>
+      ))}
+    </div>
+  </Section>
+
+  <MoreFromStack exclude={`${SIS_BASE}/network-intelligence`} tone="raised" />
+
+  <!-- Contact -->
+  <Section>
+    <div class="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
+      <SectionHeading eyebrow="Contact" title="Reclaim your" highlight="network visibility" lede="Tell us about your traffic, your compliance requirements and the visibility gaps you need to close." />
+      <ContactForm name="sis-network-intelligence" topic="Network Intelligence" title="Talk to our network team" />
+    </div>
+  </Section>
+</Base>

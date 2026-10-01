@@ -1,0 +1,114 @@
+---
+import Base from '../../../../layouts/Base.astro';
+import PageHero from '../../../../components/PageHero.astro';
+import Section from '../../../../components/Section.astro';
+import SectionHeading from '../../../../components/SectionHeading.astro';
+import SplitSection from '../../../../components/SplitSection.astro';
+import FeatureCard from '../../../../components/FeatureCard.astro';
+import CheckList from '../../../../components/CheckList.astro';
+import Button from '../../../../components/Button.astro';
+import Icon from '../../../../components/Icon.astro';
+import ContactForm from '../../../../components/ContactForm.astro';
+import MoreFromStack from '../../../../components/sis/MoreFromStack.astro';
+import { SIS_BASE } from '../../../../data/site';
+
+// Copy source: content/source/sovereign-intelligence-stack.md, "Page 1.1 – Terrestrial Transit Capacity Wholesale".
+const features = [
+  { icon: 'route', title: 'Pakistan–China Terrestrial Fiber', text: 'High-capacity terrestrial routes connecting regional networks through Pakistan and China.' },
+  { icon: 'shield', title: 'Resilient Network Path', text: 'Provides route diversity to complement submarine infrastructure and improve service continuity.' },
+  { icon: 'gauge', title: 'Low-Latency Connectivity', text: 'Optimized routing delivers reduced latency for regional traffic and mission-critical applications.' },
+  { icon: 'network', title: 'Wholesale Capacity', text: 'Flexible bandwidth solutions designed for carriers, ISPs, cloud providers, and large enterprises.' },
+] as const;
+const ideal = ['Telecommunications operators', 'Internet Service Providers', 'Mobile operators', 'Cloud providers', 'Data center operators', 'Large enterprises'];
+const benefits = [
+  { icon: 'shield', t: 'Improved resilience' },
+  { icon: 'gauge', t: 'Lower latency for regional traffic' },
+  { icon: 'activity', t: 'Enhanced network availability' },
+] as const;
+---
+
+<Base title="Terrestrial Transit Capacity Wholesale" description="Wholesale bandwidth over terrestrial fiber connecting Pakistan with China and beyond, for carriers, ISPs, content providers and enterprises.">
+  <PageHero
+    eyebrow="Connectivity"
+    title="Terrestrial Transit"
+    highlight="Capacity Wholesale"
+    lede="Wholesale bandwidth through terrestrial fiber infrastructure connecting Pakistan with China and beyond."
+    crumbs={[
+      { label: 'Services' },
+      { label: 'Sovereign Intelligence Stack', href: SIS_BASE },
+      { label: 'Connectivity', href: `${SIS_BASE}/connectivity` },
+      { label: 'Terrestrial Transit' },
+    ]}
+  >
+    <Button href="#contact" size="lg">Contact us</Button>
+    <Button href={`${SIS_BASE}/connectivity`} variant="outline" size="lg" arrow={false}>Connectivity overview</Button>
+    <div slot="visual" aria-hidden="true" class="glass relative overflow-hidden p-6 sm:p-8">
+      <div class="bg-grid absolute inset-0 opacity-60"></div>
+      <svg viewBox="0 30 400 200" fill="none" class="relative w-full">
+        <defs><linearGradient id="tt-route" x1="0" x2="1"><stop stop-color="#7fdcd5" /><stop offset="1" stop-color="#2fd39a" /></linearGradient></defs>
+        <path d="M60 190 C 110 150, 150 200, 200 130 S 300 90, 340 60" stroke="url(#tt-route)" stroke-width="3" stroke-linecap="round" stroke-dasharray="8 10" class="animate-dash" />
+        <path d="M60 190 C 120 230, 260 170, 340 60" stroke="#22aaa1" stroke-opacity="0.3" stroke-width="2" stroke-dasharray="3 9" stroke-linecap="round" />
+        {[[60, 190, 'Pakistan'], [200, 130, ''], [340, 60, 'China']].map(([x, y, l]) => (
+          <g>
+            <circle cx={x} cy={y} r="12" fill="#22aaa1" fill-opacity="0.4" class="animate-pulse-ring" style={`transform-origin:${x}px ${y}px; transform-box:view-box`} />
+            <circle cx={x} cy={y} r="5" fill="#7fdcd5" />
+            {l && <text x={x} y={Number(y) + 30} text-anchor="middle" fill="#eef2f8" font-size="14" font-family="Poppins, sans-serif" font-weight="600">{l}</text>}
+          </g>
+        ))}
+        <text x="340" y="112" fill="#a9b4cc" font-size="12" font-family="Inter Variable, sans-serif" text-anchor="middle">and beyond</text>
+      </svg>
+      <p class="relative mt-2 text-center text-sm text-ink-muted">Land-based fiber, an alternative path to submarine routes</p>
+    </div>
+  </PageHero>
+
+  <!-- Intro -->
+  <Section>
+    <SplitSection>
+      <SectionHeading eyebrow="The service" title="Dependable regional connectivity," highlight="over land">
+        <p class="mt-6 leading-relaxed text-ink-muted">
+          Acmetel’s Terrestrial Transit Capacity service provides wholesale bandwidth through terrestrial fiber infrastructure connecting Pakistan with China and beyond.
+        </p>
+        <p class="mt-4 leading-relaxed text-ink-muted">
+          Designed for carriers, ISPs, content providers, and enterprises, this service delivers dependable regional connectivity while providing an alternative path to traditional submarine routes.
+        </p>
+        <p class="mt-4 leading-relaxed text-ink-muted">
+          By leveraging strategic land-based fiber networks, customers benefit from improved resilience, lower latency for regional traffic, and enhanced network availability.
+        </p>
+      </SectionHeading>
+      <div slot="visual" class="space-y-4" data-stagger>
+        {benefits.map((b, i) => (
+          <div class:list={['glass spotlight flex items-center gap-4 p-5', i === 1 && 'sm:ml-8']}>
+            <span class="grid size-12 shrink-0 place-items-center rounded-xl border border-teal-500/30 bg-gradient-to-br from-teal-500/25 to-green-700/20 text-teal-300"><Icon name={b.icon} /></span>
+            <p class="font-display text-lg font-semibold text-ink">{b.t}</p>
+          </div>
+        ))}
+      </div>
+    </SplitSection>
+  </Section>
+
+  <!-- Key features -->
+  <Section tone="raised">
+    <SectionHeading eyebrow="Key features" title="Built for" highlight="wholesale capacity" align="center" />
+    <div class="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4" data-stagger>
+      {features.map((f) => <FeatureCard icon={f.icon} title={f.title} text={f.text} />)}
+    </div>
+  </Section>
+
+  <!-- Ideal for -->
+  <Section tone="glow">
+    <div class="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20">
+      <SectionHeading eyebrow="Ideal for" title="Who this service" highlight="is for" />
+      <CheckList columns={2} items={ideal} />
+    </div>
+  </Section>
+
+  <MoreFromStack exclude={`${SIS_BASE}/connectivity`} tone="raised" />
+
+  <!-- Contact -->
+  <Section>
+    <div class="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
+      <SectionHeading eyebrow="Contact" title="Secure your" highlight="terrestrial capacity" lede="Tell us about the capacity and routes you need." />
+      <ContactForm name="sis-terrestrial-transit" topic="Terrestrial Transit Capacity Wholesale" title="Request capacity" />
+    </div>
+  </Section>
+</Base>
