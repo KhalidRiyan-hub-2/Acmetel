@@ -1,0 +1,43 @@
+---
+import Logo from './Logo.astro';
+import Icon from './Icon.astro';
+import { nav, sisPages, contact } from '../data/site';
+
+const groups = nav.filter((n) => 'children' in n);
+const year = new Date().getFullYear();
+---
+
+<footer class="relative mt-24 overflow-hidden border-t border-line bg-navy-800">
+  <div aria-hidden="true" class="pointer-events-none absolute -top-40 left-1/2 h-80 w-[60rem] -translate-x-1/2 rounded-full bg-teal-500/10 blur-3xl"></div>
+  <div class="container-x relative grid gap-12 py-16 md:grid-cols-2 lg:grid-cols-5">
+    <div class="lg:col-span-2">
+      <Logo class="h-11 w-auto" />
+      <p class="mt-5 max-w-sm text-sm leading-relaxed text-ink-muted">
+        From connecting networks to building digital ecosystems — voice, messaging, eSIM and sovereign digital infrastructure for operators and enterprises worldwide.
+      </p>
+      <a href={`mailto:${contact.email}`} class="mt-6 inline-flex items-center gap-2 text-sm text-teal-300 hover:text-teal-400">
+        <Icon name="mail" size={18} />{contact.email}
+      </a>
+    </div>
+    {groups.map((g) => 'children' in g && (
+      <div>
+        <h2 class="eyebrow">{g.label}</h2>
+        <ul class="mt-4 space-y-3 text-sm">
+          {g.children.map((c) => <li><a href={c.href} class="text-ink-muted transition-colors hover:text-ink">{c.label}</a></li>)}
+        </ul>
+      </div>
+    ))}
+    <div>
+      <h2 class="eyebrow">Sovereign Stack</h2>
+      <ul class="mt-4 space-y-3 text-sm">
+        {sisPages.map((p) => <li><a href={p.href} class="text-ink-muted transition-colors hover:text-ink">{p.label}</a></li>)}
+      </ul>
+    </div>
+  </div>
+  <div class="border-t border-line">
+    <div class="container-x flex flex-col gap-3 py-6 text-xs text-ink-faint sm:flex-row sm:items-center sm:justify-between">
+      <p>&copy; {year} Acmetel. All rights reserved.</p>
+      <p class="font-mono tracking-wider">onward | forw&gt;rd</p>
+    </div>
+  </div>
+</footer>

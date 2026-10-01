@@ -1,0 +1,7 @@
+---
+// PLACEHOLDER ASSET: extracted from a screenshot of acmetel.com. Replace public/brand/logo-*.png
+// with the original vector logo from the client. Dark variant has the grey wordmark lifted for navy backgrounds.
+interface Props { class?: string; variant?: 'dark' | 'light' }
+const { class: className = 'h-10 w-auto', variant = 'dark' } = Astro.props;
+---
+<img src={`/brand/logo-${variant}.png`} alt="Acmetel — onward | forward" width="342" height="90" class={className} decoding="async" />

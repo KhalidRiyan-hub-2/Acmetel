@@ -1,0 +1,11 @@
+---
+// Animated dashed "signal" curve — the brand motif carried over from acmetel.com's dashed connectors.
+interface Props { class?: string; flip?: boolean }
+const { class: className = '', flip = false } = Astro.props;
+---
+<div aria-hidden="true" class:list={['pointer-events-none mx-auto w-48 sm:w-64', flip && '-scale-x-100', className]}>
+  <svg viewBox="0 0 260 140" fill="none" class="w-full">
+    <path d="M10 6 C 40 70, 200 40, 230 80 S 160 136, 120 134" stroke="url(#sp-grad)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="10 14" class="animate-dash" />
+    <defs><linearGradient id="sp-grad" x1="0" x2="1"><stop stop-color="#22aaa1" stop-opacity="0.2" /><stop offset="0.5" stop-color="#4cc6bd" /><stop offset="1" stop-color="#22aaa1" stop-opacity="0.2" /></linearGradient></defs>
+  </svg>
+</div>

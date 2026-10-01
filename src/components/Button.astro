@@ -1,0 +1,33 @@
+---
+import Icon from './Icon.astro';
+
+interface Props {
+  href: string;
+  variant?: 'primary' | 'ghost' | 'outline';
+  size?: 'md' | 'lg';
+  external?: boolean;
+  arrow?: boolean;
+  class?: string;
+}
+
+const { href, variant = 'primary', size = 'md', external = false, arrow = variant === 'primary', class: className = '' } = Astro.props;
+
+const base =
+  'group inline-flex items-center justify-center gap-2 rounded-full font-display font-semibold transition duration-200 active:scale-[0.97] cursor-pointer whitespace-nowrap';
+const sizes = { md: 'h-11 px-5 text-sm', lg: 'h-13 px-7 text-base' };
+const variants = {
+  primary:
+    'bg-teal-500 text-navy-950 shadow-[0_0_0_1px_rgb(127_220_213/0.4)_inset,0_10px_30px_-10px_rgb(34_170_161/0.8)] hover:bg-teal-400 hover:shadow-[0_0_0_1px_rgb(127_220_213/0.6)_inset,0_14px_40px_-8px_rgb(34_170_161/0.9)]',
+  outline: 'border border-teal-500/60 text-teal-300 hover:bg-teal-500/10 hover:border-teal-400',
+  ghost: 'text-ink hover:text-teal-300 px-2!',
+};
+---
+
+<a
+  href={href}
+  class:list={[base, sizes[size], variants[variant], className]}
+  {...(external ? { target: '_blank', rel: 'noopener' } : {})}
+>
+  <slot />
+  {arrow && <Icon name={external ? 'arrow-up-right' : 'arrow-right'} size={18} class="transition-transform duration-200 group-hover:translate-x-0.5" />}
+</a>

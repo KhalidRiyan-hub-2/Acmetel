@@ -1,0 +1,127 @@
+@import "tailwindcss";
+@import "@fontsource/poppins/500.css";
+@import "@fontsource/poppins/600.css";
+@import "@fontsource/poppins/700.css";
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/jetbrains-mono";
+
+/*
+ * Acmetel design tokens. Components use these names, never raw hex.
+ * Brand: teal #22AAA1 (primary), deep green #006B52 (secondary), navy #202943 (surface).
+ */
+@theme {
+  --color-navy-950: #0e1322;
+  --color-navy-900: #151b2e;
+  --color-navy-800: #202943; /* brand surface, matches acmetel.com footer */
+  --color-navy-700: #2a3556;
+  --color-navy-600: #3a4770;
+
+  --color-teal-300: #7fdcd5;
+  --color-teal-400: #4cc6bd;
+  --color-teal-500: #22aaa1; /* brand primary */
+  --color-teal-600: #1b8a83;
+  --color-green-700: #006b52; /* brand secondary */
+  --color-green-800: #00513e;
+
+  --color-ink: #eef2f8;        /* primary text, 14:1 on navy-800 */
+  --color-ink-muted: #a9b4cc;  /* secondary text, 6.9:1 on navy-800 */
+  --color-ink-faint: #8794b2;  /* captions only, 4.6:1 on navy-800 */
+  --color-line: rgb(255 255 255 / 0.09);
+  --color-line-strong: rgb(255 255 255 / 0.16);
+
+  --font-display: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --animate-dash: dash 1.6s linear infinite;
+  --animate-float: float 7s ease-in-out infinite;
+  --animate-pulse-ring: pulse-ring 2.4s var(--ease-out-expo) infinite;
+  --animate-marquee: marquee 40s linear infinite;
+  --animate-aurora: aurora 18s ease-in-out infinite alternate;
+
+  @keyframes dash { to { stroke-dashoffset: -24; } }
+  @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+  @keyframes pulse-ring {
+    0% { transform: scale(0.6); opacity: 0.9; }
+    100% { transform: scale(2.4); opacity: 0; }
+  }
+  @keyframes marquee { to { transform: translateX(-50%); } }
+  @keyframes aurora {
+    0% { transform: translate3d(0, 0, 0) scale(1); }
+    100% { transform: translate3d(6%, -4%, 0) scale(1.15); }
+  }
+}
+
+@layer base {
+  html {
+    background: var(--color-navy-900);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    scroll-behavior: smooth;
+    scroll-padding-top: 6rem;
+    -webkit-font-smoothing: antialiased;
+  }
+  body { background: var(--color-navy-900); min-height: 100dvh; }
+  h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -0.02em; text-wrap: balance; }
+  p { text-wrap: pretty; }
+  ::selection { background: var(--color-teal-500); color: var(--color-navy-950); }
+  :focus-visible { outline: 2px solid var(--color-teal-400); outline-offset: 3px; border-radius: 6px; }
+}
+
+@layer components {
+  .container-x { width: 100%; max-width: 76rem; margin-inline: auto; padding-inline: 1rem; }
+  @media (min-width: 640px) { .container-x { padding-inline: 1.5rem; } }
+
+  /* Teal → green gradient text for highlighted words in headings. */
+  .text-gradient {
+    background: linear-gradient(100deg, var(--color-teal-300), var(--color-teal-500) 45%, #2fd39a);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+
+  .eyebrow {
+    font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--color-teal-400);
+  }
+
+  /* Glass card with gradient hairline border and cursor spotlight (see Base.astro script). */
+  .glass {
+    position: relative; isolation: isolate;
+    background: linear-gradient(180deg, rgb(255 255 255 / 0.045), rgb(255 255 255 / 0.015));
+    border: 1px solid var(--color-line);
+    border-radius: 1.25rem;
+    backdrop-filter: blur(10px);
+  }
+  .spotlight::before {
+    content: ""; position: absolute; inset: 0; border-radius: inherit; z-index: -1; pointer-events: none;
+    background: radial-gradient(420px circle at var(--mx, 50%) var(--my, -20%), rgb(34 170 161 / 0.16), transparent 45%);
+    opacity: 0; transition: opacity 300ms;
+  }
+  .spotlight::after {
+    content: ""; position: absolute; inset: -1px; border-radius: inherit; pointer-events: none; padding: 1px;
+    background: radial-gradient(300px circle at var(--mx, 50%) var(--my, -20%), rgb(76 198 189 / 0.7), transparent 50%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude;
+    opacity: 0; transition: opacity 300ms;
+  }
+  .spotlight:hover::before, .spotlight:hover::after { opacity: 1; }
+
+  /* Faint engineering grid used behind heroes. */
+  .bg-grid {
+    background-image:
+      linear-gradient(to right, rgb(255 255 255 / 0.04) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(255 255 255 / 0.04) 1px, transparent 1px);
+    background-size: 56px 56px;
+    mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 30%, transparent 75%);
+  }
+
+  /* Scroll reveal: elements with [data-reveal] fade up once visible. */
+  [data-reveal] { opacity: 0; transform: translateY(18px); transition: opacity 700ms var(--ease-out-expo), transform 700ms var(--ease-out-expo); transition-delay: var(--reveal-delay, 0ms); }
+  [data-reveal].is-visible { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+  [data-reveal] { opacity: 1; transform: none; }
+}

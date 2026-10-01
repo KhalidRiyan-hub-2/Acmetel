@@ -1,0 +1,9 @@
+---
+// Two-column text + visual. Default slot = text column, slot "visual" = media column.
+interface Props { reverse?: boolean; class?: string }
+const { reverse = false, class: className = '' } = Astro.props;
+---
+<div class:list={['grid items-center gap-12 lg:grid-cols-2 lg:gap-20', className]}>
+  <div class:list={[reverse && 'lg:order-2']} data-reveal><slot /></div>
+  <div class:list={['relative', reverse && 'lg:order-1']} data-reveal style="--reveal-delay:120ms"><slot name="visual" /></div>
+</div>

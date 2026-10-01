@@ -1,0 +1,17 @@
+---
+// Animated count-up stats. `value` is numeric; `prefix`/`suffix` wrap it (e.g. suffix "B+").
+interface Stat { value: number; prefix?: string; suffix?: string; label: string }
+interface Props { stats: Stat[]; class?: string }
+const { stats, class: className = '' } = Astro.props;
+const lgCols = { 2: 'lg:grid-cols-2', 3: 'lg:grid-cols-3', 4: 'lg:grid-cols-4', 5: 'lg:grid-cols-5', 6: 'lg:grid-cols-6' }[Math.min(Math.max(stats.length, 2), 6)];
+---
+<dl class:list={['grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-line bg-line', lgCols, className]} data-stagger>
+  {stats.map((s) => (
+    <div class="bg-navy-900 px-5 py-7 sm:px-7">
+      <dt class="text-sm text-ink-muted">{s.label}</dt>
+      <dd class="mt-2 font-display text-3xl font-semibold tabular-nums text-ink sm:text-4xl">
+        {s.prefix}<span data-count={s.value} data-suffix={s.suffix ?? ''}>{s.value}{s.suffix}</span>
+      </dd>
+    </div>
+  ))}
+</dl>

@@ -1,0 +1,71 @@
+---
+import '../styles/global.css';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+
+interface Props { title: string; description: string }
+const { title, description } = Astro.props;
+const fullTitle = title === 'Home' ? 'Acmetel — Onward | Forward' : `${title} — Acmetel`;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#202943" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/png" href="/brand/favicon.png" />
+  </head>
+  <body class="overflow-x-clip">
+    <Header />
+    <main id="main" tabindex="-1">
+      <slot />
+    </main>
+    <Footer />
+
+    <script>
+      // Scroll reveal for [data-reveal]; children of [data-stagger] get incremental delays.
+      document.querySelectorAll<HTMLElement>('[data-stagger]').forEach((group) => {
+        [...group.children].forEach((el, i) => {
+          (el as HTMLElement).dataset.reveal ??= '';
+          (el as HTMLElement).style.setProperty('--reveal-delay', `${i * 70}ms`);
+        });
+      });
+      const io = new IntersectionObserver(
+        (entries) => entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('is-visible'); io.unobserve(e.target); } }),
+        { rootMargin: '0px 0px -8% 0px' },
+      );
+      document.querySelectorAll('[data-reveal]').forEach((el) => io.observe(el));
+
+      // Cursor spotlight on .spotlight cards.
+      document.addEventListener('pointermove', (ev) => {
+        const card = (ev.target as Element | null)?.closest?.<HTMLElement>('.spotlight');
+        if (!card) return;
+        const r = card.getBoundingClientRect();
+        card.style.setProperty('--mx', `${ev.clientX - r.left}px`);
+        card.style.setProperty('--my', `${ev.clientY - r.top}px`);
+      }, { passive: true });
+
+      // Count-up for [data-count] (value in attribute, formatted with optional suffix in data-suffix).
+      const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const co = new IntersectionObserver((entries) => entries.forEach((e) => {
+        if (!e.isIntersecting) return;
+        co.unobserve(e.target);
+        const el = e.target as HTMLElement;
+        const end = Number(el.dataset.count);
+        const suffix = el.dataset.suffix ?? '';
+        if (reduce) { el.textContent = end + suffix; return; }
+        const t0 = performance.now();
+        const tick = (t: number) => {
+          const p = Math.min(1, (t - t0) / 1400);
+          el.textContent = Math.round(end * (1 - Math.pow(1 - p, 4))) + suffix;
+          if (p < 1) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      }), { threshold: 0.6 });
+      document.querySelectorAll('[data-count]').forEach((el) => co.observe(el));
+    </script>
+  </body>
+</html>
