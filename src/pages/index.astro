@@ -6,16 +6,19 @@ import Button from '../components/Button.astro';
 import Icon from '../components/Icon.astro';
 import FeatureCard from '../components/FeatureCard.astro';
 import StatStrip from '../components/StatStrip.astro';
-import LogoMarquee from '../components/LogoMarquee.astro';
-import NetworkGlobe from '../components/NetworkGlobe.astro';
-import SignalPath from '../components/SignalPath.astro';
-import SplitSection from '../components/SplitSection.astro';
-import CheckList from '../components/CheckList.astro';
 import PhoneMockup from '../components/PhoneMockup.astro';
 import ContactForm from '../components/ContactForm.astro';
+import GlobeHero from '../components/home/GlobeHero.astro';
+import BrandBelt from '../components/home/BrandBelt.astro';
+import DealCards from '../components/home/DealCards.astro';
+import ServicesRail from '../components/home/ServicesRail.astro';
+import LiveNetwork from '../components/home/LiveNetwork.astro';
 import { SIS_BASE, acmesimStoreUrl } from '../data/site';
 
 // Copy sources: content/source/home-current-site.md and content/source/about.md.
+// Section order and merges: docs/superpowers/specs/2026-10-01-homepage-motion-design.md
+
+// The only place these figures appear on the page.
 const stats = [
   { value: 150, suffix: '+', label: 'Clients across markets' },
   { value: 6, suffix: 'B+', label: 'Voice minutes terminated yearly' },
@@ -23,10 +26,35 @@ const stats = [
   { value: 16, label: 'Years in the industry' },
 ];
 
+const whoCards = [
+  { icon: 'globe', title: 'Three continents', text: 'Global presence with local reliability' },
+  { icon: 'headset', title: '24/7 NOC', text: 'Round-the-clock network operations' },
+  { icon: 'users', title: 'Built for partners', text: 'Agencies, operators and enterprises' },
+  { icon: 'sparkles', title: 'Innovation-first', text: 'Network intelligence and automation' },
+] as const;
+
+const services = [
+  { icon: 'phone', title: 'Voice', href: '/services/voice', text: 'Wholesale voice termination with strong footholds in Pakistan and the GCC, expanding into Africa — backed by Tier-1 carriers.' },
+  { icon: 'messages', title: 'Messaging', href: '/services/messaging', text: 'A2P, P2A and P2P SMS with direct MNO connectivity across EMEA, plus firewall and silent network authentication.' },
+  { icon: 'layers', title: 'Sovereign Intelligence Stack', href: SIS_BASE, text: 'Connectivity, data center, cloud, AI automation and network intelligence — your sovereign digital foundation.' },
+  { icon: 'hash', title: 'DID & Toll-Free', href: '/services/voice#did-toll-free', text: 'Local, toll-free and international toll-free numbers in 25+ countries, connected straight to your PBX.' },
+  { icon: 'search', title: 'MNP Lookup', text: 'Exclusive partner for Pakistan’s MNP database and verification services for international traffic.' },
+] as const;
+
+// "Why Acmetel" points that aren't already stats in the hero.
+const whyPoints = [
+  'Direct MNO connectivity and exclusive operator partnerships',
+  'End-to-end portfolio: voice, SMS, eSIM, infrastructure',
+  'Round-the-clock network operations support',
+  'Global presence across three continents',
+  'Built for agencies, operators and enterprises',
+  'Investment in network intelligence and automation',
+];
+
 const events = [
-  { name: 'Capacity Europe', date: 'October 13–15, 2026', place: 'London, England' },
-  { name: 'GCCM Middle East', date: 'November 1–4, 2026', place: 'Muscat, Oman' },
-  { name: 'Africa Tech Festival', date: 'November 17–19, 2026', place: 'Cape Town, South Africa' },
+  { name: 'Capacity Europe', date: 'Oct 13–15, 2026', place: 'London, England' },
+  { name: 'GCCM Middle East', date: 'Nov 1–4, 2026', place: 'Muscat, Oman' },
+  { name: 'Africa Tech Festival', date: 'Nov 17–19, 2026', place: 'Cape Town, South Africa' },
 ];
 
 const posts = [
@@ -37,14 +65,14 @@ const posts = [
 ---
 
 <Base title="Home" description="Acmetel delivers wholesale voice, A2P messaging, SMS firewall, eSIM and sovereign digital infrastructure for telecom operators and enterprises worldwide.">
-  <!-- Hero -->
-  <section class="relative overflow-hidden pt-32 pb-16 sm:pt-40">
+  <!-- 1. Hero -->
+  <section class="relative overflow-hidden pt-28 pb-12 sm:pt-36">
     <div aria-hidden="true" class="pointer-events-none absolute inset-0">
       <div class="bg-grid absolute inset-0"></div>
       <div class="absolute -left-32 top-0 h-[36rem] w-[36rem] animate-aurora rounded-full bg-teal-500/20 blur-3xl"></div>
       <div class="absolute -right-40 top-40 h-[30rem] w-[30rem] animate-aurora rounded-full bg-green-700/35 blur-3xl [animation-delay:-8s]"></div>
     </div>
-    <div class="container-x relative grid items-center gap-12 lg:grid-cols-[1.15fr_0.85fr]">
+    <div class="container-x relative grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
       <div>
         <p class="eyebrow mb-6 inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-3 py-1.5" data-reveal>
           <span class="relative flex size-2"><span class="absolute inline-flex size-full animate-ping rounded-full bg-teal-400 opacity-75"></span><span class="relative inline-flex size-2 rounded-full bg-teal-400"></span></span>
@@ -61,160 +89,131 @@ const posts = [
           <Button href="/contact" variant="outline" size="lg" arrow={false}>Talk to our team</Button>
         </div>
       </div>
-      <div data-reveal style="--reveal-delay:200ms"><NetworkGlobe /></div>
+      <GlobeHero />
     </div>
-    <div class="container-x relative mt-16 sm:mt-20"><StatStrip stats={stats} /></div>
+    <div class="container-x relative mt-12 sm:mt-14"><StatStrip stats={stats} /></div>
   </section>
 
-  <!-- Partners -->
+  <!-- 2. Brand belt -->
   <Section tight>
-    <p class="eyebrow mb-8 text-center" data-reveal>Trusted by operators and platforms worldwide</p>
-    <LogoMarquee names={['Mobily', 'e&', 'du', 'Sinch', 'stc', 'Mobily', 'e&', 'du']} />
+    <p class="eyebrow mb-14 text-center" data-reveal>Trusted by operators and platforms worldwide</p>
+    <BrandBelt />
   </Section>
 
-  <SignalPath />
-
-  <!-- Intro -->
+  <!-- 3. Who we are -->
   <Section>
-    <SplitSection>
+    <DealCards cards={[...whoCards]}>
       <SectionHeading eyebrow="Who we are" title="A platform that encompasses" highlight="business ideas">
         <p class="mt-6 leading-relaxed text-ink-muted">
           Acmetel is a leading provider of innovative and reliable telecommunication solutions. We founded our company with the goal of delivering top-notch services to businesses of all sizes, and we’ve been doing so for over a decade. Our team of experts is dedicated to helping our clients stay connected, efficient, and competitive.
         </p>
         <div class="mt-8"><Button href="/about" variant="outline">Our story</Button></div>
       </SectionHeading>
-      <div slot="visual" class="grid grid-cols-2 gap-4" data-stagger>
-        {[
-          { icon: 'globe', t: 'Three continents', d: 'Global presence with local reliability' },
-          { icon: 'headset', t: '24/7 NOC', d: 'Round-the-clock network operations' },
-          { icon: 'users', t: 'Built for partners', d: 'Agencies, operators and enterprises' },
-          { icon: 'sparkles', t: 'Innovation-first', d: 'Network intelligence and automation' },
-        ].map((c, i) => (
-          <div class:list={['glass spotlight p-5', i % 2 === 1 && 'translate-y-6']}>
-            <Icon name={c.icon as any} class="text-teal-300" />
-            <p class="mt-4 font-display font-semibold text-ink">{c.t}</p>
-            <p class="mt-1 text-sm text-ink-muted">{c.d}</p>
-          </div>
-        ))}
-      </div>
-    </SplitSection>
+    </DealCards>
   </Section>
 
-  <!-- Services bento -->
-  <Section id="services" tone="glow">
-    <SectionHeading eyebrow="Services" title="The primary services" highlight="we offer" align="center" lede="Carrier-grade voice and messaging, and the sovereign infrastructure underneath them." />
-    <div class="mt-14 grid gap-5 md:grid-cols-6" data-stagger>
-      <FeatureCard class="md:col-span-3" icon="phone" title="Voice" href="/services/voice"
-        text="Wholesale voice termination with strong footholds in Pakistan and the GCC, expanding into Africa — backed by Tier-1 carriers." />
-      <FeatureCard class="md:col-span-3" icon="messages" title="Messaging" href="/services/messaging"
-        text="A2P, P2A and P2P SMS with direct MNO connectivity across EMEA, plus firewall and silent network authentication." />
-      <FeatureCard class="md:col-span-2" icon="layers" title="Sovereign Intelligence Stack" href={SIS_BASE}
-        text="Connectivity, data center, cloud, AI automation and network intelligence — your sovereign digital foundation." />
-      <FeatureCard class="md:col-span-2" icon="hash" title="DID & Toll-Free" href="/services/voice#did-toll-free"
-        text="Local, toll-free and international toll-free numbers in 25+ countries, connected straight to your PBX." />
-      <FeatureCard class="md:col-span-2" icon="search" title="MNP Lookup"
-        text="Exclusive partner for Pakistan’s MNP database and verification services for international traffic." />
-    </div>
-  </Section>
+  <!-- 4. Services -->
+  <ServicesRail id="services" services={[...services]}>
+    <SectionHeading eyebrow="Services" title="The primary services" highlight="we offer" lede="Carrier-grade voice and messaging, and the sovereign infrastructure underneath them." />
+  </ServicesRail>
 
-  <!-- Products -->
-  <Section tone="raised">
+  <!-- 5. Products + ACMeSIM -->
+  <Section tone="raised" id="products">
     <SectionHeading eyebrow="Products" title="Our wide range of" highlight="products" />
-    <div class="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4" data-stagger>
-      <FeatureCard icon="shield" title="SMS Firewall" href="/services/messaging#firewall" text="Cutting-edge filtering and blocking policy that safeguards revenue and the subscriber experience." />
-      <FeatureCard icon="activity" title="Fraud Management" href="/services/voice#fraud-management" text="Real-time detection and revenue assurance against fraud — a major concern for operators." />
-      <FeatureCard icon="radar" title="Probe Testing" href="/services/messaging#penetration-testing" text="Find grey routes, bypass and SIM boxes before fraudsters exploit them." />
-      <FeatureCard icon="sim" title="ACMeSIM" href="/products/acmesim" text="Instant eSIM data in 200+ destinations, plus bulk and white-label for travel businesses." />
-    </div>
-  </Section>
-
-  <!-- ACMeSIM spotlight -->
-  <Section>
-    <SplitSection>
-      <SectionHeading eyebrow="ACMeSIM" title="Smart global connectivity," highlight="simplified" lede="Instant eSIM activation, flexible plans and seamless mobile data in 200+ destinations. No roaming. No contracts. No hidden fees.">
-        <ul class="mt-8 grid gap-3 sm:grid-cols-2">
-          {['Activation in seconds', 'Save up to 80% vs roaming', '5G / 4G worldwide', 'Hotspot for multiple devices'].map((t) => (
-            <li class="flex items-center gap-2.5 text-sm text-ink"><Icon name="zap" size={18} class="text-teal-400" />{t}</li>
-          ))}
-        </ul>
-        <div class="mt-10 flex flex-wrap gap-3">
-          <Button href="/products/acmesim">Discover ACMeSIM</Button>
-          <Button href={acmesimStoreUrl} variant="outline" external>Get your eSIM</Button>
-        </div>
-      </SectionHeading>
-      <div slot="visual">
-        <PhoneMockup>
-          <p class="text-xs text-ink-faint">Destination</p>
-          <p class="font-display text-lg font-semibold text-ink">United Kingdom</p>
-          <div class="mt-4 rounded-2xl bg-gradient-to-br from-teal-500 to-green-700 p-4 text-navy-950">
-            <p class="text-xs font-semibold opacity-80">ACTIVE PLAN</p>
-            <p class="mt-1 font-display text-2xl font-bold">10 GB · 30 days</p>
-            <div class="mt-3 h-1.5 rounded-full bg-navy-950/20"><div class="h-full w-2/3 rounded-full bg-navy-950/70"></div></div>
-            <p class="mt-1.5 text-xs font-medium">6.7 GB remaining</p>
+    <div class="mt-10 grid gap-5 lg:grid-cols-[1.35fr_1fr]">
+      <article class="glass spotlight relative grid gap-8 overflow-hidden p-7 sm:grid-cols-[1fr_auto] sm:p-9" data-reveal>
+        <div aria-hidden="true" class="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-teal-500/20 blur-3xl"></div>
+        <div class="relative">
+          <p class="eyebrow">Featured · ACMeSIM</p>
+          <h3 class="mt-4 text-3xl font-semibold text-ink">Smart global connectivity, <span class="text-gradient">simplified</span></h3>
+          <p class="mt-4 leading-relaxed text-ink-muted">Instant eSIM activation, flexible plans and seamless mobile data in 200+ destinations. No roaming. No contracts. No hidden fees.</p>
+          <ul class="mt-6 grid gap-2.5 text-sm text-ink sm:grid-cols-2">
+            {['Activation in seconds', 'Save up to 80% vs roaming', '5G / 4G worldwide', 'Hotspot for multiple devices'].map((t) => (
+              <li class="flex items-center gap-2"><Icon name="zap" size={16} class="text-teal-400" />{t}</li>
+            ))}
+          </ul>
+          <div class="mt-8 flex flex-wrap gap-3">
+            <Button href="/products/acmesim">Discover ACMeSIM</Button>
+            <Button href={acmesimStoreUrl} variant="outline" external>Get your eSIM</Button>
           </div>
-          <div class="mt-4 space-y-2">
-            {['5G connected', 'Hotspot on', 'No roaming fees'].map((t) => (
-              <div class="flex items-center justify-between rounded-xl border border-line bg-white/[0.03] px-3 py-2.5 text-xs text-ink"><span>{t}</span><span class="size-2 rounded-full bg-teal-400"></span></div>
+        </div>
+        <PhoneMockup class="w-48! sm:w-52!">
+          <p class="text-[0.65rem] text-ink-faint">Destination</p>
+          <p class="font-display text-base font-semibold text-ink">United Kingdom</p>
+          <div class="mt-3 rounded-xl bg-gradient-to-br from-teal-500 to-green-700 p-3 text-navy-950">
+            <p class="text-[0.6rem] font-semibold opacity-80">ACTIVE PLAN</p>
+            <p class="mt-0.5 font-display text-lg font-bold">10 GB · 30 days</p>
+            <div class="mt-2 h-1 rounded-full bg-navy-950/20"><div class="h-full w-2/3 rounded-full bg-navy-950/70"></div></div>
+          </div>
+          <div class="mt-3 space-y-1.5">
+            {['5G connected', 'Hotspot on'].map((t) => (
+              <div class="flex items-center justify-between rounded-lg border border-line bg-white/[0.03] px-2.5 py-2 text-[0.65rem] text-ink"><span>{t}</span><span class="size-1.5 rounded-full bg-teal-400"></span></div>
             ))}
           </div>
         </PhoneMockup>
+      </article>
+      <div class="grid gap-5" data-stagger>
+        <FeatureCard icon="shield" title="SMS Firewall" href="/services/messaging#firewall" text="Cutting-edge filtering and blocking policy that safeguards revenue and the subscriber experience." class="p-5! sm:p-6!" />
+        <FeatureCard icon="activity" title="Fraud Management" href="/services/voice#fraud-management" text="Real-time detection and revenue assurance against fraud — a major concern for operators." class="p-5! sm:p-6!" />
+        <FeatureCard icon="radar" title="Probe Testing" href="/services/messaging#penetration-testing" text="Find grey routes, bypass and SIM boxes before fraudsters exploit them." class="p-5! sm:p-6!" />
       </div>
-    </SplitSection>
-  </Section>
-
-  <!-- Why Acmetel -->
-  <Section tone="glow">
-    <div class="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20">
-      <SectionHeading eyebrow="Why Acmetel" title="An end-to-end portfolio," highlight="built for partners" lede="We invest in network intelligence and automation to keep our partners ahead of the curve." />
-      <CheckList columns={2} items={[
-        'Trusted by 150+ clients across markets',
-        'Over 6 billion voice minutes terminated yearly',
-        'More than 2 billion messages delivered',
-        'Leading the industry for 16 years',
-        'Round-the-clock network operations support',
-        'Global presence across three continents',
-      ]} />
     </div>
   </Section>
 
-  <!-- Events -->
-  <Section id="events">
-    <div class="flex flex-wrap items-end justify-between gap-6">
-      <SectionHeading eyebrow="Events" title="Meet us" highlight="on the road" />
+  <!-- 6. Live network (absorbs "Why Acmetel") -->
+  <LiveNetwork>
+    <div class="flex flex-col gap-5 lg:flex-row lg:items-center">
+      <p class="eyebrow shrink-0">Why Acmetel</p>
+      <ul class="flex flex-wrap gap-2.5" data-stagger>
+        {whyPoints.map((p) => (
+          <li class="flex items-center gap-2 rounded-full border border-line bg-white/[0.03] px-3.5 py-2 text-sm text-ink">
+            <Icon name="check" size={15} class="text-teal-400" />{p}
+          </li>
+        ))}
+      </ul>
     </div>
-    <div class="mt-12 grid gap-5 md:grid-cols-3" data-stagger>
-      {events.map((e) => (
-        <article class="glass spotlight group flex flex-col overflow-hidden">
-          <div class="relative h-40 overflow-hidden bg-gradient-to-br from-green-700/60 via-navy-700 to-navy-800">
-            <div class="bg-grid absolute inset-0 opacity-70"></div>
-            <p class="absolute bottom-4 left-5 font-display text-2xl font-bold leading-tight text-ink">{e.name}</p>
-          </div>
-          <div class="flex flex-1 flex-col p-6">
-            <p class="flex items-center gap-2 text-sm text-ink"><Icon name="calendar" size={16} class="text-teal-400" />{e.date}</p>
-            <p class="mt-2 flex items-center gap-2 text-sm text-ink-muted"><Icon name="map-pin" size={16} class="text-teal-400" />{e.place}</p>
-            <a href="/contact" class="mt-6 inline-flex items-center gap-1.5 text-sm font-semibold text-teal-300">Book a meeting <Icon name="arrow-right" size={16} class="transition-transform group-hover:translate-x-1" /></a>
-          </div>
-        </article>
-      ))}
+  </LiveNetwork>
+
+  <!-- 7. Latest: events + blog -->
+  <Section id="latest">
+    <SectionHeading eyebrow="Latest" title="Meet us and" highlight="read our thinking" />
+    <div class="mt-10 grid gap-10 lg:grid-cols-2 lg:gap-12">
+      <div id="events">
+        <h3 class="flex items-center gap-2 font-display text-lg font-semibold text-ink"><Icon name="calendar" size={20} class="text-teal-400" />Upcoming events</h3>
+        <ul class="mt-5 divide-y divide-line overflow-hidden rounded-2xl border border-line" data-stagger>
+          {events.map((e) => (
+            <li>
+              <a href="/contact" class="group flex items-center gap-5 bg-white/[0.02] px-5 py-4 transition-colors hover:bg-teal-500/[0.06]">
+                <span class="w-24 shrink-0 font-mono text-xs text-teal-300">{e.date}</span>
+                <span class="min-w-0 flex-1">
+                  <span class="block font-display font-semibold text-ink">{e.name}</span>
+                  <span class="mt-0.5 flex items-center gap-1.5 text-sm text-ink-muted"><Icon name="map-pin" size={14} />{e.place}</span>
+                </span>
+                <span class="hidden text-sm font-semibold text-teal-300 sm:inline">Book a meeting</span>
+                <Icon name="arrow-right" size={16} class="shrink-0 text-teal-300 transition-transform group-hover:translate-x-1" />
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div id="blog">
+        <h3 class="flex items-center gap-2 font-display text-lg font-semibold text-ink"><Icon name="sparkles" size={20} class="text-teal-400" />From the blog</h3>
+        <ul class="mt-5 grid gap-3" data-stagger>
+          {posts.map((p) => (
+            <li>
+              <a href="#blog" class="glass spotlight group block px-5 py-4">
+                <span class="eyebrow">{p.tag}</span>
+                <span class="mt-1.5 block font-display font-semibold leading-snug text-ink transition-colors group-hover:text-teal-300">{p.title}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   </Section>
 
-  <!-- Blog -->
-  <Section id="blog" tone="raised">
-    <SectionHeading eyebrow="Insights" title="From the" highlight="blog" />
-    <div class="mt-12 grid gap-5 lg:grid-cols-3" data-stagger>
-      {posts.map((p, i) => (
-        <a href="#blog" class:list={['glass spotlight group flex flex-col justify-between p-7', i === 0 && 'lg:row-span-2 lg:min-h-80']}>
-          <span class="eyebrow">{p.tag}</span>
-          <h3 class:list={['mt-6 font-semibold leading-snug text-ink transition-colors group-hover:text-teal-300', i === 0 ? 'text-2xl' : 'text-lg']}>{p.title}</h3>
-          <span class="mt-6 inline-flex items-center gap-1.5 text-sm font-semibold text-teal-300">Read article <Icon name="arrow-right" size={16} class="transition-transform group-hover:translate-x-1" /></span>
-        </a>
-      ))}
-    </div>
-  </Section>
-
-  <!-- Contact -->
-  <Section>
+  <!-- 8. Contact -->
+  <Section tone="raised">
     <div class="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
       <SectionHeading eyebrow="Contact" title="Let’s build what’s" highlight="next together" lede="Join a global network of trusted telecom partners. Tell us about your traffic, your network or your next launch." />
       <ContactForm name="home-contact" title="Get in touch" />

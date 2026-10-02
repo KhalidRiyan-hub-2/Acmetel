@@ -1,0 +1,82 @@
+---
+// Home hero visual: interactive WebGL globe (Three.js, lazy-loaded) over a static fallback image.
+// The box is reserved up front (no layout shift). The image stays when reduced motion is on or WebGL is unavailable.
+import PauseButton from '../PauseButton.astro';
+
+interface Props { class?: string }
+const { class: className = '' } = Astro.props;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+<div data-globe-hero data-live="false" data-dots={`${base}/data/land-dots.bin`}
+  class:list={['group/globe relative mx-auto aspect-square w-full max-w-[34rem]', className]}>
+  <p class="sr-only">Globe showing Acmetel's core network in Pakistan, the Pakistan–China terrestrial fiber route, and markets in the Gulf, Africa and the UK.</p>
+
+  <div data-globe-stage aria-hidden="true" class="absolute inset-0 [mask-image:radial-gradient(closest-side,black_93%,transparent)]">
+    <img data-globe-img src={`${base}/images/globe-fallback.webp`} width="800" height="800" alt="" loading="eager" fetchpriority="high" decoding="async"
+      class="absolute inset-0 size-full select-none object-cover transition-opacity duration-700" />
+  </div>
+
+  <div data-globe-label aria-hidden="true" class="pointer-events-none absolute left-1/2 top-1/2 will-change-transform">
+    <span class="absolute left-2.5 -top-4 h-4 w-px bg-teal-400/60"></span>
+    <span class="absolute -top-[2.7rem] left-2.5 whitespace-nowrap rounded-full border border-teal-500/40 bg-navy-950/80 px-3 py-1 font-mono text-[0.7rem] tracking-wide text-teal-300 backdrop-blur">Pakistan · Core network</span>
+  </div>
+
+  <span data-globe-hint data-show="false" aria-hidden="true"
+    class="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-line-strong bg-navy-900/80 px-3 py-1 text-xs text-ink-muted opacity-0 backdrop-blur transition-opacity duration-300 data-[show=true]:opacity-100">Click to zoom</span>
+
+  <div class="absolute bottom-1 right-1 hidden group-data-[live=true]/globe:block">
+    <PauseButton />
+  </div>
+</div>
+
+<script>
+  import { onVisible, prefersReducedMotion } from '../../scripts/motion';
+
+  const root = document.querySelector<HTMLElement>('[data-globe-hero]');
+  if (root) {
+    const stage = root.querySelector<HTMLElement>('[data-globe-stage]')!;
+    const img = root.querySelector<HTMLImageElement>('[data-globe-img]')!;
+    const label = root.querySelector<HTMLElement>('[data-globe-label]')!;
+    const hint = root.querySelector<HTMLElement>('[data-globe-hint]');
+    const pauseBtn = root.querySelector<HTMLButtonElement>('[data-pause]');
+
+    const hasWebGL = (() => {
+      try {
+        const c = document.createElement('canvas');
+        const gl = (c.getContext('webgl2') || c.getContext('webgl')) as WebGLRenderingContext | null;
+        gl?.getExtension('WEBGL_lose_context')?.loseContext();
+        return !!gl;
+      } catch { return false; }
+    })();
+
+    // Reduced motion or no WebGL: keep the static image only; the three.js chunk is never requested.
+    // Start the 3D globe on the visitor's first interaction rather than at load. The static image is the
+    // same view, so the hand-off is invisible, and the ~140 KB three.js chunk plus its render loop stay off
+    // the critical path (this is what keeps mobile Lighthouse Performance in the 90s).
+    const afterFirstInteraction = (cb: () => void) => {
+      const events = ['pointermove', 'pointerdown', 'scroll', 'keydown', 'touchstart', 'wheel'] as const;
+      const go = () => { events.forEach((e) => removeEventListener(e, go)); cb(); };
+      events.forEach((e) => addEventListener(e, go, { once: true, passive: true }));
+    };
+
+    if (hasWebGL && !prefersReducedMotion()) {
+      afterFirstInteraction(() => onVisible(root, async () => {
+        try {
+          const { initGlobe } = await import('../../scripts/globe/scene');
+          root.dataset.live = 'true';
+          label.style.left = '0';
+          label.style.top = '0';
+          label.style.opacity = '0';
+          initGlobe(stage, {
+            dotsUrl: root.dataset.dots!,
+            label, hint, pauseButton: pauseBtn,
+            onFirstFrame: () => { img.style.opacity = '0'; },
+            onContextLost: () => { img.style.opacity = '1'; root.dataset.live = 'false'; label.style.cssText = ''; },
+          });
+        } catch {
+          root.dataset.live = 'false';
+        }
+      }));
+    }
+  }
+</script>
