@@ -5,7 +5,7 @@ import Footer from '../components/Footer.astro';
 
 interface Props { title: string; description: string }
 const { title, description } = Astro.props;
-const fullTitle = title === 'Home' ? 'Acmetel — Onward | Forward' : `${title} — Acmetel`;
+const fullTitle = title === 'Home' ? 'Acmetel | Onward, Forward' : `${title} | Acmetel`;
 ---
 
 <!doctype html>
@@ -17,15 +17,30 @@ const fullTitle = title === 'Home' ? 'Acmetel — Onward | Forward' : `${title} 
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
     <link rel="icon" type="image/png" href="/brand/favicon.png" />
+    <!-- Before first paint: lets CSS hide elements that motion will bring in (never with reduced motion). -->
+    <script is:inline>matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.classList.add('motion');</script>
   </head>
   <body class="overflow-x-clip">
+    <!-- Fixed background layers behind the page; sections opt in with data-bg (see src/scripts/patterns.ts). -->
+    <div aria-hidden="true" class="bg-layers" data-bg-layers>
+      <div class="bg-layer bg-layer-glow" data-bg-layer="glow"></div>
+      <div class="bg-layer bg-layer-grid" data-bg-layer="grid"></div>
+    </div>
+    <!-- Fixed, so it stays outside the smoothed content. -->
     <Header />
-    <main id="main" tabindex="-1">
-      <slot />
-    </main>
-    <Footer />
+    <!-- ScrollSmoother moves #smooth-content inside the fixed #smooth-wrapper (mouse/trackpad only; see motion.ts). -->
+    <div id="smooth-wrapper">
+      <div id="smooth-content">
+        <main id="main" tabindex="-1">
+          <slot />
+        </main>
+        <Footer />
+      </div>
+    </div>
 
     <script>
+      import '../scripts/patterns';
+
       // Scroll reveal for [data-reveal]; children of [data-stagger] get incremental delays.
       document.querySelectorAll<HTMLElement>('[data-stagger]').forEach((group) => {
         [...group.children].forEach((el, i) => {

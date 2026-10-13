@@ -1,45 +1,207 @@
 ---
 // Home hero visual: interactive WebGL globe (Three.js, lazy-loaded) over a static fallback image.
-// The box is reserved up front (no layout shift). The image stays when reduced motion is on or WebGL is unavailable.
+// The box is reserved up front (no layout shift) and sized so the whole globe always fits the viewport.
+// With motion allowed, the globe rises and scales into place as the page scrolls past the headline.
+// The static image stays when reduced motion is on or WebGL is unavailable.
+// Zoom destinations form a tree (src/data/globe.ts): breadcrumbs show where you are, chips show where you
+// can go next; tapping the map or wheel/pinch (once focused) move through the same tree.
 import PauseButton from '../PauseButton.astro';
+import { stops, tags, childrenOf } from '../../data/globe';
 
 interface Props { class?: string }
 const { class: className = '' } = Astro.props;
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const coord = (lat: number, lon: number) => `${Math.abs(lat).toFixed(2)}°${lat >= 0 ? 'N' : 'S'} ${Math.abs(lon).toFixed(2)}°${lon >= 0 ? 'E' : 'W'}`;
+const startChips = childrenOf('global');
 ---
-<div data-globe-hero data-live="false" data-dots={`${base}/data/land-dots.bin`}
-  class:list={['group/globe relative mx-auto aspect-square w-full max-w-[34rem]', className]}>
-  <p class="sr-only">Globe showing Acmetel's core network in Pakistan, the Pakistan–China terrestrial fiber route, and markets in the Gulf, Africa and the UK.</p>
+<div data-globe-hero data-live="false" data-data={`${base}/data`} data-stops={JSON.stringify(stops.map(({ id, label, parent, caption }) => ({ id, label, parent, caption })))}
+  class:list={['globe-hero group/globe relative mx-auto w-full', className]}>
+  <div class="globe-box relative mx-auto aspect-square" data-globe-box>
+    <div class="absolute inset-0 will-change-transform" data-globe-rise>
+      <p class="sr-only">Globe showing Acmetel's core network in Pakistan, the Pakistan–China terrestrial fiber route, and markets in the Gulf, Africa and the UK. Use the location controls below the globe to zoom.</p>
 
-  <div data-globe-stage aria-hidden="true" class="absolute inset-0 [mask-image:radial-gradient(closest-side,black_93%,transparent)]">
-    <img data-globe-img src={`${base}/images/globe-fallback.webp`} width="800" height="800" alt="" loading="eager" fetchpriority="high" decoding="async"
-      class="absolute inset-0 size-full select-none object-cover transition-opacity duration-700" />
+      <div data-globe-stage aria-hidden="true" class="absolute inset-0">
+        <img data-globe-img src={`${base}/images/globe-fallback.webp`} width="800" height="800" alt="" loading="eager" fetchpriority="high" decoding="async"
+          class="absolute inset-0 size-full select-none object-contain transition-opacity duration-700" />
+      </div>
+
+      <div aria-hidden="true" class="pointer-events-none absolute inset-0 overflow-hidden">
+        {tags.map((t) => (
+          <div data-globe-tag data-lat={t.lat} data-lon={t.lon} data-z0={t.z[0]} data-z1={t.z[1]} data-near={t.near ?? ''} class={`globe-tag globe-tag-${t.kind}`}>
+            {t.kind === 'pill' && (<>
+              <span class="absolute left-2.5 -top-4 h-4 w-px bg-teal-400/60"></span>
+              <span class="absolute -top-[2.7rem] left-2.5 whitespace-nowrap rounded-full border border-teal-500/40 bg-navy-950/80 px-3 py-1 font-mono text-[0.7rem] tracking-wide text-teal-300 backdrop-blur">{t.text}</span>
+            </>)}
+            {t.kind === 'country' && <span class="absolute -translate-x-1/2 -translate-y-1/2 whitespace-nowrap font-mono text-[0.62rem] uppercase tracking-[0.34em] text-ink/80">{t.text}</span>}
+            {t.kind === 'city-major' && (<>
+              <span class="absolute left-0 -top-8 h-8 w-px bg-gradient-to-t from-teal-300/80 to-transparent"></span>
+              <span class="absolute -top-[3.1rem] right-2 whitespace-nowrap text-right">
+                <span class="block font-display text-sm font-semibold text-ink">{t.text}</span>
+                <span class="block font-mono text-[0.6rem] tracking-[0.12em] text-teal-300">{coord(t.lat, t.lon)}</span>
+              </span>
+            </>)}
+            {t.kind === 'city' && <span class="absolute left-2 -top-2 whitespace-nowrap font-mono text-[0.62rem] tracking-wide text-ink-muted">{t.text}</span>}
+            {t.kind === 'waypoint' && <span class="absolute left-2.5 -top-2 whitespace-nowrap font-mono text-[0.6rem] uppercase tracking-[0.16em] text-teal-300/90">{t.text}</span>}
+          </div>
+        ))}
+      </div>
+
+      <p data-globe-readout aria-hidden="true" class="pointer-events-none absolute left-0 top-1 hidden font-mono text-[0.625rem] uppercase leading-relaxed tracking-[0.14em] text-ink-faint tabular-nums group-data-[live=true]/globe:block">
+        <span data-ro-lat>30.40°N</span> <span data-ro-lon>69.30°E</span><br /><span class="text-teal-400/80">Alt</span> <span data-ro-alt>24,200 km</span>
+      </p>
+
+      <span data-globe-hint data-show="false" aria-hidden="true"
+        class="pointer-events-none absolute right-0 top-1 whitespace-nowrap rounded-full border border-line-strong bg-navy-900/80 px-3 py-1 text-xs text-ink-muted opacity-0 backdrop-blur transition-opacity duration-300 data-[show=true]:opacity-100 max-sm:hidden">Click to focus, then scroll to zoom</span>
+
+      <p data-globe-osm data-show="false" class="absolute bottom-1 left-0 font-mono text-[0.6rem] text-ink-faint opacity-0 transition-opacity duration-300 data-[show=false]:pointer-events-none data-[show=true]:opacity-100">
+        © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener" class="underline-offset-2 hover:text-ink hover:underline" tabindex="-1" data-globe-osm-link>OpenStreetMap contributors</a>
+      </p>
+
+      <div class="absolute bottom-1 right-1 hidden group-data-[live=true]/globe:block">
+        <PauseButton />
+      </div>
+    </div>
   </div>
 
-  <div data-globe-label aria-hidden="true" class="pointer-events-none absolute left-1/2 top-1/2 will-change-transform">
-    <span class="absolute left-2.5 -top-4 h-4 w-px bg-teal-400/60"></span>
-    <span class="absolute -top-[2.7rem] left-2.5 whitespace-nowrap rounded-full border border-teal-500/40 bg-navy-950/80 px-3 py-1 font-mono text-[0.7rem] tracking-wide text-teal-300 backdrop-blur">Pakistan · Core network</span>
-  </div>
-
-  <span data-globe-hint data-show="false" aria-hidden="true"
-    class="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-line-strong bg-navy-900/80 px-3 py-1 text-xs text-ink-muted opacity-0 backdrop-blur transition-opacity duration-300 data-[show=true]:opacity-100">Click to zoom</span>
-
-  <div class="absolute bottom-1 right-1 hidden group-data-[live=true]/globe:block">
-    <PauseButton />
+  <!-- Location controls. Reserved in the layout so they never shift; hidden entirely when the globe can't run. -->
+  <div data-globe-controls class="globe-controls mx-auto mt-4 flex max-w-xl flex-col items-center gap-3 text-center">
+    <nav aria-label="Globe location">
+      <ol class="flex min-h-7 flex-wrap items-center justify-center gap-x-1 gap-y-1 font-mono text-[0.7rem] uppercase tracking-[0.16em]" data-globe-crumbs>
+        <li><span aria-current="location" class="px-2 py-1 text-ink">Global</span></li>
+      </ol>
+    </nav>
+    <div role="toolbar" aria-label="Zoom to" class="flex min-h-9 max-w-full justify-center-safe gap-2 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" data-globe-next>
+      {startChips.map((s, i) => (
+        <button type="button" data-go={s.id} tabindex={i === 0 ? 0 : -1} class="globe-chip">{s.label}</button>
+      ))}
+    </div>
+    <p data-globe-caption aria-live="polite" class="min-h-[4rem] max-w-md text-sm leading-snug text-ink-muted sm:min-h-[2.75rem]">{stops[0].caption}</p>
   </div>
 </div>
 
+<style>
+  /* The whole globe fits the viewport at rest (svh: stable on mobile when the browser bars move). */
+  .globe-box { width: min(100%, 54rem, calc(100svh - 9.5rem)); }
+  .globe-tag { position: absolute; left: 0; top: 0; opacity: 0; visibility: hidden; will-change: transform, opacity; }
+  .globe-tag-city::before, .globe-tag-waypoint::before {
+    content: ""; position: absolute; left: -2px; top: -2px; width: 4px; height: 4px; border-radius: 9999px;
+    background: var(--color-ink); box-shadow: 0 0 0 2px rgb(14 19 34 / 0.6);
+  }
+  .globe-tag-waypoint::before { background: var(--color-teal-300); }
+  /* Flipped (set by the scene near the right edge): text sits left of its point. */
+  .globe-tag-city[data-flip='true'] > span, .globe-tag-waypoint[data-flip='true'] > span { left: auto !important; right: 0.5rem; }
+  .globe-tag-pill[data-flip='true'] > span { left: auto !important; }
+  .globe-tag-pill[data-flip='true'] > span:first-child { right: auto; left: 0.625rem !important; }
+  .globe-tag-pill[data-flip='true'] > span:last-child { right: -0.625rem; }
+  :global(.globe-chip) {
+    flex: none; border-radius: 9999px; border: 1px solid var(--color-line-strong); background: rgb(14 19 34 / 0.6);
+    padding: 0.4rem 0.9rem; font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--color-ink-muted); transition: color 200ms, border-color 200ms, background-color 200ms; cursor: pointer;
+  }
+  :global(.globe-chip:hover), :global(.globe-chip:focus-visible) { color: var(--color-ink); border-color: rgb(76 198 189 / 0.6); }
+  :global(.globe-crumb) { border-radius: 9999px; padding: 0.25rem 0.5rem; color: var(--color-ink-faint); transition: color 200ms; cursor: pointer; }
+  :global(.globe-crumb:hover), :global(.globe-crumb:focus-visible) { color: var(--color-teal-300); }
+  [data-globe-crumbs] :global(li + li)::before { content: "›"; margin-right: 0.25rem; color: var(--color-ink-faint); }
+  /* No WebGL / context lost / reduced motion: the static image has nothing to drive. */
+  [data-globe-hero][data-static] .globe-controls { display: none; }
+  @media (prefers-reduced-motion: reduce) { .globe-controls { display: none; } }
+</style>
+
 <script>
-  import { onVisible, prefersReducedMotion } from '../../scripts/motion';
+  import { gsap, onVisible, prefersReducedMotion, SCRUB } from '../../scripts/motion';
 
   const root = document.querySelector<HTMLElement>('[data-globe-hero]');
   if (root) {
+    type S = { id: string; label: string; parent: string | null; caption: string };
+    const stops: S[] = JSON.parse(root.dataset.stops!);
+    const byId = Object.fromEntries(stops.map((s) => [s.id, s])) as Record<string, S>;
+    const pathTo = (id: string) => { const out: S[] = []; for (let s: S | undefined = byId[id]; s; s = s.parent ? byId[s.parent] : undefined) out.unshift(s); return out; };
+    const kidsOf = (id: string) => stops.filter((s) => s.parent === id);
+
     const stage = root.querySelector<HTMLElement>('[data-globe-stage]')!;
+    const box = root.querySelector<HTMLElement>('[data-globe-box]')!;
+    const rise = root.querySelector<HTMLElement>('[data-globe-rise]')!;
     const img = root.querySelector<HTMLImageElement>('[data-globe-img]')!;
-    const label = root.querySelector<HTMLElement>('[data-globe-label]')!;
     const hint = root.querySelector<HTMLElement>('[data-globe-hint]');
     const pauseBtn = root.querySelector<HTMLButtonElement>('[data-pause]');
+    const crumbs = root.querySelector<HTMLElement>('[data-globe-crumbs]')!;
+    const next = root.querySelector<HTMLElement>('[data-globe-next]')!;
+    const caption = root.querySelector<HTMLElement>('[data-globe-caption]')!;
+    const osm = root.querySelector<HTMLElement>('[data-globe-osm]')!;
+    const osmLink = root.querySelector<HTMLElement>('[data-globe-osm-link]')!;
+    const ro = {
+      lat: root.querySelector<HTMLElement>('[data-ro-lat]')!,
+      lon: root.querySelector<HTMLElement>('[data-ro-lon]')!,
+      alt: root.querySelector<HTMLElement>('[data-ro-alt]')!,
+    };
+    const tags = [...root.querySelectorAll<HTMLElement>('[data-globe-tag]')].map((el) => ({
+      el, lat: Number(el.dataset.lat), lon: Number(el.dataset.lon), z: [Number(el.dataset.z0), Number(el.dataset.z1)] as const,
+      near: el.dataset.near ? Number(el.dataset.near) : undefined,
+    }));
 
+    let api: { flyTo(id: string): void } | null = null;
+    let pending: string | null = null;
+    const go = (id: string) => { if (api) api.flyTo(id); else pending = id; };
+
+    // --- Breadcrumb + "zoom to" chips -----------------------------------------------------------
+    // The trail shows the destination as soon as a flight starts; the caption updates on arrival.
+    let shown = '';
+    const renderNav = (id: string) => {
+      if (id === shown) return;
+      const hadFocus = root.contains(document.activeElement) && (crumbs.contains(document.activeElement) || next.contains(document.activeElement));
+      shown = id;
+      const trail = pathTo(id);
+      crumbs.replaceChildren(...trail.map((s, i) => {
+        const li = document.createElement('li');
+        if (i === trail.length - 1) {
+          const span = document.createElement('span');
+          span.className = 'px-2 py-1 text-ink';
+          span.setAttribute('aria-current', 'location');
+          span.textContent = s.label;
+          li.append(span);
+        } else {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'globe-crumb';
+          b.dataset.go = s.id;
+          b.textContent = s.label;
+          li.append(b);
+        }
+        return li;
+      }));
+      // Where you can go next: children, or for a leaf its siblings.
+      const here = byId[id];
+      const options = kidsOf(id).length ? kidsOf(id) : here.parent ? kidsOf(here.parent).filter((s) => s.id !== id) : [];
+      next.replaceChildren(...options.map((s, i) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'globe-chip';
+        b.dataset.go = s.id;
+        b.tabIndex = i === 0 ? 0 : -1;
+        b.textContent = s.label;
+        return b;
+      }));
+      // Keep keyboard users in the controls after the list changes.
+      if (hadFocus) (next.querySelector<HTMLElement>('[tabindex="0"]') ?? crumbs.querySelector<HTMLElement>('button'))?.focus({ preventScroll: true });
+    };
+    root.addEventListener('click', (e) => {
+      const b = (e.target as Element).closest<HTMLElement>('[data-go]');
+      if (b && root.contains(b)) go(b.dataset.go!);
+    });
+    // Roving focus in the chip toolbar.
+    next.addEventListener('keydown', (e) => {
+      const items = [...next.querySelectorAll<HTMLElement>('button')];
+      const i = items.indexOf(document.activeElement as HTMLElement);
+      if (i < 0) return;
+      const k = { ArrowRight: i + 1, ArrowDown: i + 1, ArrowLeft: i - 1, ArrowUp: i - 1, Home: 0, End: items.length - 1 }[e.key];
+      if (k === undefined) return;
+      e.preventDefault();
+      const j = (k + items.length) % items.length;
+      items.forEach((b, n) => { b.tabIndex = n === j ? 0 : -1; });
+      items[j].focus();
+    });
+
+    const fmt = (v: number, pos: string, neg: string) => `${Math.abs(v).toFixed(2)}°${v >= 0 ? pos : neg}`;
     const hasWebGL = (() => {
       try {
         const c = document.createElement('canvas');
@@ -48,33 +210,58 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
         return !!gl;
       } catch { return false; }
     })();
+    const reduced = prefersReducedMotion();
 
-    // Reduced motion or no WebGL: keep the static image only; the three.js chunk is never requested.
+    // --- Scroll-driven entrance --------------------------------------------------------------------
+    // From the top of the page until the globe is centred below the header, it rises and scales into
+    // place. Scrubbed, so it reverses and survives fast scrolling. Measured on the unmoved box.
+    if (!reduced) {
+      // Rest = centred in the space below the fixed header.
+      const headerH = () => document.querySelector('header')?.getBoundingClientRect().height ?? 0;
+      const restAt = () => Math.max(1, box.getBoundingClientRect().top + scrollY + box.offsetHeight / 2 - (innerHeight + headerH()) / 2);
+      gsap.fromTo(rise, { y: () => box.offsetHeight * 0.14, scale: 0.8 }, {
+        y: 0, scale: 1, ease: 'power1.out',
+        scrollTrigger: { trigger: document.documentElement, start: 0, end: restAt, scrub: SCRUB, invalidateOnRefresh: true },
+      });
+    }
+
+    // --- Globe -------------------------------------------------------------------------------------
     // Start the 3D globe on the visitor's first interaction rather than at load. The static image is the
-    // same view, so the hand-off is invisible, and the ~140 KB three.js chunk plus its render loop stay off
+    // same view, so the hand-off is invisible, and the three.js chunk plus its render loop stay off
     // the critical path (this is what keeps mobile Lighthouse Performance in the 90s).
     const afterFirstInteraction = (cb: () => void) => {
       const events = ['pointermove', 'pointerdown', 'scroll', 'keydown', 'touchstart', 'wheel'] as const;
-      const go = () => { events.forEach((e) => removeEventListener(e, go)); cb(); };
-      events.forEach((e) => addEventListener(e, go, { once: true, passive: true }));
+      const run = () => { events.forEach((e) => removeEventListener(e, run)); cb(); };
+      events.forEach((e) => addEventListener(e, run, { once: true, passive: true }));
     };
 
-    if (hasWebGL && !prefersReducedMotion()) {
+    if (!hasWebGL || reduced) {
+      root.dataset.static = '';
+    } else {
       afterFirstInteraction(() => onVisible(root, async () => {
         try {
           const { initGlobe } = await import('../../scripts/globe/scene');
           root.dataset.live = 'true';
-          label.style.left = '0';
-          label.style.top = '0';
-          label.style.opacity = '0';
-          initGlobe(stage, {
-            dotsUrl: root.dataset.dots!,
-            label, hint, pauseButton: pauseBtn,
+          const g = initGlobe(stage, {
+            dataUrl: root.dataset.data!,
+            tags, hint, pauseButton: pauseBtn,
+            onTarget: (id) => renderNav(id),
+            onState: (s) => {
+              if (s.stop) { renderNav(s.stop); if (caption.textContent !== byId[s.stop].caption) caption.textContent = byId[s.stop].caption; }
+              ro.lat.textContent = fmt(s.lat, 'N', 'S');
+              ro.lon.textContent = fmt(s.lon, 'E', 'W');
+              ro.alt.textContent = `${s.altKm.toLocaleString('en-US')} km`;
+              osm.dataset.show = String(s.osm);
+              osmLink.tabIndex = s.osm ? 0 : -1;
+            },
             onFirstFrame: () => { img.style.opacity = '0'; },
-            onContextLost: () => { img.style.opacity = '1'; root.dataset.live = 'false'; label.style.cssText = ''; },
+            onContextLost: () => { img.style.opacity = '1'; root.dataset.live = 'false'; root.dataset.static = ''; },
           });
+          api = g;
+          if (pending) g.flyTo(pending);
         } catch {
           root.dataset.live = 'false';
+          root.dataset.static = '';
         }
       }));
     }

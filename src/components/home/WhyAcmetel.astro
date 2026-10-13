@@ -1,0 +1,212 @@
+---
+// "Why choose Acmetel": a central core with six ports, each routed to one reason. As the section scrolls through
+// the viewport, a pulse leaves the core on each trace in turn; when it arrives, that reason switches on (and its
+// port on the core lights). Scroll-driven both ways, no pin. When all six are linked, a slow pulse keeps
+// circulating while the section is on screen.
+// Reduced motion / no JS: everything is shown linked, no pulses.
+// Desktop: three reasons either side of the core. Below 1024px: the core sits on top and a trunk runs down the
+// left edge to each reason.
+// Copy: content/source/voice.md "Why Acmetel ?" + "Managed Telecom Services", content/source/about.md
+// "Why Acmetel?", content/source/sovereign-intelligence-stack.md intro, content/source/home-current-site.md.
+import Icon, { type IconName } from '../Icon.astro';
+import SectionHeading from '../SectionHeading.astro';
+
+const reasons: { id: string; label: string; icon: IconName; title: string; text: string; side: 'L' | 'R' }[] = [
+  { id: '01', label: 'Connectivity', icon: 'network', side: 'L', title: 'Direct to the operator', text: 'Global direct MNO connectivity and exclusive operator partnerships, including Pakistan’s MNP database.' },
+  { id: '02', label: 'Reliability', icon: 'headset', side: 'R', title: 'Run around the clock', text: 'A 24×7 network operations centre, SLA-driven support, high availability and low latency.' },
+  { id: '03', label: 'Security', icon: 'shield', side: 'L', title: 'Security in the network', text: 'Carrier-grade network security, SMS firewall and real-time fraud detection protect traffic and revenue.' },
+  { id: '04', label: 'Sovereignty', icon: 'server', side: 'R', title: 'Infrastructure you control', text: 'Connectivity, data centres, cloud, automation and network intelligence through the Sovereign Intelligence Stack.' },
+  { id: '05', label: 'Reach', icon: 'globe', side: 'L', title: 'Global reach, local reliability', text: 'Presence across three continents, with consistent, secure and scalable services in every market.' },
+  { id: '06', label: 'Innovation', icon: 'cpu', side: 'R', title: 'Innovation-first', text: 'We invest in network intelligence and AI-driven automation to keep partners ahead of the curve.' },
+];
+const services = ['Voice', 'Messaging', 'ACMeSIM', 'Sovereign Intelligence Stack'];
+// Grid placement on desktop: left column rows 1–3, right column rows 1–3, in id order.
+const row = (i: number) => ['lg:row-start-1', 'lg:row-start-2', 'lg:row-start-3'][Math.floor(i / 2)];
+---
+
+<section id="why-acmetel" class="relative overflow-hidden border-y border-line bg-navy-800 py-20 sm:py-24" data-why>
+  <div aria-hidden="true" class="bg-grid pointer-events-none absolute inset-0 opacity-60"></div>
+  <div class="container-x relative">
+    <div class="grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
+      <SectionHeading eyebrow="Why choose Acmetel" title="One core." highlight="Six reasons it holds." />
+      <p class="max-w-lg leading-relaxed text-ink-muted lg:justify-self-end" data-reveal>
+        One partner for voice, messaging, eSIM and the infrastructure underneath them, built for agencies, operators and enterprises. Every service runs through the same network, so these hold across all of it.
+      </p>
+    </div>
+
+    <div class="why-net relative mt-14 lg:mt-20" data-why-net>
+      <svg class="pointer-events-none absolute inset-0 size-full overflow-visible" aria-hidden="true" data-why-svg>
+        <g data-why-base></g>
+        <g data-why-lit></g>
+        <g data-why-pulse></g>
+        <g data-why-idle></g>
+      </svg>
+
+      <div class="relative grid gap-4 pl-8 lg:grid-cols-[minmax(0,1fr)_17rem_minmax(0,1fr)] lg:gap-x-24 lg:gap-y-5 lg:pl-0">
+        <!-- Core -->
+        <div class="why-core relative z-10 -ml-8 mb-6 rounded-2xl border border-teal-500/35 bg-navy-950 p-5 lg:col-start-2 lg:row-span-3 lg:row-start-1 lg:mb-0 lg:ml-0 lg:self-center" data-why-core>
+          <div class="flex items-center justify-between">
+            <p class="font-mono text-[0.68rem] uppercase tracking-[0.2em] text-teal-300">Acmetel core</p>
+            <span class="flex items-center gap-1.5 font-mono text-[0.6rem] uppercase tracking-[0.14em] text-ink-faint"><span class="size-1.5 rounded-full bg-teal-400"></span>24×7 NOC</span>
+          </div>
+          <ul class="mt-5 grid grid-cols-6 gap-1.5" aria-hidden="true">
+            {reasons.map((r) => (
+              <li class="why-port flex flex-col items-center gap-1.5 rounded-md border border-line bg-navy-900 py-2" data-port={r.id}>
+                <span class="why-led size-1.5 rounded-full"></span>
+                <span class="font-mono text-[0.55rem] text-ink-faint">{r.id}</span>
+              </li>
+            ))}
+          </ul>
+          <ul class="mt-5 space-y-2 border-t border-line pt-4">
+            {services.map((s) => (
+              <li class="flex items-center justify-between font-mono text-[0.68rem] text-ink-muted">
+                <span>{s}</span><span class="h-px w-8 bg-teal-500/50"></span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <!-- Reasons -->
+        {reasons.map((r, i) => (
+          <article class:list={['why-node relative z-10 rounded-2xl border border-line bg-navy-900 p-5 sm:p-6', r.side === 'L' ? 'lg:col-start-1' : 'lg:col-start-3', row(i)]} data-node={r.id} data-side={r.side}>
+            <span aria-hidden="true" class:list={['why-jack absolute top-1/2 size-2.5 -translate-y-1/2 rounded-full border-2 border-navy-800', r.side === 'L' ? 'max-lg:-left-[5px] lg:-right-[5px]' : '-left-[5px]']}></span>
+            <div class="flex items-center gap-3">
+              <span class="why-icon grid size-9 shrink-0 place-items-center rounded-lg border text-teal-300"><Icon name={r.icon} size={18} /></span>
+              <p class="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-ink-faint"><span class="text-teal-400">{r.id}</span> · {r.label}</p>
+            </div>
+            <h3 class="mt-4 text-lg font-semibold text-ink">{r.title}</h3>
+            <p class="mt-1.5 text-sm leading-relaxed text-ink-muted">{r.text}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  /* --on: 0 = waiting for its pulse, 1 = linked. Defaults to linked (no JS, reduced motion). */
+  .why-node { --on: 1; transition: border-color 450ms var(--ease-out-expo); border-color: color-mix(in srgb, var(--color-teal-500) calc(var(--on) * 40%), var(--color-line)); }
+  .why-node > :not(.why-jack) { opacity: calc(0.38 + var(--on) * 0.62); transition: opacity 450ms var(--ease-out-expo); }
+  .why-icon { border-color: color-mix(in srgb, var(--color-teal-500) calc(var(--on) * 35%), var(--color-line)); background: color-mix(in srgb, var(--color-teal-500) calc(var(--on) * 14%), transparent); }
+  .why-jack { background: color-mix(in srgb, var(--color-teal-400) calc(var(--on) * 100%), var(--color-navy-600)); }
+  .why-port { --on: 1; }
+  .why-led { background: color-mix(in srgb, var(--color-teal-300) calc(var(--on) * 100%), var(--color-navy-600)); box-shadow: 0 0 calc(var(--on) * 8px) color-mix(in srgb, var(--color-teal-400) calc(var(--on) * 80%), transparent); }
+
+  [data-why-base] :global(path) { fill: none; stroke: var(--color-line-strong); stroke-width: 1; }
+  [data-why-lit] :global(path) { fill: none; stroke: var(--color-teal-500); stroke-width: 1.25; stroke-dasharray: 1 1; stroke-dashoffset: 0; opacity: 0.75; }
+  [data-why-pulse] :global(path), [data-why-idle] :global(path) {
+    fill: none; stroke: var(--color-teal-300); stroke-width: 2.25; stroke-linecap: round; stroke-dasharray: 0.1 2; stroke-dashoffset: 0.1; opacity: 0;
+  }
+  /* Idle circulation once everything is linked: one pulse at a time, a few seconds apart. */
+  [data-why-net].is-idle [data-why-idle] :global(path) { animation: why-idle 13.2s cubic-bezier(0.45, 0, 0.25, 1) infinite; animation-delay: calc(var(--i) * 2.2s); }
+  @keyframes why-idle {
+    0% { stroke-dashoffset: 0.1; opacity: 0; }
+    1% { opacity: 0.85; }
+    13% { stroke-dashoffset: -1; opacity: 0.85; }
+    14%, 100% { stroke-dashoffset: -1; opacity: 0; }
+  }
+  [data-why-net].is-offscreen [data-why-idle] :global(path) { animation-play-state: paused; }
+  @media (prefers-reduced-motion: reduce) { [data-why-net].is-idle [data-why-idle] :global(path) { animation: none; } }
+</style>
+
+<script>
+  import { gsap, prefersReducedMotion, SCRUB } from '../../scripts/motion';
+
+  const NS = 'http://www.w3.org/2000/svg';
+
+  document.querySelectorAll<HTMLElement>('[data-why]').forEach((root) => {
+    const net = root.querySelector<HTMLElement>('[data-why-net]')!;
+    const svg = root.querySelector<SVGSVGElement>('[data-why-svg]')!;
+    const groups = ['base', 'lit', 'pulse', 'idle'].map((g) => root.querySelector<SVGGElement>(`[data-why-${g}]`)!);
+    const core = root.querySelector<HTMLElement>('[data-why-core]')!;
+    const nodes = [...root.querySelectorAll<HTMLElement>('[data-node]')];
+    const ports = [...root.querySelectorAll<HTMLElement>('[data-port]')];
+
+    // One path per reason in each layer. pathLength=1 lets dash animations ignore the real length.
+    const paths = groups.map((g) => nodes.map((_, i) => {
+      const p = document.createElementNS(NS, 'path');
+      p.setAttribute('pathLength', '1');
+      if (g.dataset.whyIdle !== undefined) p.style.setProperty('--i', String(i));
+      g.append(p);
+      return p;
+    }));
+    const [, lit, pulse] = paths;
+
+    // Orthogonal route with rounded corners through the given points.
+    const route = (pts: [number, number][], r = 10) => {
+      let d = `M${pts[0][0]},${pts[0][1]}`;
+      for (let i = 1; i < pts.length - 1; i++) {
+        const [x0, y0] = pts[i - 1], [x1, y1] = pts[i], [x2, y2] = pts[i + 1];
+        const a = Math.min(r, Math.hypot(x1 - x0, y1 - y0) / 2), b = Math.min(r, Math.hypot(x2 - x1, y2 - y1) / 2);
+        const ux = Math.sign(x1 - x0), uy = Math.sign(y1 - y0), vx = Math.sign(x2 - x1), vy = Math.sign(y2 - y1);
+        d += ` L${x1 - ux * a},${y1 - uy * a} Q${x1},${y1} ${x1 + vx * b},${y1 + vy * b}`;
+      }
+      const [xn, yn] = pts[pts.length - 1];
+      return d + ` L${xn},${yn}`;
+    };
+
+    const draw = () => {
+      const box = net.getBoundingClientRect();
+      const rel = (r: DOMRect) => ({ l: r.left - box.left, r: r.right - box.left, t: r.top - box.top, b: r.bottom - box.top, cy: (r.top + r.bottom) / 2 - box.top });
+      const c = rel(core.getBoundingClientRect());
+      const wide = matchMedia('(min-width: 1024px)').matches;
+      svg.setAttribute('viewBox', `0 0 ${box.width} ${box.height}`);
+      const left = nodes.filter((n) => n.dataset.side === 'L');
+      const right = nodes.filter((n) => n.dataset.side === 'R');
+      nodes.forEach((n, i) => {
+        const r = rel(n.getBoundingClientRect());
+        let pts: [number, number][];
+        if (wide) {
+          // Ports leave the core's side at three heights; each trace bends once in the gutter.
+          const side = n.dataset.side!;
+          const k = (side === 'L' ? left : right).indexOf(n);
+          const py = c.t + (c.b - c.t) * [0.3, 0.5, 0.7][k];
+          const sx = side === 'L' ? c.l : c.r;
+          const ex = side === 'L' ? r.r : r.l;
+          const mx = (sx + ex) / 2 + (side === 'L' ? 1 : -1) * (k - 1) * 10;
+          pts = [[sx, py], [mx, py], [mx, r.cy], [ex, r.cy]];
+        } else {
+          // Trunk down the left edge from under the core, branching right into each reason.
+          const tx = 12;
+          pts = [[tx, c.b], [tx, r.cy], [r.l, r.cy]];
+        }
+        const d = route(pts);
+        paths.forEach((layer) => layer[i].setAttribute('d', d));
+      });
+    };
+    const set = (els: HTMLElement[], i: number, v: number) => els[i].style.setProperty('--on', v.toFixed(3));
+
+    draw();
+    new ResizeObserver(draw).observe(net);
+    if (prefersReducedMotion()) return; // CSS defaults: all linked, no pulses
+
+    // Activation order alternates sides so the pulses read as a sequence.
+    const order = nodes.map((_, i) => i);
+    nodes.forEach((_, i) => { set(nodes, i, 0); set(ports, i, 0); });
+    lit.forEach((p) => { p.style.strokeDashoffset = '1'; });
+
+    const tl = gsap.timeline({
+      defaults: { ease: 'none' },
+      scrollTrigger: {
+        trigger: net, start: 'top 72%', end: 'bottom 62%', scrub: SCRUB,
+        onUpdate: (st) => net.classList.toggle('is-idle', st.progress > 0.995),
+        onLeave: () => net.classList.add('is-idle'),
+        onLeaveBack: () => net.classList.remove('is-idle'),
+      },
+    });
+    const step = 1 / order.length;
+    order.forEach((i, k) => {
+      const t = k * step;
+      const travel = step * 0.8;
+      tl.fromTo(ports[i], { '--on': 0 }, { '--on': 1, duration: step * 0.2, immediateRender: false }, t)
+        .fromTo(pulse[i], { strokeDashoffset: 0.1, opacity: 0 }, { strokeDashoffset: -1, opacity: 1, duration: travel, ease: 'power1.inOut', immediateRender: false }, t)
+        .fromTo(pulse[i], { opacity: 1 }, { opacity: 0, duration: step * 0.15, immediateRender: false }, t + travel)
+        .fromTo(lit[i], { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: travel, ease: 'power1.inOut', immediateRender: false }, t)
+        .fromTo(nodes[i], { '--on': 0 }, { '--on': 1, duration: step * 0.25, ease: 'power2.out', immediateRender: false }, t + travel * 0.9);
+    });
+
+    // The idle loop only runs while the section is on screen.
+    const io = new IntersectionObserver(([e]) => net.classList.toggle('is-offscreen', !e.isIntersecting));
+    io.observe(net);
+  });
+</script>

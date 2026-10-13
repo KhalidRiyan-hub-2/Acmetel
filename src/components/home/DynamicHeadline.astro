@@ -1,0 +1,129 @@
+---
+// Hero h1. The highlighted phrase is edited in place once, like a person rewriting it:
+//   "in the digital age"  → backspaced (key-repeat rhythm)  → "through innovation" typed
+//   "innovation"          → selected with the caret          → "sovereign digital infrastructure" typed over it
+// It runs once on load and then stays. The phrase box is sized by an invisible copy of the longest phrase,
+// so nothing below the headline moves while it types. Reduced motion: the final phrase, no caret.
+// Screen readers always get the final sentence.
+interface Props { class?: string; [attr: string]: unknown }
+const { class: className = '', ...rest } = Astro.props;
+const lead = 'Empowering seamless communication';
+const first = 'in the digital age'; // client copy (content/source/home-current-site.md)
+const final = 'through sovereign digital infrastructure';
+---
+<h1 class:list={['dh', className]} {...rest} data-headline data-first={first} data-final={final}>
+  <span class="sr-only">{lead} {final}</span>
+  <span aria-hidden="true">
+    {lead}
+    <span class="dh-box">
+      <span class="dh-ghost">{final}</span>
+      <span class="dh-live"><span class="dh-text text-gradient" data-dh-text>{first}</span><span class="dh-caret" data-dh-caret></span></span>
+    </span>
+  </span>
+</h1>
+
+<style>
+  /* The box is centred and as wide as the longest version of the sentence (capped so it wraps into two lines per
+     part on wide screens); the text inside stays left-aligned, so typing never moves anything sideways. */
+  .dh { width: fit-content; max-width: min(100%, 13.5em); margin-inline: auto; text-align: left; }
+  /* The phrase always sits on its own line(s); the ghost reserves the height of the longest version.
+     Plain wrapping (not balance) so lines don't re-flow on every keystroke. */
+  .dh-ghost, .dh-live { text-wrap: wrap; }
+  .dh-box { display: grid; }
+  .dh-ghost, .dh-live { grid-area: 1 / 1; }
+  .dh-ghost { visibility: hidden; }
+  .dh-live { white-space: pre-wrap; }
+  .dh-text :global(mark) {
+    background: rgb(34 170 161 / 0.32); color: var(--color-teal-300); -webkit-text-fill-color: var(--color-teal-300);
+    border-radius: 0.06em; padding: 0;
+  }
+  .dh-caret {
+    display: inline-block; width: 0.055em; height: 0.82em; margin-left: 0.04em; vertical-align: -0.06em;
+    background: var(--color-teal-300); border-radius: 1px; opacity: 0;
+  }
+  .dh-caret[data-state='blink'] { opacity: 1; animation: dh-blink 1.06s steps(1, end) infinite; }
+  .dh-caret[data-state='solid'] { opacity: 1; }
+  .dh-caret[data-state='out'] { opacity: 0; transition: opacity 500ms var(--ease-out-expo); }
+  @keyframes dh-blink { 0%, 55% { opacity: 1; } 56%, 100% { opacity: 0; } }
+</style>
+
+<script>
+  import { prefersReducedMotion } from '../../scripts/motion';
+
+  document.querySelectorAll<HTMLElement>('[data-headline]').forEach((h) => {
+    const text = h.querySelector<HTMLElement>('[data-dh-text]')!;
+    const caret = h.querySelector<HTMLElement>('[data-dh-caret]')!;
+    const finalText = h.dataset.final!;
+    if (prefersReducedMotion()) { text.textContent = finalText; return; }
+
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    const jitter = (base: number, spread: number) => base + (Math.random() * 2 - 1) * spread;
+    const caretState = (s: 'blink' | 'solid' | 'out') => { caret.dataset.state = s; };
+    let kept = h.dataset.first!;
+    let selected = '';
+    const render = () => {
+      text.textContent = kept;
+      if (selected) { const m = document.createElement('mark'); m.textContent = selected; text.append(m); }
+    };
+
+    // Typing rhythm: quick within a word, a beat at spaces, a slightly longer one before longer words.
+    const type = async (s: string) => {
+      caretState('solid');
+      for (let i = 0; i < s.length; i++) {
+        kept += s[i];
+        render();
+        const next = s[i + 1];
+        let d = jitter(58, 22);
+        if (s[i] === ' ') d += 70 + (s.indexOf(' ', i + 1) - i > 9 ? 90 : 0);
+        if (next === undefined) d = 0;
+        await sleep(d);
+      }
+    };
+    // Backspace held down: one press, the key-repeat delay, then a steady repeat.
+    const backspace = async (n: number) => {
+      caretState('solid');
+      for (let i = 0; i < n; i++) {
+        kept = kept.slice(0, -1);
+        render();
+        await sleep(i === 0 ? 420 : 34);
+      }
+    };
+    // Shift + arrow: the selection grows leftward one character at a time, with the caret at its leading edge.
+    const selectBack = async (n: number) => {
+      caretState('solid');
+      for (let i = 0; i < n; i++) {
+        selected = kept.slice(-1) + selected;
+        kept = kept.slice(0, -1);
+        render();
+        await sleep(i === 0 ? 160 : 26);
+      }
+    };
+
+    const run = async () => {
+      await sleep(1100);              // let the hero reveal land
+      caretState('blink');
+      await sleep(1250);
+      await backspace(kept.length);
+      await sleep(260);
+      await type('through innovation');
+      caretState('blink');
+      await sleep(1500);
+      await selectBack('innovation'.length);
+      await sleep(380);
+      selected = '';                  // typing replaces the selection
+      await type('sovereign digital infrastructure');
+      caretState('blink');
+      await sleep(2300);
+      caretState('out');
+      if (text.textContent !== finalText) text.textContent = finalText;
+    };
+
+    // Start once the headline is actually on screen (it usually is, at load).
+    const io = new IntersectionObserver((entries) => {
+      if (!entries.some((e) => e.isIntersecting)) return;
+      io.disconnect();
+      run();
+    }, { threshold: 0.5 });
+    io.observe(h);
+  });
+</script>

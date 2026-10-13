@@ -1,0 +1,275 @@
+---
+// ACMeSIM on the homepage: the phone is the anchor and scroll walks through the purchase journey on its screen.
+//
+// The markup IS the final composition (CSS grid: three cards, phone, three cards, in journey order). Motion only
+// adds transform offsets on top, so no-JS, reduced motion and the end of the scroll all show the same layout.
+//
+// Desktop with motion: the phone slides in from the right edge as the section arrives, the section pins, and
+// four scroll steps play on the screen. The cards start stacked where the phone came from and dock one by one
+// beside the phone as their step plays. Mobile: no pin; the phone slides in and its screens follow scroll.
+import Icon, { type IconName } from '../Icon.astro';
+import Button from '../Button.astro';
+import PhoneMockup from '../PhoneMockup.astro';
+import AcmesimScreens from './AcmesimScreens.astro';
+import { acmesimStoreUrl } from '../../data/site';
+
+// Copy: content/source/acmesim.md "Why Choose Us (USPs)", tightened into title + line.
+// Listed in journey order. `slot` is the place in the final composition (L = left of phone, R = right, rows 1–3).
+const cards: { icon: IconName; title: string; text: string; slot: string; step: number }[] = [
+  { icon: 'globe', title: '200+ destinations', text: 'Coverage across 200+ destinations worldwide.', slot: 'L1', step: 1 },
+  { icon: 'dollar', title: 'Up to 80% less', text: 'Compared with roaming charges.', slot: 'L2', step: 2 },
+  { icon: 'lock', title: 'Transparent pricing', text: 'No hidden fees. What you see is what you pay.', slot: 'L3', step: 2 },
+  { icon: 'zap', title: 'Instant activation', text: 'Your eSIM is active in seconds.', slot: 'R1', step: 3 },
+  { icon: 'sim', title: 'No physical SIM', text: 'Nothing to collect, no QR codes.', slot: 'R2', step: 3 },
+  { icon: 'chart', title: 'Real-time usage', text: 'Track your data as you use it.', slot: 'R3', step: 4 },
+];
+const place: Record<string, string> = {
+  L1: 'lg:col-start-1 lg:row-start-1', L2: 'lg:col-start-1 lg:row-start-2', L3: 'lg:col-start-1 lg:row-start-3',
+  R1: 'lg:col-start-3 lg:row-start-1', R2: 'lg:col-start-3 lg:row-start-2', R3: 'lg:col-start-3 lg:row-start-3',
+};
+const steps = ['Choose your destination', 'Select your data plan', 'Install your eSIM instantly', 'You are connected'];
+---
+
+<section id="products" class="acm relative border-y border-line bg-navy-800" data-acmesim>
+  <div class="acm-pin relative overflow-hidden py-16 sm:py-20 lg:flex lg:min-h-screen lg:items-center lg:py-0">
+    <div class="container-x grid gap-12 lg:grid-cols-[minmax(0,0.6fr)_minmax(0,1.4fr)] lg:items-center lg:gap-10 xl:grid-cols-[minmax(0,0.72fr)_minmax(0,1.28fr)] xl:gap-14 lg:pt-16">
+      <div class="relative z-20">
+        <p class="eyebrow mb-4" data-reveal>Products · ACMeSIM</p>
+        <h2 class="text-3xl font-semibold leading-tight text-ink sm:text-4xl lg:text-[2.75rem]" data-reveal>Smart global connectivity, <span class="text-gradient">simplified</span></h2>
+        <p class="mt-5 max-w-md leading-relaxed text-ink-muted" data-reveal>Instant eSIM activation, flexible plans and mobile data in one place. No roaming. No contracts. No hidden fees.</p>
+
+        <ol class="acm-steps mt-8 hidden max-w-sm space-y-3 lg:block" aria-label="How ACMeSIM works">
+          {steps.map((s, i) => (
+            <li class="acm-step flex items-center gap-3 text-sm text-ink-faint" data-step={i + 1}>
+              <span class="grid size-7 shrink-0 place-items-center rounded-full border border-line-strong font-mono text-[0.65rem] tabular-nums">{String(i + 1).padStart(2, '0')}</span>
+              <span>{s}</span>
+            </li>
+          ))}
+        </ol>
+
+        <div class="mt-9 flex flex-wrap gap-3" data-reveal>
+          <Button href="/products/acmesim">Discover ACMeSIM</Button>
+          <Button href={acmesimStoreUrl} variant="outline" external>Get your eSIM</Button>
+        </div>
+      </div>
+
+      <div class="acm-stage relative" data-acm-stage>
+        <ul role="list" class="acm-grid relative grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-[minmax(0,1fr)_13.5rem_minmax(0,1fr)] lg:grid-rows-3 lg:gap-x-7 lg:gap-y-4 xl:grid-cols-[minmax(0,1fr)_15rem_minmax(0,1fr)] xl:gap-x-9">
+          <li class="acm-phone col-span-2 row-start-1 mb-6 lg:col-span-1 lg:col-start-2 lg:row-span-3 lg:row-start-1 lg:mb-0 lg:self-center" data-acm-phone>
+            <PhoneMockup tilt={false} class="w-60! lg:w-[13.5rem]! xl:w-60!"><AcmesimScreens /></PhoneMockup>
+          </li>
+          {cards.map((c) => (
+            <li class:list={['acm-card relative', place[c.slot]]} data-acm-card data-slot={c.slot} data-step={c.step}>
+              <div class="acm-body relative flex h-full flex-col rounded-2xl border border-line bg-navy-900 p-4 sm:p-5 lg:justify-center" data-reveal>
+                <span aria-hidden="true" class:list={['acm-link absolute top-1/2 hidden h-px w-7 bg-teal-400/60 lg:block xl:w-9', c.slot[0] === 'L' ? 'left-full origin-left' : 'right-full origin-right']}>
+                  <span class:list={['absolute -top-[3px] size-[7px] rounded-full bg-teal-400', c.slot[0] === 'L' ? '-right-[3px]' : '-left-[3px]']}></span>
+                </span>
+                <div class="flex items-center justify-between">
+                  <span class="grid size-9 place-items-center rounded-lg border border-teal-500/30 bg-teal-500/10 text-teal-300"><Icon name={c.icon} size={18} /></span>
+                  <span class="font-mono text-[0.625rem] tracking-[0.14em] text-ink-faint">STEP {String(c.step).padStart(2, '0')}</span>
+                </div>
+                <p class="mt-3 font-display text-[0.95rem] font-semibold leading-snug text-ink">{c.title}</p>
+                <p class="mt-1 text-[0.8125rem] leading-snug text-ink-muted">{c.text}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  </div>
+  <slot />
+</section>
+
+<style>
+  /* Screens live in AcmesimScreens (another component), so these must be global. Default: connected screen only. */
+  .acm :global(.screen) { opacity: 0; }
+  .acm :global(.screen[data-screen='4']) { opacity: 1; }
+  .acm-body { transition: border-color 400ms var(--ease-out-expo); }
+  .acm-card[data-active] .acm-body { border-color: rgb(76 198 189 / 0.55); }
+  .acm-step { transition: color 300ms; }
+  .acm-step[data-current] { color: var(--color-ink); }
+  .acm-step[data-current] > span:first-child { border-color: var(--color-teal-400); color: var(--color-teal-300); }
+  .acm-step[data-done] > span:first-child { border-color: rgb(76 198 189 / 0.5); color: var(--color-teal-400); }
+  @media (max-width: 1023px) { .acm-grid { max-width: 34rem; margin-inline: auto; } }
+</style>
+
+<script>
+  import { gsap, ScrollTrigger, prefersReducedMotion, SCRUB } from '../../scripts/motion';
+
+  document.querySelectorAll<HTMLElement>('[data-acmesim]').forEach((root) => {
+    const pinEl = root.querySelector<HTMLElement>('.acm-pin')!;
+    const grid = root.querySelector<HTMLElement>('.acm-grid')!;
+    const phone = root.querySelector<HTMLElement>('[data-acm-phone]')!;
+    const cards = [...root.querySelectorAll<HTMLElement>('[data-acm-card]')];
+    const bodies = cards.map((c) => c.querySelector<HTMLElement>('.acm-body')!);
+    const links = cards.map((c) => c.querySelector<HTMLElement>('.acm-link')!);
+    const stepEls = [...root.querySelectorAll<HTMLElement>('.acm-step')];
+    const q = <T extends Element = HTMLElement>(s: string) => root.querySelector<T>(s)!;
+    const screens = [1, 2, 3, 4].map((n) => q(`[data-screen="${n}"]`));
+    const destList = q('[data-dest-list]');
+    const destHl = q('[data-dest-hl]');
+    const planHl = q('[data-plan-hl]');
+    const planCheck = q('[data-plan-check]');
+    const planCta = q('[data-plan-cta]');
+    const ring = q<SVGCircleElement>('[data-install-ring]');
+    const sim = q('[data-install-sim]');
+    const done = q('[data-install-done]');
+    const instA = q('[data-install-a]');
+    const instB = q('[data-install-b]');
+    const usage = q('[data-usage]');
+    const rows = [...root.querySelectorAll<HTMLElement>('[data-status-row]')];
+    const pick = Number(getComputedStyle(destList).getPropertyValue('--pick')) || 5;
+    const screenParts = [...screens, destList, destHl, planHl, planCheck, planCta, ring, sim, done, instA, instB, usage, ...rows];
+
+    if (prefersReducedMotion()) return; // markup already shows the final composition and the connected screen
+
+    const rem = () => parseFloat(getComputedStyle(document.documentElement).fontSize);
+    const ease = 'power3.inOut';
+    const ir = { immediateRender: false };
+
+    // Screen sequence, shared by desktop (pinned) and mobile (unpinned). Times are 0–1 of the timeline.
+    const buildScreens = (tl: gsap.core.Timeline) => {
+      gsap.set(screens, { opacity: 0, xPercent: 0 });
+      gsap.set(screens[0], { opacity: 1 });
+      gsap.set(destList, { y: 0 });
+      gsap.set([destHl, planHl], { y: 0 });
+      gsap.set(planCheck, { opacity: 0, scale: 0.4 });
+      gsap.set(ring, { strokeDashoffset: 1 });
+      gsap.set(sim, { opacity: 1, scale: 1 });
+      gsap.set(done, { opacity: 0, scale: 0.5 });
+      gsap.set(instA, { opacity: 1 });
+      gsap.set(instB, { opacity: 0 });
+      gsap.set(rows, { opacity: 0, y: 8 });
+      gsap.set(usage, { scaleX: 0 });
+      const swap = (from: number, to: number, p: number) => {
+        tl.fromTo(screens[from], { xPercent: 0, opacity: 1 }, { xPercent: -28, opacity: 0, duration: 0.05, ease, ...ir }, p)
+          .fromTo(screens[to], { xPercent: 28, opacity: 0 }, { xPercent: 0, opacity: 1, duration: 0.05, ease, ...ir }, p + 0.01);
+      };
+      // 1. The destination list scrolls and the highlight lands on the UAE, then a tap.
+      tl.fromTo(destList, { y: 0 }, { y: () => -(pick - 2) * 3 * rem(), duration: 0.17, ease: 'power2.inOut', ...ir }, 0.03)
+        .fromTo(destHl, { y: 0 }, { y: () => pick * 3 * rem(), duration: 0.17, ease: 'power2.inOut', ...ir }, 0.03)
+        .fromTo(destHl, { scale: 1 }, { scale: 0.96, duration: 0.012, yoyo: true, repeat: 1, ...ir }, 0.205);
+      swap(0, 1, 0.24);
+      // 2. Plan: highlight moves to 10 GB, the check fills, Continue is pressed.
+      tl.fromTo(planHl, { y: 0 }, { y: () => 3.75 * rem(), duration: 0.08, ease: 'power2.inOut', ...ir }, 0.31)
+        .fromTo(planCheck, { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.03, ease: 'back.out(2)', ...ir }, 0.38)
+        .fromTo(planCta, { scale: 1 }, { scale: 0.95, duration: 0.012, yoyo: true, repeat: 1, ...ir }, 0.43);
+      swap(1, 2, 0.47);
+      // 3. Install: ring fills, the SIM icon gives way to a check.
+      tl.fromTo(ring, { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.14, ease: 'power1.inOut', ...ir }, 0.53)
+        .fromTo(sim, { opacity: 1, scale: 1 }, { opacity: 0, scale: 0.6, duration: 0.03, ...ir }, 0.665)
+        .fromTo(done, { opacity: 0, scale: 0.5 }, { opacity: 1, scale: 1, duration: 0.04, ease: 'back.out(1.8)', ...ir }, 0.67)
+        .fromTo(instA, { opacity: 1 }, { opacity: 0, duration: 0.02, ...ir }, 0.665)
+        .fromTo(instB, { opacity: 0 }, { opacity: 1, duration: 0.02, ...ir }, 0.675);
+      swap(2, 3, 0.71);
+      // 4. Connected: status rows arrive and usage starts to count.
+      tl.fromTo(rows, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.04, stagger: 0.025, ease: 'power2.out', ...ir }, 0.76)
+        .fromTo(usage, { scaleX: 0 }, { scaleX: 0.32, duration: 0.1, ease: 'power1.out', ...ir }, 0.78);
+    };
+
+    ScrollTrigger.matchMedia({
+      // ---------------------------------------------------------------- desktop: pinned story
+      '(min-width: 1024px)': () => {
+        // Take over from the generic reveal so the two don't fight.
+        bodies.forEach((c) => { c.removeAttribute('data-reveal'); c.classList.add('is-visible'); });
+        const slotOrder = 'L1 L2 L3 R1 R2 R3';
+        const order = [...cards].sort((a, b) => slotOrder.indexOf(a.dataset.slot!) - slotOrder.indexOf(b.dataset.slot!));
+        const stackHome = cards.find((c) => c.dataset.slot === 'R2')!;
+        // When each card leaves the stack (timeline time, 0–1). Matches the screen steps in buildScreens.
+        const dockAt: Record<string, number> = { L1: 0.07, L2: 0.3, L3: 0.37, R1: 0.53, R2: 0.6, R3: 0.76 };
+        const T = order.map((c) => dockAt[c.dataset.slot!]);
+        const DOCK = 0.13, CLOSE = 0.08, LINK = 0.05;
+
+        // Offsets from each grid slot to the stack (offsetLeft/Top ignore transforms). Measured on refresh.
+        let base: { x: number; y: number }[] = [];
+        const measure = () => { base = order.map((c) => ({ x: stackHome.offsetLeft - c.offsetLeft + 26, y: stackHome.offsetTop - c.offsetTop })); };
+        measure();
+
+        const ease3 = gsap.parseEase('power3.inOut');
+        const ease2 = gsap.parseEase('power2.out');
+        const prog = (t: number, a: number, d: number) => Math.min(1, Math.max(0, (t - a) / d));
+        // Card poses are a pure function of timeline time, so any scroll position (forward, backward or a jump)
+        // always produces the same composition.
+        const layout = (t: number) => {
+          order.forEach((c, i) => {
+            let k = 0; // depth in the stack, easing down as the cards above it leave
+            for (let j = 0; j < i; j++) k += 1 - ease2(prog(t, T[j] + 0.04, CLOSE));
+            const d = ease3(prog(t, T[i], DOCK));
+            const sx = base[i].x, sy = base[i].y - k * 9;
+            const x = sx * (1 - d);
+            const y = sy * (1 - d) - Math.sin(Math.PI * d) * 18; // slight lift while travelling
+            const r = -k * 1.2 * (1 - d);
+            const sc = 1 - k * 0.035 * (1 - d);
+            const o = 1 - (1 - Math.min(1, Math.max(0, 4 - k))) * (1 - d);
+            c.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) rotate(${r.toFixed(2)}deg) scale(${sc.toFixed(4)})`;
+            c.style.opacity = o.toFixed(3);
+            links[cards.indexOf(c)].style.transform = `scaleX(${ease2(prog(t, T[i] + DOCK - 0.01, LINK)).toFixed(3)})`;
+          });
+        };
+
+        gsap.set(phone, { zIndex: 30 });
+        order.forEach((c, i) => { c.style.zIndex = String(20 - i); });
+
+        // Entry: the phone slides in from the side as the section arrives; the stack it passes over settles.
+        // Only the phone and the inner card bodies move here, never the elements the pinned timeline owns.
+        const phoneStartX = () => window.innerWidth - (grid.getBoundingClientRect().left + phone.offsetLeft) - phone.offsetWidth * 0.32;
+        const entry = gsap.timeline({
+          scrollTrigger: { trigger: root, start: 'top 72%', end: 'top top', scrub: SCRUB, invalidateOnRefresh: true },
+        });
+        entry.fromTo(phone, { x: phoneStartX, rotation: 9, y: 30 }, { x: 0, rotation: 0, y: 0, ease: 'back.out(1.25)', duration: 1 }, 0)
+          .fromTo(order.map((c) => bodies[cards.indexOf(c)]), { x: 80, y: 24, rotation: 6, opacity: 0 },
+            { x: 0, y: 0, rotation: 0, opacity: 1, ease: 'power3.out', duration: 0.75, stagger: 0.03 }, 0.18);
+
+        // Pinned sequence.
+        let last = -1;
+        const bounds = [0.24, 0.47, 0.71];
+        const syncState = (p: number) => {
+          const step = p < bounds[0] ? 1 : p < bounds[1] ? 2 : p < bounds[2] ? 3 : 4;
+          const key = step * 2 + (p > 0.02 ? 1 : 0);
+          if (key === last) return;
+          last = key;
+          stepEls.forEach((el, i) => { el.toggleAttribute('data-current', i + 1 === step); el.toggleAttribute('data-done', i + 1 < step); });
+          cards.forEach((c) => c.toggleAttribute('data-active', Number(c.dataset.step) === step && p > 0.02));
+        };
+        const tl = gsap.timeline({
+          defaults: { ease },
+          scrollTrigger: {
+            trigger: pinEl, start: 'top top', end: () => `+=${Math.round(window.innerHeight * 2.4)}`,
+            pin: true, scrub: SCRUB, invalidateOnRefresh: true,
+            onRefresh: () => { measure(); layout(tl.time()); },
+          },
+        });
+        buildScreens(tl);
+        // One driver for the cards and the step list, spanning the whole timeline.
+        const driver = { t: 0 };
+        tl.fromTo(driver, { t: 0 }, { t: 1, duration: 1, ease: 'none', immediateRender: false, onUpdate: () => { layout(driver.t); syncState(driver.t); } }, 0);
+        tl.to({}, { duration: 0.1 }); // hold the locked composition before the pin releases
+        layout(0);
+        syncState(0);
+
+        return () => {
+          entry.scrollTrigger?.kill(); entry.kill();
+          tl.scrollTrigger?.kill(); tl.kill();
+          gsap.set([phone, ...cards, ...bodies, ...links, ...screenParts], { clearProps: 'all' });
+          stepEls.forEach((el) => { el.removeAttribute('data-current'); el.removeAttribute('data-done'); });
+          cards.forEach((c) => c.removeAttribute('data-active'));
+        };
+      },
+
+      // ---------------------------------------------------------------- mobile / tablet: no pin
+      '(max-width: 1023px)': () => {
+        const entry = gsap.fromTo(phone, { x: () => window.innerWidth * 0.62, rotation: 8 }, {
+          x: 0, rotation: 0, ease: 'back.out(1.2)',
+          scrollTrigger: { trigger: phone, start: 'top bottom', end: 'top 50%', scrub: SCRUB, invalidateOnRefresh: true },
+        });
+        const tl = gsap.timeline({ defaults: { ease }, scrollTrigger: { trigger: phone, start: 'top 45%', end: 'bottom 30%', scrub: SCRUB } });
+        buildScreens(tl);
+        return () => {
+          entry.scrollTrigger?.kill(); entry.kill();
+          tl.scrollTrigger?.kill(); tl.kill();
+          gsap.set([phone, ...screenParts], { clearProps: 'all' });
+        };
+      },
+    });
+  });
+</script>

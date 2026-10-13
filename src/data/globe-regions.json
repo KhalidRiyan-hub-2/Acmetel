@@ -1,0 +1,9 @@
+{
+  "_comment": "High-detail globe layers. Read by scripts/build-globe-data.mjs (to build them) and src/data/globe.ts (to draw them). Boxes are lon/lat degrees; boxes must not overlap.",
+  "regions": [
+    { "id": "gulf", "file": "globe-gulf.bin", "box": { "lon0": 46, "lon1": 62, "lat0": 18, "lat1": 31 }, "highlight": ["784"], "tol": 0.004, "minLen": 0 },
+    { "id": "route", "file": "globe-route.bin", "box": { "lon0": 62.5, "lon1": 91, "lat0": 23, "lat1": 46.5 }, "highlight": ["586", "156"], "tol": 0.006, "minLen": 0.05 },
+    { "id": "usa", "file": "globe-usa.bin", "box": { "lon0": -126, "lon1": -65, "lat0": 23, "lat1": 50.5 }, "highlight": ["840"], "tol": 0.025, "minLen": 0.3 }
+  ],
+  "osm": { "id": "dubai", "file": "globe-dubai-osm.bin", "box": { "lon0": 54.95, "lon1": 55.65, "lat0": 24.85, "lat1": 25.4 } }
+}

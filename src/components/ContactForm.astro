@@ -47,7 +47,7 @@ const label = 'text-sm font-medium text-ink';
     form.addEventListener('submit', (e) => {
       if (location.hostname.endsWith('netlify.app')) return;
       e.preventDefault();
-      form.querySelector('[data-form-status]')!.textContent = 'Thanks — prototype form, nothing was sent.';
+      form.querySelector('[data-form-status]')!.textContent = 'Thanks. This is a prototype form, so nothing was sent.';
       form.reset();
     });
   });

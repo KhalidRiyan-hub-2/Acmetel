@@ -28,6 +28,6 @@ const variants = {
   class:list={[base, sizes[size], variants[variant], className]}
   {...(external ? { target: '_blank', rel: 'noopener' } : {})}
 >
-  <slot />
+  <span data-flicker><slot /></span>
   {arrow && <Icon name={external ? 'arrow-up-right' : 'arrow-right'} size={18} class="transition-transform duration-200 group-hover:translate-x-0.5" />}
 </a>

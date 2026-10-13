@@ -6,14 +6,17 @@ import Button from '../components/Button.astro';
 import Icon from '../components/Icon.astro';
 import FeatureCard from '../components/FeatureCard.astro';
 import StatStrip from '../components/StatStrip.astro';
-import PhoneMockup from '../components/PhoneMockup.astro';
 import ContactForm from '../components/ContactForm.astro';
 import GlobeHero from '../components/home/GlobeHero.astro';
+import DynamicHeadline from '../components/home/DynamicHeadline.astro';
 import BrandBelt from '../components/home/BrandBelt.astro';
 import DealCards from '../components/home/DealCards.astro';
 import ServicesRail from '../components/home/ServicesRail.astro';
 import LiveNetwork from '../components/home/LiveNetwork.astro';
-import { SIS_BASE, acmesimStoreUrl } from '../data/site';
+import WhyAcmetel from '../components/home/WhyAcmetel.astro';
+import AcmesimStory from '../components/home/AcmesimStory.astro';
+import Statement from '../components/Statement.astro';
+import { SIS_BASE } from '../data/site';
 
 // Copy sources: content/source/home-current-site.md and content/source/about.md.
 // Section order and merges: docs/superpowers/specs/2026-10-01-homepage-motion-design.md
@@ -26,30 +29,21 @@ const stats = [
   { value: 16, label: 'Years in the industry' },
 ];
 
+// What Acmetel does (content/source/about.md pillars). The "why" lives in WhyAcmetel directly below.
 const whoCards = [
-  { icon: 'globe', title: 'Three continents', text: 'Global presence with local reliability' },
-  { icon: 'headset', title: '24/7 NOC', text: 'Round-the-clock network operations' },
-  { icon: 'users', title: 'Built for partners', text: 'Agencies, operators and enterprises' },
-  { icon: 'sparkles', title: 'Innovation-first', text: 'Network intelligence and automation' },
+  { icon: 'messages', title: 'Telecom solutions', text: 'A2P messaging, wholesale voice and SMS firewall' },
+  { icon: 'network', title: 'Global connectivity', text: 'High-capacity terrestrial and cross-border data networks' },
+  { icon: 'cloud', title: 'Cloud & data centers', text: 'Public, private and hybrid cloud infrastructure' },
+  { icon: 'cpu', title: 'Digital innovation', text: 'AI-driven automation, DPI and the ACMeSIM eSIM app' },
 ] as const;
 
 const services = [
-  { icon: 'phone', title: 'Voice', href: '/services/voice', text: 'Wholesale voice termination with strong footholds in Pakistan and the GCC, expanding into Africa — backed by Tier-1 carriers.' },
+  { icon: 'phone', title: 'Voice', href: '/services/voice', text: 'Wholesale voice termination with strong footholds in Pakistan and the GCC, now expanding into Africa. Backed by Tier-1 carriers.' },
   { icon: 'messages', title: 'Messaging', href: '/services/messaging', text: 'A2P, P2A and P2P SMS with direct MNO connectivity across EMEA, plus firewall and silent network authentication.' },
-  { icon: 'layers', title: 'Sovereign Intelligence Stack', href: SIS_BASE, text: 'Connectivity, data center, cloud, AI automation and network intelligence — your sovereign digital foundation.' },
+  { icon: 'layers', title: 'Sovereign Intelligence Stack', href: SIS_BASE, text: 'Connectivity, data center, cloud, AI automation and network intelligence. Build your sovereign digital foundation.' },
   { icon: 'hash', title: 'DID & Toll-Free', href: '/services/voice#did-toll-free', text: 'Local, toll-free and international toll-free numbers in 25+ countries, connected straight to your PBX.' },
   { icon: 'search', title: 'MNP Lookup', text: 'Exclusive partner for Pakistan’s MNP database and verification services for international traffic.' },
 ] as const;
-
-// "Why Acmetel" points that aren't already stats in the hero.
-const whyPoints = [
-  'Direct MNO connectivity and exclusive operator partnerships',
-  'End-to-end portfolio: voice, SMS, eSIM, infrastructure',
-  'Round-the-clock network operations support',
-  'Global presence across three continents',
-  'Built for agencies, operators and enterprises',
-  'Investment in network intelligence and automation',
-];
 
 const events = [
   { name: 'Capacity Europe', date: 'Oct 13–15, 2026', place: 'London, England' },
@@ -66,32 +60,25 @@ const posts = [
 
 <Base title="Home" description="Acmetel delivers wholesale voice, A2P messaging, SMS firewall, eSIM and sovereign digital infrastructure for telecom operators and enterprises worldwide.">
   <!-- 1. Hero -->
-  <section class="relative overflow-hidden pt-28 pb-12 sm:pt-36">
+  <section class="relative overflow-hidden pt-28 pb-12 sm:pt-32">
     <div aria-hidden="true" class="pointer-events-none absolute inset-0">
       <div class="bg-grid absolute inset-0"></div>
-      <div class="absolute -left-32 top-0 h-[36rem] w-[36rem] animate-aurora rounded-full bg-teal-500/20 blur-3xl"></div>
-      <div class="absolute -right-40 top-40 h-[30rem] w-[30rem] animate-aurora rounded-full bg-green-700/35 blur-3xl [animation-delay:-8s]"></div>
+      <div class="absolute -left-32 top-0 h-[36rem] w-[36rem] animate-aurora rounded-full bg-teal-500/12 blur-3xl"></div>
+      <div class="absolute -right-40 top-40 h-[30rem] w-[30rem] animate-aurora rounded-full bg-green-700/25 blur-3xl [animation-delay:-8s]"></div>
     </div>
-    <div class="container-x relative grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
-      <div>
-        <p class="eyebrow mb-6 inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-3 py-1.5" data-reveal>
-          <span class="relative flex size-2"><span class="absolute inline-flex size-full animate-ping rounded-full bg-teal-400 opacity-75"></span><span class="relative inline-flex size-2 rounded-full bg-teal-400"></span></span>
-          Solutions that empower telecom operators
-        </p>
-        <h1 class="text-[2.4rem] font-bold leading-[1.05] text-ink sm:text-6xl lg:text-7xl" data-reveal style="--reveal-delay:80ms">
-          Empowering seamless communication <span class="text-gradient">in the digital age</span>
-        </h1>
-        <p class="mt-7 max-w-xl text-lg leading-relaxed text-ink-muted" data-reveal style="--reveal-delay:160ms">
-          From voice and messaging to eSIM and sovereign digital infrastructure — one partner for the full connectivity stack.
-        </p>
-        <div class="mt-10 flex flex-wrap gap-3" data-reveal style="--reveal-delay:240ms">
-          <Button href="#services" size="lg">Explore services</Button>
-          <Button href="/contact" variant="outline" size="lg" arrow={false}>Talk to our team</Button>
-        </div>
+    <div class="container-x relative">
+      <!-- Headline, sub-line and CTAs centred; the headline box keeps its text left-aligned (see DynamicHeadline). -->
+      <DynamicHeadline class="text-[2.35rem] font-bold leading-[1.06] text-ink sm:text-[3.4rem] lg:text-[4rem] xl:text-[4.5rem]" data-reveal style="--reveal-delay:80ms" />
+      <p class="mx-auto mt-7 max-w-xl text-center text-lg leading-relaxed text-ink-muted" data-reveal style="--reveal-delay:160ms">
+        Voice, messaging, eSIM and the networks underneath them. One partner for the full connectivity stack.
+      </p>
+      <div class="mt-9 flex flex-wrap justify-center gap-3" data-reveal style="--reveal-delay:240ms">
+        <Button href="#services" size="lg">Explore services</Button>
+        <Button href="/contact" variant="outline" size="lg" arrow={false}>Talk to our team</Button>
       </div>
-      <GlobeHero />
+      <GlobeHero class="mt-12 sm:mt-16" />
+      <div class="mt-12 sm:mt-14"><StatStrip stats={stats} /></div>
     </div>
-    <div class="container-x relative mt-12 sm:mt-14"><StatStrip stats={stats} /></div>
   </section>
 
   <!-- 2. Brand belt -->
@@ -105,76 +92,43 @@ const posts = [
     <DealCards cards={[...whoCards]}>
       <SectionHeading eyebrow="Who we are" title="A platform that encompasses" highlight="business ideas">
         <p class="mt-6 leading-relaxed text-ink-muted">
-          Acmetel is a leading provider of innovative and reliable telecommunication solutions. We founded our company with the goal of delivering top-notch services to businesses of all sizes, and we’ve been doing so for over a decade. Our team of experts is dedicated to helping our clients stay connected, efficient, and competitive.
+          Acmetel provides reliable telecommunication services to businesses of every size, and has done for over a decade. Our team has deep industry experience and one job: keeping clients connected, efficient and competitive.
         </p>
         <div class="mt-8"><Button href="/about" variant="outline">Our story</Button></div>
       </SectionHeading>
     </DealCards>
   </Section>
 
-  <!-- 4. Services -->
+  <!-- Statement: live-site hero line (home-current-site.md "Hero"), letters assemble on scroll. -->
+  <Statement text="Empowering seamless communication" highlight="in the digital age" bg="glow" />
+
+  <!-- 4. Why choose Acmetel -->
+  <WhyAcmetel />
+
+  <!-- 5. Services -->
   <ServicesRail id="services" services={[...services]}>
     <SectionHeading eyebrow="Services" title="The primary services" highlight="we offer" lede="Carrier-grade voice and messaging, and the sovereign infrastructure underneath them." />
   </ServicesRail>
 
-  <!-- 5. Products + ACMeSIM -->
-  <Section tone="raised" id="products">
-    <SectionHeading eyebrow="Products" title="Our wide range of" highlight="products" />
-    <div class="mt-10 grid gap-5 lg:grid-cols-[1.35fr_1fr]">
-      <article class="glass spotlight relative grid gap-8 overflow-hidden p-7 sm:grid-cols-[1fr_auto] sm:p-9" data-reveal>
-        <div aria-hidden="true" class="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-teal-500/20 blur-3xl"></div>
-        <div class="relative">
-          <p class="eyebrow">Featured · ACMeSIM</p>
-          <h3 class="mt-4 text-3xl font-semibold text-ink">Smart global connectivity, <span class="text-gradient">simplified</span></h3>
-          <p class="mt-4 leading-relaxed text-ink-muted">Instant eSIM activation, flexible plans and seamless mobile data in 200+ destinations. No roaming. No contracts. No hidden fees.</p>
-          <ul class="mt-6 grid gap-2.5 text-sm text-ink sm:grid-cols-2">
-            {['Activation in seconds', 'Save up to 80% vs roaming', '5G / 4G worldwide', 'Hotspot for multiple devices'].map((t) => (
-              <li class="flex items-center gap-2"><Icon name="zap" size={16} class="text-teal-400" />{t}</li>
-            ))}
-          </ul>
-          <div class="mt-8 flex flex-wrap gap-3">
-            <Button href="/products/acmesim">Discover ACMeSIM</Button>
-            <Button href={acmesimStoreUrl} variant="outline" external>Get your eSIM</Button>
-          </div>
-        </div>
-        <PhoneMockup class="w-48! sm:w-52!">
-          <p class="text-[0.65rem] text-ink-faint">Destination</p>
-          <p class="font-display text-base font-semibold text-ink">United Kingdom</p>
-          <div class="mt-3 rounded-xl bg-gradient-to-br from-teal-500 to-green-700 p-3 text-navy-950">
-            <p class="text-[0.6rem] font-semibold opacity-80">ACTIVE PLAN</p>
-            <p class="mt-0.5 font-display text-lg font-bold">10 GB · 30 days</p>
-            <div class="mt-2 h-1 rounded-full bg-navy-950/20"><div class="h-full w-2/3 rounded-full bg-navy-950/70"></div></div>
-          </div>
-          <div class="mt-3 space-y-1.5">
-            {['5G connected', 'Hotspot on'].map((t) => (
-              <div class="flex items-center justify-between rounded-lg border border-line bg-white/[0.03] px-2.5 py-2 text-[0.65rem] text-ink"><span>{t}</span><span class="size-1.5 rounded-full bg-teal-400"></span></div>
-            ))}
-          </div>
-        </PhoneMockup>
-      </article>
-      <div class="grid gap-5" data-stagger>
-        <FeatureCard icon="shield" title="SMS Firewall" href="/services/messaging#firewall" text="Cutting-edge filtering and blocking policy that safeguards revenue and the subscriber experience." class="p-5! sm:p-6!" />
-        <FeatureCard icon="activity" title="Fraud Management" href="/services/voice#fraud-management" text="Real-time detection and revenue assurance against fraud — a major concern for operators." class="p-5! sm:p-6!" />
+  <!-- 6. Products: ACMeSIM story, then the operator products -->
+  <AcmesimStory>
+    <div class="container-x pb-16 sm:pb-20">
+      <div class="flex flex-wrap items-end justify-between gap-4 border-t border-line pt-12">
+        <h3 class="text-2xl font-semibold text-ink">Products for operators</h3>
+        <p class="max-w-md text-sm text-ink-muted">Protection for messaging and voice revenue, from filtering to fraud detection and network testing.</p>
+      </div>
+      <div class="mt-8 grid gap-5 md:grid-cols-3" data-stagger>
+        <FeatureCard icon="shield" title="SMS Firewall" href="/services/messaging#firewall" text="Filtering techniques and a blocking policy that safeguard revenue and the subscriber experience." class="p-5! sm:p-6!" />
+        <FeatureCard icon="activity" title="Fraud Management" href="/services/voice#fraud-management" text="Real-time detection and revenue assurance against fraud, a major concern for operators." class="p-5! sm:p-6!" />
         <FeatureCard icon="radar" title="Probe Testing" href="/services/messaging#penetration-testing" text="Find grey routes, bypass and SIM boxes before fraudsters exploit them." class="p-5! sm:p-6!" />
       </div>
     </div>
-  </Section>
+  </AcmesimStory>
 
-  <!-- 6. Live network (absorbs "Why Acmetel") -->
-  <LiveNetwork>
-    <div class="flex flex-col gap-5 lg:flex-row lg:items-center">
-      <p class="eyebrow shrink-0">Why Acmetel</p>
-      <ul class="flex flex-wrap gap-2.5" data-stagger>
-        {whyPoints.map((p) => (
-          <li class="flex items-center gap-2 rounded-full border border-line bg-white/[0.03] px-3.5 py-2 text-sm text-ink">
-            <Icon name="check" size={15} class="text-teal-400" />{p}
-          </li>
-        ))}
-      </ul>
-    </div>
-  </LiveNetwork>
+  <!-- 7. Live network -->
+  <LiveNetwork />
 
-  <!-- 7. Latest: events + blog -->
+  <!-- 8. Latest: events + blog -->
   <Section id="latest">
     <SectionHeading eyebrow="Latest" title="Meet us and" highlight="read our thinking" />
     <div class="mt-10 grid gap-10 lg:grid-cols-2 lg:gap-12">
@@ -212,7 +166,7 @@ const posts = [
     </div>
   </Section>
 
-  <!-- 8. Contact -->
+  <!-- 9. Contact -->
   <Section tone="raised">
     <div class="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
       <SectionHeading eyebrow="Contact" title="Let’s build what’s" highlight="next together" lede="Join a global network of trusted telecom partners. Tell us about your traffic, your network or your next launch." />

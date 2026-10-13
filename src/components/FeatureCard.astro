@@ -7,7 +7,7 @@ const Tag = href ? 'a' : 'article';
 ---
 <Tag id={id} href={href} class:list={['glass spotlight group flex h-full flex-col p-6 transition-transform duration-300 sm:p-7', href && 'hover:-translate-y-1', className]}>
   {icon && (
-    <div class="mb-5 grid size-12 place-items-center rounded-xl border border-teal-500/30 bg-gradient-to-br from-teal-500/25 to-green-700/20 text-teal-300 shadow-[0_0_24px_-6px_rgb(34_170_161/0.6)]">
+    <div class="mb-5 grid size-12 place-items-center rounded-xl border border-teal-500/30 bg-teal-500/10 text-teal-300" data-pop>
       <Icon name={icon} />
     </div>
   )}

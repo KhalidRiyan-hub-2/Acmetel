@@ -8,7 +8,8 @@
     "build": "astro build",
     "preview": "astro preview",
     "check": "astro check",
-    "build:globe-data": "node scripts/build-land-dots.mjs"
+    "build:globe-data": "node scripts/build-globe-data.mjs",
+    "build:osm-dubai": "node scripts/build-osm-dubai.mjs"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.3.0",
@@ -26,6 +27,7 @@
   },
   "devDependencies": {
     "@types/three": "^0.186.0",
+    "playwright": "^1.64.0",
     "topojson-client": "^3.1.0",
     "world-atlas": "^2.0.2"
   }

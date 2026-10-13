@@ -13,10 +13,10 @@ import { SIS_BASE } from '../../../data/site';
 
 // Copy source: content/source/sovereign-intelligence-stack.md, "Page 3 – Cloud Computing (Overview)".
 const solutions = [
-  { icon: 'cloud', title: 'Private Cloud', text: 'Take full control of your infrastructure with a secure, scalable private cloud built around your requirements. Designed for performance, compliance, and flexibility, so you can run critical workloads with confidence.' },
-  { icon: 'layers', title: 'Cloud Management Platform (CMP)', text: 'Take full control of your environment with a secure, compliant, and fully customizable private cloud, designed for businesses that need visibility, governance, and data sovereignty.' },
-  { icon: 'headset', title: 'Managed Services', text: 'Outsource your cloud monitoring, management and operations and get the freedom you deserve.' },
-  { icon: 'users', title: 'Professional Services', text: 'From discovery to deployment, our experts help you design, build, and scale your cloud infrastructure on optimal cost while ensuring business continuity.' },
+  { icon: 'cloud', title: 'Private Cloud', text: 'Take full control of your infrastructure with a secure, scalable private cloud built around your requirements. It is designed for performance, compliance and flexibility, so you can run critical workloads with confidence.' },
+  { icon: 'layers', title: 'Cloud Management Platform (CMP)', text: 'A secure, compliant and fully customizable private cloud that puts your environment under your control. Built for businesses that need visibility, governance and data sovereignty.' },
+  { icon: 'headset', title: 'Managed Services', text: 'Outsource cloud monitoring, management and operations to us and free your team to focus elsewhere.' },
+  { icon: 'users', title: 'Professional Services', text: 'From discovery to deployment, our experts help you design, build and scale your cloud infrastructure at optimal cost while maintaining business continuity.' },
 ] as const;
 const traits = [
   { icon: 'lock', t: 'Secure' },
@@ -54,7 +54,7 @@ const traits = [
     <SplitSection>
       <SectionHeading eyebrow="Overview" title="Innovate faster," highlight="grow with confidence">
         <p class="mt-6 leading-relaxed text-ink-muted">
-          Acme CloudHub delivers private cloud solutions designed to give you the control, flexibility, and performance your business needs. Built for organizations of all sizes, it provides a secure, scalable, and vendor-neutral environment, so you can innovate faster, optimize workloads, and grow with confidence.
+          Acme CloudHub delivers private cloud solutions that give your business the control, flexibility and performance it needs. Built for organizations of all sizes, it is a secure, scalable and vendor-neutral environment where you can innovate faster, optimize workloads and grow with confidence.
         </p>
       </SectionHeading>
       <div slot="visual" class="grid gap-4 sm:grid-cols-3" data-stagger>
@@ -70,7 +70,7 @@ const traits = [
 
   <!-- Solutions -->
   <Section id="solutions" tone="raised">
-    <SectionHeading eyebrow="Our cloud solutions" title="A carefully crafted" highlight="portfolio of services" lede="We provide FREE personalized guidance to choose the right Cloud Solution that solves your biggest problems and suits best for your vision and strategy." />
+    <SectionHeading eyebrow="Our cloud solutions" title="A carefully crafted" highlight="portfolio of services" lede="We offer free, personalized guidance to help you choose the cloud solution that solves your biggest problems and best fits your vision and strategy." />
     <div class="mt-14 grid gap-5 md:grid-cols-6" data-stagger>
       <FeatureCard class="md:col-span-3" icon={solutions[0].icon} title={solutions[0].title} text={solutions[0].text} />
       <FeatureCard class="md:col-span-3" icon={solutions[1].icon} title={solutions[1].title} text={solutions[1].text} />
