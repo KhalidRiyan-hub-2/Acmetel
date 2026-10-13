@@ -7,7 +7,8 @@ let pw;
 try { pw = require('playwright'); } catch { pw = require('/opt/node22/lib/node_modules/playwright'); }
 const [outDir = 'screenshots', ...paths] = process.argv.slice(2);
 const routes = paths.length ? paths : ['/'];
-const browser = await pw.chromium.launch();
+// Bundled Chromium isn't available on every OS (e.g. macOS 12); fall back to installed Chrome.
+const browser = await pw.chromium.launch().catch(() => pw.chromium.launch({ channel: 'chrome' }));
 const errors = [];
 for (const width of [375, 1440]) {
   const page = await browser.newPage({ viewport: { width, height: 900 }, reducedMotion: process.env.REDUCED ? 'reduce' : 'no-preference' });

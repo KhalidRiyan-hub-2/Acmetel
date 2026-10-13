@@ -1,6 +1,5 @@
 ---
-// "Live network" band: heartbeat panel + radar panel (both SIMULATED, labelled as such), then a default slot
-// for the "Why Acmetel" chip row. Data and the simulated feed live in src/data/live.ts.
+// "Live network" band: heartbeat panel + radar panel (both SIMULATED, labelled as such), then an optional default slot. Data and the simulated feed live in src/data/live.ts.
 import Section from '../Section.astro';
 import SectionHeading from '../SectionHeading.astro';
 import Icon from '../Icon.astro';
@@ -21,7 +20,7 @@ const blips = dests.map((d, i) => {
 });
 ---
 
-<Section tone="glow" id="live-network">
+<Section tone="glow" bg="grid" id="live-network">
   <div data-live-network>
     <SectionHeading
       eyebrow="Network operations"
@@ -114,7 +113,7 @@ const blips = dests.map((d, i) => {
       </div>
     </div>
 
-    <div class="mt-10"><slot /></div>
+    {Astro.slots.has('default') && <div class="mt-10"><slot /></div>}
   </div>
 </Section>
 

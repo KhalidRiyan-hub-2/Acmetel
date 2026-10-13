@@ -19,19 +19,19 @@ const facts = [
   { value: '24/7', label: 'Technical expertise' },
 ];
 const commitments = [
-  { icon: 'cpu', title: 'High-Density & AI-Ready Architecture', text: 'Deploy next-generation workloads seamlessly and specialized power configurations for AI training and inference.' },
-  { icon: 'activity', title: 'Resilient Uptime Operations', text: 'Protect your business from disruption with an N+1 power and cooling architecture yielding an industry-leading 99.99% SLA uptime guarantee.' },
-  { icon: 'lock', title: 'Fortified Physical & Data Security', text: 'Rest easy knowing your assets are protected by strict ISO/PCI-DSS compliance frameworks, 24/7 on-site physical security, and absolute visitor and asset logging.' },
+  { icon: 'cpu', title: 'High-Density & AI-Ready Architecture', text: 'Deploy high-density workloads on specialized power configurations for AI training and inference.' },
+  { icon: 'activity', title: 'Resilient Uptime Operations', text: 'N+1 power and cooling architecture protects your business from disruption and backs an industry-leading 99.99% SLA uptime guarantee.' },
+  { icon: 'lock', title: 'Fortified Physical & Data Security', text: 'Your assets are protected by strict ISO/PCI-DSS compliance frameworks, 24/7 on-site physical security and complete visitor and asset logging.' },
   { icon: 'network', title: 'Carrier-Neutral Ecosystem', text: 'Avoid vendor lock-in. Connect directly to a diverse, carrier-neutral ecosystem integrated with 150+ global carrier networks for optimal routing and redundancy.' },
-  { icon: 'headset', title: '24/7 Smart Hands Support', text: 'Minimize your overhead. Leverage our round-the-clock proactive monitoring and expert on-site technical support to handle hardware tasks whenever you need them.' },
+  { icon: 'headset', title: '24/7 Smart Hands Support', text: 'Minimize your overhead. Our round-the-clock proactive monitoring and expert on-site technical support handle hardware tasks whenever you need them.' },
 ] as const;
 const solutions = [
-  { icon: 'building', title: 'HyperScaler Region Hosting', text: 'Massive-scale deployments engineered for hyperscale operators demanding dedicated, ultra-high-density footprints.' },
-  { icon: 'layers', title: 'Cloud Availability Zone Hosting', text: 'Strategic node isolation and multi-zone deployment spaces to guarantee flawless cloud reliability and continuous application availability.' },
-  { icon: 'globe', title: 'CDN Node Hosting', text: 'Edge-optimized placements designed to house content delivery networks, drastically reducing latency and maximizing content throughput.' },
-  { icon: 'zap', title: 'Professional Gaming Edge Servers Hosting', text: 'Ultra-low latency infrastructure featuring high-performance edge compute environments tailored explicitly for the modern gaming ecosystem.' },
-  { icon: 'server', title: 'Colocation Services', text: 'Secure, flexible, and premium rack-space environments tailored to accommodate everything from single enterprise cabinets to complex private cages.' },
-  { icon: 'shield', title: 'Disaster Recovery Site Hosting', text: 'Comprehensive business continuity solutions featuring dedicated DR/BCP seats to keep your operations active during unforeseen outages.' },
+  { icon: 'building', title: 'HyperScaler Region Hosting', text: 'Large-scale deployments for hyperscale operators that need dedicated, ultra-high-density footprints.' },
+  { icon: 'layers', title: 'Cloud Availability Zone Hosting', text: 'Node isolation and multi-zone deployment spaces that guarantee cloud reliability and continuous application availability.' },
+  { icon: 'globe', title: 'CDN Node Hosting', text: 'Edge-optimized placements for content delivery networks that cut latency and maximize content throughput.' },
+  { icon: 'zap', title: 'Professional Gaming Edge Servers Hosting', text: 'Ultra-low latency infrastructure with high-performance edge compute environments built specifically for gaming.' },
+  { icon: 'server', title: 'Colocation Services', text: 'Secure, flexible, premium rack space, from a single enterprise cabinet to complex private cages.' },
+  { icon: 'shield', title: 'Disaster Recovery Site Hosting', text: 'Business continuity with dedicated DR/BCP seats that keep your operations running through unforeseen outages.' },
 ] as const;
 ---
 
@@ -68,7 +68,7 @@ const solutions = [
     <div class="grid gap-10 lg:grid-cols-[1fr_1fr] lg:gap-16">
       <SectionHeading eyebrow="Overview" title="More than space:" highlight="absolute resilience" />
       <p class="leading-relaxed text-ink-muted" data-reveal>
-        In an increasingly complex digital landscape, your business infrastructure requires more than just space, it demands absolute resilience, world-class security, and seamless global connectivity. Acmetel provides a robust, carrier-neutral ecosystem backed by Tier III/IV-certified facilities and a network of over 150+ global carriers. Built with an AI-ready architecture, high-density power configurations, and rigorous compliance standards, we deliver the scalable foundation your enterprise needs to innovate with confidence, supported by 24/7 technical expertise every step of the way.
+        Business infrastructure needs more than space. It needs absolute resilience, strong security and global connectivity. Acmetel provides a carrier-neutral ecosystem backed by Tier III/IV-certified facilities and a network of 150+ global carriers. With AI-ready architecture, high-density power configurations and rigorous compliance standards, we give your enterprise a scalable foundation to innovate with confidence, backed by 24/7 technical expertise.
       </p>
     </div>
     <FactStrip class="mt-14" facts={facts} />

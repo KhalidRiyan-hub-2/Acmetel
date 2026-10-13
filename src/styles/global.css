@@ -116,6 +116,28 @@
     mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 30%, transparent 75%);
   }
 
+  /* Smooth-scroll wrapper sits above the fixed background layers (ScrollSmoother makes it position: fixed). */
+  #smooth-wrapper { position: relative; z-index: 1; }
+
+  /* Fixed background layers, faded in by sections with [data-bg] (src/scripts/patterns.ts). */
+  .bg-layers { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+  .bg-layer { position: absolute; inset: -6% 0; opacity: 0; }
+  .bg-layer-glow {
+    background:
+      radial-gradient(ellipse 48% 42% at 50% 46%, color-mix(in srgb, var(--color-teal-500) 18%, transparent), transparent 72%),
+      radial-gradient(ellipse 36% 30% at 72% 70%, color-mix(in srgb, var(--color-green-700) 30%, transparent), transparent 70%);
+  }
+  .bg-layer-grid {
+    background-image:
+      linear-gradient(to right, rgb(255 255 255 / 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(255 255 255 / 0.05) 1px, transparent 1px);
+    background-size: 56px 56px;
+    mask-image: radial-gradient(ellipse 60% 55% at 50% 50%, #000 20%, transparent 75%);
+  }
+
+  /* Pop-in accents start hidden only when motion will bring them in. */
+  .motion [data-pop] { opacity: 0; }
+
   /* Scroll reveal: elements with [data-reveal] fade up once visible. */
   [data-reveal] { opacity: 0; transform: translateY(18px); transition: opacity 700ms var(--ease-out-expo), transform 700ms var(--ease-out-expo); transition-delay: var(--reveal-delay, 0ms); }
   [data-reveal].is-visible { opacity: 1; transform: none; }

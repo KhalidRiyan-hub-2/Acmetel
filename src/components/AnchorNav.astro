@@ -1,9 +1,10 @@
 ---
 // Sticky in-page pill nav for long service pages. Highlights the section in view.
+// data-sticky: re-created as a pin when the smoother is on (CSS sticky can't work in transformed content).
 interface Props { items: { label: string; href: string }[] }
 const { items } = Astro.props;
 ---
-<nav aria-label="On this page" class="sticky top-18 z-40 border-y border-line bg-navy-900/80 backdrop-blur-xl">
+<nav aria-label="On this page" data-sticky class="sticky top-18 z-40 border-y border-line bg-navy-900/80 backdrop-blur-xl">
   <ul class="container-x flex gap-2 overflow-x-auto py-3 [scrollbar-width:none]" data-anchor-nav>
     {items.map((i) => (
       <li class="shrink-0"><a href={i.href} class="block rounded-full border border-transparent px-4 py-2 text-sm text-ink-muted transition hover:text-ink aria-[current=true]:border-teal-500/40 aria-[current=true]:bg-teal-500/10 aria-[current=true]:text-teal-300">{i.label}</a></li>

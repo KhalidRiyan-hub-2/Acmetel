@@ -21,9 +21,9 @@ const nav = [
 ];
 
 const overview = [
-  { icon: 'phone', title: 'Wholesale Voice', text: 'Seamless voice termination across global destinations with optimized routing, premium quality, and competitive rates.', href: '#wholesale-voice' },
-  { icon: 'hash', title: 'DID & Toll-Free Solutions', text: 'Local DIDs, Toll-Free, and International Toll-Free Numbers available in more than 25 countries, enabling businesses to establish a global presence.', href: '#did-toll-free' },
-  { icon: 'activity', title: 'Fraud Management System', text: 'State-of-the-art fraud detection and revenue assurance platform designed to protect networks and maximize profitability.', href: '#fraud-management' },
+  { icon: 'phone', title: 'Wholesale Voice', text: 'Voice termination to global destinations, with optimized routing, premium quality and competitive rates.', href: '#wholesale-voice' },
+  { icon: 'hash', title: 'DID & Toll-Free Solutions', text: 'Local DIDs, Toll-Free and International Toll-Free Numbers in more than 25 countries, so businesses can establish a global presence.', href: '#did-toll-free' },
+  { icon: 'activity', title: 'Fraud Management System', text: 'A fraud detection and revenue assurance platform that protects networks and maximizes profitability.', href: '#fraud-management' },
 ] as const;
 
 const wholesale = [
@@ -47,7 +47,7 @@ const fraud = [
     eyebrow="Voice Business"
     title="Global Connectivity. Local Presence."
     highlight="One Platform."
-    lede="Acmetel is a trusted global telecom aggregator, empowering operators, service providers, enterprises, and resellers with seamless access to worldwide voice solutions through a unified platform."
+    lede="Acmetel is a trusted global telecom aggregator. Operators, service providers, enterprises and resellers reach worldwide voice solutions through one unified platform."
     crumbs={[{ label: 'Services', href: '/#services' }, { label: 'Voice' }]}
   >
     <Button href="#contact" size="lg">Contact Us</Button>
@@ -62,10 +62,10 @@ const fraud = [
     <SplitSection>
       <SectionHeading eyebrow="Why Acmetel voice" title="One dependable partner," highlight="not many carriers">
         <p class="mt-6 leading-relaxed text-ink-muted">
-          Backed by a robust network of Tier-1 carriers and strategic partners, we simplify global connectivity by delivering reliable voice termination, DID services and advanced fraud management capabilities all through a single, dependable partner.
+          Backed by a network of Tier-1 carriers and strategic partners, we simplify global connectivity. Reliable voice termination, DID services and advanced fraud management all come from a single, dependable partner.
         </p>
         <p class="mt-4 leading-relaxed text-ink-muted">
-          Eliminate the complexity of managing multiple carrier relationships and fragmented networks. With Acmetel, gain access to global coverage, flexible commercial models, carrier-grade reliability, and the technical expertise needed to scale your business with confidence.
+          Remove the complexity of managing multiple carrier relationships and fragmented networks. Acmetel gives you global coverage, flexible commercial models, carrier-grade reliability and the technical expertise to scale your business with confidence.
         </p>
       </SectionHeading>
       <ul slot="visual" class="grid gap-4" data-stagger>
@@ -90,7 +90,7 @@ const fraud = [
   <!-- Wholesale -->
   <Section id="wholesale-voice" tone="raised">
     <div class="grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-20">
-      <SectionHeading eyebrow="Wholesale Voice" title="Wholesale Voice" highlight="Aggregation" lede="Acmetel provides seamless global voice termination through an extensive network of Tier-1 carriers and trusted international partners.">
+      <SectionHeading eyebrow="Wholesale Voice" title="Wholesale Voice" highlight="Aggregation" lede="Acmetel provides global voice termination through an extensive network of Tier-1 carriers and trusted international partners.">
         <div class="mt-8"><Button href="#contact">Talk to our voice team</Button></div>
       </SectionHeading>
       <div>
@@ -112,7 +112,7 @@ const fraud = [
     <SplitSection reverse>
       <SectionHeading eyebrow="DID & Toll-Free" title="Establish a local presence" highlight="anywhere in the world" lede="Our extensive portfolio of DIDs and Toll-Free numbers is available across more than 25 countries.">
         <p class="mt-5 leading-relaxed text-ink-muted">
-          Direct Inward Dialing (DID) seamlessly connects telephone numbers to a company’s PBX system, and can be used with local, premium rate, toll free, and international toll free service numbers.
+          Direct Inward Dialing (DID) connects telephone numbers directly to a company’s PBX system. It works with local, premium rate, toll free and international toll free service numbers.
         </p>
         <div class="mt-8"><CheckList items={['Local business presence', 'Easy deployment', 'International accessibility', 'Flexible scalability']} columns={2} /></div>
       </SectionHeading>
@@ -133,7 +133,7 @@ const fraud = [
 
   <!-- Fraud -->
   <Section id="fraud-management" tone="glow">
-    <SectionHeading eyebrow="Fraud Management System" title="Fraud Management &" highlight="Revenue Assurance" lede="Protect your network and revenue streams with advanced fraud detection technologies. A state-of-the-art platform designed to protect networks and maximize profitability." />
+    <SectionHeading eyebrow="Fraud Management System" title="Fraud Management &" highlight="Revenue Assurance" lede="Protect your network and revenue streams with advanced fraud detection technologies, on a platform built to maximize profitability." />
     <div class="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4" data-stagger>
       {fraud.map((f) => (
         <div class="glass spotlight flex flex-col gap-5 p-6 sm:p-7">

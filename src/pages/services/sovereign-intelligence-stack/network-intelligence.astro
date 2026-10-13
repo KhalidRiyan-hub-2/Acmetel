@@ -13,17 +13,17 @@ import { SIS_BASE } from '../../../data/site';
 // Copy source: content/source/sovereign-intelligence-stack.md, "Page 5 – Network Intelligence".
 // The source overview calls this pillar "DPI Solutions"; the page title is Network Intelligence, so DPI is covered in the portfolio.
 const challenges = [
-  { icon: 'chart', title: 'Exponential Network Traffic & Bandwidth Strain', text: 'Skyrocketing data volumes stretch infrastructure capacities, driving up operational overhead.' },
-  { icon: 'eye', title: 'Encrypted Traffic Blind Spots', text: 'Next-gen protocols diminish visibility, allowing unauthorized applications and security anomalies to pass through uninspected.' },
-  { icon: 'dollar', title: 'OTT Congestion & Revenue Leakage', text: 'Over-the-top applications run unmonitored across carrier lines, driving up infrastructure delivery costs without contributing to monetization.' },
-  { icon: 'server', title: 'Legacy Technological Deadlocks', text: 'Outdated hardware and rigid software configurations struggle to keep pace with dynamic modern traffic profiles.' },
-  { icon: 'lock', title: 'Escalating Compliance & Interception Demands', text: 'Evolving national security standards require robust, high-speed data logging and regulatory policy enforcement.' },
+  { icon: 'chart', title: 'Exponential Network Traffic & Bandwidth Strain', text: 'Rapidly growing data volumes stretch infrastructure capacity and drive up operational overhead.' },
+  { icon: 'eye', title: 'Encrypted Traffic Blind Spots', text: 'Newer encryption protocols reduce visibility, letting unauthorized applications and security anomalies pass through uninspected.' },
+  { icon: 'dollar', title: 'OTT Congestion & Revenue Leakage', text: 'Over-the-top applications run unmonitored across carrier lines, raising infrastructure delivery costs without contributing to monetization.' },
+  { icon: 'server', title: 'Legacy Technological Deadlocks', text: 'Outdated hardware and rigid software configurations struggle to keep pace with modern traffic profiles.' },
+  { icon: 'lock', title: 'Escalating Compliance & Interception Demands', text: 'Evolving national security standards require reliable, high-speed data logging and regulatory policy enforcement.' },
 ] as const;
 const modules = [
-  { icon: 'radar', name: 'Deep Packet Inspection (DPI)', tag: 'Premium Packet Inspection & Carrier Monetization', text: 'Elevate network edge security and zero-day threat detection while optimizing application-level visibility. This module provides robust compliance frameworks, structured data governance, and precise granular policy enforcement across deep carrier pipelines.' },
-  { icon: 'search', name: 'Web Management System (WMS)', tag: 'Real-Time Extreme Packet Inspection (xPi) & Regulatory Compliance', text: 'Reclaim complete control and policy enforcement by cleanly identifying, classifying, and filtering hidden OTT, Voice, and live streaming traffic. Effortlessly unmask unauthorized proxy and VPN configurations to secure highly regulated data zones.' },
-  { icon: 'shield', name: 'DDoS Anomaly Detection', tag: 'AI-Powered Security Layer, Real-Time Threat Mitigation', text: 'Shield your infrastructure from service disruptions by autonomously identifying and neutralizing phishing networks, multi-vector scams, hidden malware, and intense volumetric DDoS attacks. Instantly compile valid IPDR/CDR logs to satisfy strict state regulatory mandates.' },
-  { icon: 'gauge', name: 'Core + Enterprise Network Traffic Manager', tag: 'Optimize Cross-Domain Performance & Enforce Dynamic Bandwidth Policies', text: 'Distribute available network bandwidth intelligently by prioritizing critical mission-essential applications. Run custom content management protocols to shape traffic dynamically, automatically throttling torrent spikes, blocking malicious media layers, or executing automated customer upsell matrices.' },
+  { icon: 'radar', name: 'Deep Packet Inspection (DPI)', tag: 'Premium Packet Inspection & Carrier Monetization', text: 'Strengthens network edge security and zero-day threat detection while improving application-level visibility. The module adds compliance frameworks, structured data governance and granular policy enforcement across deep carrier pipelines.' },
+  { icon: 'search', name: 'Web Management System (WMS)', tag: 'Real-Time Extreme Packet Inspection (xPi) & Regulatory Compliance', text: 'Regain full control and policy enforcement by identifying, classifying and filtering hidden OTT, voice and live streaming traffic. Unauthorized proxy and VPN configurations are exposed, keeping highly regulated data zones secure.' },
+  { icon: 'shield', name: 'DDoS Anomaly Detection', tag: 'AI-Powered Security Layer, Real-Time Threat Mitigation', text: 'Protects your infrastructure from service disruption by autonomously identifying and neutralizing phishing networks, multi-vector scams, hidden malware and large volumetric DDoS attacks. Valid IPDR/CDR logs are compiled instantly to meet strict state regulatory mandates.' },
+  { icon: 'gauge', name: 'Core + Enterprise Network Traffic Manager', tag: 'Optimize Cross-Domain Performance & Enforce Dynamic Bandwidth Policies', text: 'Allocates available bandwidth by prioritizing mission-critical applications. Custom content management protocols shape traffic dynamically: throttling torrent spikes, blocking malicious media layers or running automated customer upsell flows.' },
 ] as const;
 const pressures = ['TLS 1.3', 'QUIC', 'OTT congestion', 'Cybersecurity threats'];
 ---
@@ -60,10 +60,10 @@ const pressures = ['TLS 1.3', 'QUIC', 'OTT congestion', 'Cybersecurity threats']
     <SplitSection>
       <SectionHeading eyebrow="Overview" title="Intelligence-driven," highlight="carrier-grade">
         <p class="mt-6 leading-relaxed text-ink-muted">
-          As global network traffic and bandwidth demands swell, tier-1 operators and telecommunication authorities face critical visibility gaps. The rapid adoption of next-generation encryption (TLS 1.3, QUIC), the rise of OTT application congestion, and sophisticated cybersecurity threats constantly push legacy inspection tools past their limits.
+          As global traffic and bandwidth demand grow, tier-1 operators and telecommunication authorities face critical visibility gaps. Rapid adoption of next-generation encryption (TLS 1.3, QUIC), rising OTT application congestion and sophisticated cybersecurity threats push legacy inspection tools past their limits.
         </p>
         <p class="mt-4 leading-relaxed text-ink-muted">
-          Acmetel delivers a unified, intelligence-driven network matrix engineered to handle intense carrier-grade data loads, ensuring absolute sovereignty, flawless compliance, and optimized monetization across your entire infrastructure footprint.
+          Acmetel delivers a unified, intelligence-driven network platform built for heavy carrier-grade data loads. It gives you full sovereignty, compliance and optimized monetization across your entire infrastructure footprint.
         </p>
       </SectionHeading>
       <div slot="visual" class="glass p-7 sm:p-9">
@@ -81,8 +81,8 @@ const pressures = ['TLS 1.3', 'QUIC', 'OTT congestion', 'Cybersecurity threats']
   <!-- Challenges -->
   <Section tone="raised">
     <div class="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20">
-      <div class="lg:sticky lg:top-28 lg:self-start">
-        <SectionHeading eyebrow="Challenges" title="The core network challenges" highlight="we resolve" lede="Modern network ecosystems are pressured by operational friction points that erode QoE and compromise security. Our platform directly mitigates these key infrastructure vulnerabilities." />
+      <div class="lg:sticky lg:top-28 lg:self-start" data-sticky="lg">
+        <SectionHeading eyebrow="Challenges" title="The core network challenges" highlight="we resolve" lede="Operational friction erodes QoE and compromises security across modern networks. Our platform addresses these five vulnerabilities directly." />
       </div>
       <ol class="space-y-4" data-stagger>
         {challenges.map((c, i) => (

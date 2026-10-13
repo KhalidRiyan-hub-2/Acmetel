@@ -1,0 +1,17 @@
+---
+// Full-screen statement band. With motion, it pins for one screen while the letters assemble from scattered
+// positions (data-assemble, src/scripts/patterns.ts); reduced motion shows the finished line.
+// Screen readers get the plain sentence; the visual copy that gets split into letters is aria-hidden.
+// Pass `bg` to fade in a fixed background layer while the band is on screen.
+interface Props { text: string; highlight?: string; eyebrow?: string; as?: 'h2' | 'p'; bg?: 'glow' | 'grid'; class?: string }
+const { text, highlight, eyebrow, as: Tag = 'h2', bg, class: className = '' } = Astro.props;
+---
+<section class:list={['statement relative', className]} data-assemble data-bg={bg}>
+  <div class="container-x flex min-h-svh flex-col items-center justify-center py-24 text-center">
+    {eyebrow && <p class="eyebrow mb-8">{eyebrow}</p>}
+    <Tag class="max-w-5xl font-display text-[2.6rem] font-bold leading-[1.04] text-ink sm:text-6xl lg:text-7xl xl:text-[5.25rem]">
+      <span class="sr-only">{text}{highlight && ` ${highlight}`}</span>
+      <span aria-hidden="true" data-assemble-text>{text}{highlight && <> <span class="text-gradient">{highlight}</span></>}</span>
+    </Tag>
+  </div>
+</section>

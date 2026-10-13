@@ -30,7 +30,7 @@ const usps = [
 ] as const;
 
 const travel = [
-  { icon: 'zap', title: 'One-Tap Setup', text: 'Install your eSIM instantly — no QR codes, no lengthy steps.' },
+  { icon: 'zap', title: 'One-Tap Setup', text: 'Install your eSIM instantly. No QR codes, no lengthy steps.' },
   { icon: 'globe', title: 'Global Coverage', text: 'Stay connected across 200+ countries and regions.' },
   { icon: 'headset', title: '24/7 Smart Support', text: 'Get help anytime with AI-powered and human support.' },
   { icon: 'users', title: 'Friends & Family Bundles', text: 'Manage multiple eSIMs in one purchase for your loved ones.' },
@@ -42,7 +42,7 @@ const modern = [
   { icon: 'activity', t: 'Perfect for streaming, navigation and video calls' },
   { icon: 'network', t: 'Hotspot support for multiple devices' },
   { icon: 'gauge', t: 'Prepaid plans with full control over usage' },
-  { icon: 'plane', t: 'Works seamlessly for business and leisure travel' },
+  { icon: 'plane', t: 'Works for business and leisure travel' },
 ] as const;
 
 const surprises = ['Clear, upfront pricing', 'Free eSIM with every purchase', 'No roaming charges', 'No activation fees', 'No hidden costs'];
@@ -87,7 +87,7 @@ const btnLight = 'group inline-flex h-11 items-center justify-center gap-2 round
     eyebrow="ACMeSIM"
     title="Smart Global Connectivity,"
     highlight="Simplified"
-    lede="Stay connected anywhere in the world with instant eSIM activation, flexible plans and seamless mobile data access, all in one place."
+    lede="Stay connected anywhere in the world with instant eSIM activation, flexible plans and mobile data access, all in one place."
     crumbs={[{ label: 'Products' }, { label: 'ACMeSIM' }]}
   >
     <Button href={acmesimStoreUrl} size="lg" external>Get your eSIM</Button>
@@ -126,7 +126,7 @@ const btnLight = 'group inline-flex h-11 items-center justify-center gap-2 round
 
   <!-- Why choose us -->
   <Section id="why">
-    <SectionHeading eyebrow="Why choose us" title="Global data that is simple," highlight="affordable and instant" lede="We’re redefining how travellers stay connected abroad." align="center" />
+    <SectionHeading eyebrow="Why choose us" title="Global data that is simple," highlight="affordable and instant" lede="A simpler way for travellers to stay connected abroad." align="center" />
     <div class="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3" data-stagger>
       {usps.map((u) => <FeatureCard icon={u.icon} title={u.title} text={u.text} />)}
     </div>
@@ -187,7 +187,7 @@ const btnLight = 'group inline-flex h-11 items-center justify-center gap-2 round
   <!-- Bulk -->
   <Section tone="raised">
     <SplitSection>
-      <SectionHeading eyebrow="Bulk eSIM" title="Bulk eSIM solutions for" highlight="travel businesses" lede="Empower your customers with seamless connectivity while unlocking a new revenue stream.">
+      <SectionHeading eyebrow="Bulk eSIM" title="Bulk eSIM solutions for" highlight="travel businesses" lede="Offer your customers connectivity and add a new revenue stream for your business.">
         <p class="mt-8 font-display text-lg font-semibold text-gradient">Sell smarter. Add connectivity to every journey.</p>
       </SectionHeading>
       <div slot="visual"><CheckList items={bulk} /></div>
