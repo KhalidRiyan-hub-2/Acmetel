@@ -1,12 +1,17 @@
-// Heartbeat canvas: perspective grid floor + scrolling ECG line drawn in 3D perspective. Canvas 2D only.
+// Heartbeat canvas: flat 2D monitor. Static grid, ECG trace written left to right like a bedside monitor
+// (an erase gap runs just ahead of the head, older trace fades out). Canvas 2D only.
 import { visibleLoop, type Loop } from '../motion';
 import { live } from '../../data/live';
 
 const TEAL = '34,170,161';        // #22aaa1
 const TEAL_LIGHT = '127,220,213';  // #7fdcd5
-const WINDOW_S = 6;                // seconds of waveform visible
+const PX_PER_S = 88;               // trace speed; the window scales with width so beat spacing matches across sizes
+const WINDOW_MIN_S = 3.5, WINDOW_MAX_S = 6;
 const SAMPLES = 520;
+const GAP = 0.05;                  // erase gap ahead of the head (fraction of width)
 const TALL_EVERY = 7;              // every 7th beat gets a taller R spike
+const BASELINE = 0.6;              // baseline y (fraction of height); spikes go up
+const AMP = 0.36;                  // R spike height (fraction of height)
 
 const gauss = (x: number, mu: number, sigma: number) => Math.exp(-((x - mu) ** 2) / (2 * sigma * sigma));
 
@@ -41,81 +46,109 @@ function fit(canvas: HTMLCanvasElement): Size {
   return { w, h, dpr };
 }
 
-function render(ctx: CanvasRenderingContext2D, { w, h, dpr }: Size, t: number) {
-  const period = 60 / live.heartbeat.bpm;
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.clearRect(0, 0, w, h);
-  const cx = w / 2;
-  const hy = h * 0.34; // horizon / vanishing point y
-
-  // Soft glow at the vanishing point.
-  const glow = ctx.createRadialGradient(cx, hy, 0, cx, hy, w * 0.55);
-  glow.addColorStop(0, `rgba(${TEAL},0.16)`);
-  glow.addColorStop(1, `rgba(${TEAL},0)`);
-  ctx.fillStyle = glow;
-  ctx.fillRect(0, 0, w, h);
-
-  // Floor grid: radial lines to the vanishing point, horizontal lines scrolling toward the viewer.
-  ctx.lineWidth = 1;
-  const floorH = h - hy;
-  const lines = 21;
-  for (let i = -lines; i <= lines; i++) {
-    const bx = cx + (i / lines) * w * 1.25;
-    const g = ctx.createLinearGradient(0, hy, 0, h);
-    g.addColorStop(0, `rgba(${TEAL},0)`);
-    g.addColorStop(1, `rgba(${TEAL},0.34)`);
-    ctx.strokeStyle = g;
-    ctx.beginPath(); ctx.moveTo(cx, hy); ctx.lineTo(bx, h); ctx.stroke();
-  }
-  const rows = 12;
-  const scroll = (t * 0.22) % 1;
-  for (let k = 0; k < rows; k++) {
-    const d = (k + scroll) / rows;            // 0 = horizon, 1 = viewer
-    const y = hy + floorH * Math.pow(d, 2.1);
-    ctx.strokeStyle = `rgba(${TEAL},${(0.05 + 0.3 * d).toFixed(3)})`;
-    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
-  }
-  ctx.strokeStyle = `rgba(${TEAL},0.4)`;
-  ctx.beginPath(); ctx.moveTo(0, hy); ctx.lineTo(w, hy); ctx.stroke();
-
-  // ECG: u = 0 (oldest, far left, farther away) .. 1 (head, right, nearest).
-  const amp = h * 0.36;
-  const pts: [number, number][] = [];
-  for (let i = 0; i <= SAMPLES; i++) {
-    const u = i / SAMPLES;
-    const tau = t - (1 - u) * WINDOW_S;
-    const s = 0.5 + 0.5 * u;                    // depth scale: recedes toward the vanishing point
-    const x = cx + (u - 0.5) * w * 0.9 * (0.82 + 0.18 * u);
-    const base = hy + floorH * 0.6 * s;
-    pts.push([x, base - ecg(tau, period) * amp * s]);
-  }
-  const trail = ctx.createLinearGradient(pts[0][0], 0, pts[SAMPLES][0], 0);
-  trail.addColorStop(0, `rgba(${TEAL},0)`);
-  trail.addColorStop(0.55, `rgba(${TEAL},0.55)`);
-  trail.addColorStop(1, `rgba(${TEAL_LIGHT},1)`);
-  const path = () => { ctx.beginPath(); pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); };
-  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-  ctx.shadowColor = `rgba(${TEAL},0.9)`; ctx.shadowBlur = 14;
-  ctx.strokeStyle = trail; ctx.lineWidth = 2.4; path(); ctx.stroke();
-  ctx.shadowBlur = 0;
-  ctx.lineWidth = 1; ctx.strokeStyle = trail; path(); ctx.stroke();
-
-  // Bright head with halo.
-  const [hx, hyp] = pts[SAMPLES];
-  const halo = ctx.createRadialGradient(hx, hyp, 0, hx, hyp, 22);
-  halo.addColorStop(0, `rgba(${TEAL_LIGHT},0.95)`);
-  halo.addColorStop(0.25, `rgba(${TEAL_LIGHT},0.35)`);
-  halo.addColorStop(1, `rgba(${TEAL},0)`);
-  ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(hx, hyp, 22, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(hx, hyp, 2.4, 0, Math.PI * 2); ctx.fill();
+/** Monitor grid (minor + major cells, baseline), vignetted toward the edges. Cached per size. */
+let gridCache: { key: string; canvas: HTMLCanvasElement } | undefined;
+function grid({ w, h, dpr }: Size): HTMLCanvasElement {
+  const key = `${w}x${h}@${dpr}`;
+  if (gridCache?.key === key) return gridCache.canvas;
+  const c = document.createElement('canvas');
+  c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
+  const g = c.getContext('2d')!;
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const cell = Math.max(10, Math.round(h / 24));
+  const by = Math.round(h * BASELINE);
+  const line = (x0: number, y0: number, x1: number, y1: number) => { g.moveTo(x0, y0); g.lineTo(x1, y1); };
+  // Cells are anchored on the baseline and the horizontal centre so the grid sits symmetrically.
+  const x0 = (w / 2) % cell, y0 = by % cell;
+  g.lineWidth = 1;
+  g.strokeStyle = `rgba(${TEAL},0.07)`;
+  g.beginPath();
+  for (let x = x0; x <= w; x += cell) line(Math.round(x) + 0.5, 0, Math.round(x) + 0.5, h);
+  for (let y = y0; y <= h; y += cell) line(0, Math.round(y) + 0.5, w, Math.round(y) + 0.5);
+  g.stroke();
+  g.strokeStyle = `rgba(${TEAL},0.16)`;
+  g.beginPath();
+  for (let x = w / 2 - Math.floor(w / 2 / (cell * 5)) * cell * 5; x <= w; x += cell * 5) line(Math.round(x) + 0.5, 0, Math.round(x) + 0.5, h);
+  for (let y = by - Math.floor(by / (cell * 5)) * cell * 5; y <= h; y += cell * 5) line(0, Math.round(y) + 0.5, w, Math.round(y) + 0.5);
+  g.stroke();
+  g.strokeStyle = `rgba(${TEAL},0.32)`;
+  g.setLineDash([2, 4]);
+  g.beginPath(); line(0, by + 0.5, w, by + 0.5); g.stroke();
+  // Vignette: keep the grid strong in the middle, let it dissolve at the edges.
+  g.globalCompositeOperation = 'destination-in';
+  const v = g.createRadialGradient(w / 2, by, 0, w / 2, by, Math.hypot(w, h) * 0.6);
+  v.addColorStop(0, 'rgba(0,0,0,1)');
+  v.addColorStop(1, 'rgba(0,0,0,0.15)');
+  g.fillStyle = v; g.fillRect(0, 0, w, h);
+  gridCache = { key, canvas: c };
+  return c;
 }
 
-/** One nice frame (spike mid-window), no animation. Used for prefers-reduced-motion. */
+const windowS = (w: number) => Math.min(WINDOW_MAX_S, Math.max(WINDOW_MIN_S, w / PX_PER_S));
+
+function render(ctx: CanvasRenderingContext2D, size: Size, t: number) {
+  const { w, h, dpr } = size;
+  const period = 60 / live.heartbeat.bpm;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  ctx.drawImage(grid(size), 0, 0);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  const win = windowS(w);
+  const head = (t / win) % 1;            // head position, 0-1 across the width
+  const by = h * BASELINE, amp = h * AMP;
+  const xOf = (u: number) => u * w;
+  const hx = xOf(head), hy = by - ecg(t, period) * amp;
+
+  // Write bar: a faint band trailing the head, feathered on both sides.
+  const bar = ctx.createLinearGradient(hx - 60, 0, hx + 8, 0);
+  bar.addColorStop(0, `rgba(${TEAL},0)`);
+  bar.addColorStop(60 / 68, `rgba(${TEAL},0.05)`);
+  bar.addColorStop(1, `rgba(${TEAL},0)`);
+  ctx.fillStyle = bar; ctx.fillRect(hx - 60, 0, 68, h);
+
+  // Trace. Column u shows the moment the head passed it: age = (head - u) mod 1, in sweeps.
+  // Skip the erase gap just ahead of the head; start a new subpath after it.
+  ctx.beginPath();
+  let pen = false;
+  for (let i = 0; i <= SAMPLES; i++) {
+    const u = i / SAMPLES;
+    if (pen && u > head && u - 1 / SAMPLES <= head) ctx.lineTo(hx, hy); // end the fresh trace exactly at the head
+    const age = (((head - u) % 1) + 1) % 1;
+    if (age > 1 - GAP) { pen = false; continue; }
+    const y = by - ecg(t - age * win, period) * amp;
+    if (pen) ctx.lineTo(xOf(u), y); else { ctx.moveTo(xOf(u), y); pen = true; }
+  }
+  // Alpha falls off linearly with age, so a single horizontal gradient with a hard step at the head covers it.
+  const fade = ctx.createLinearGradient(0, 0, w, 0);
+  const a = (age: number) => `rgba(${TEAL_LIGHT},${Math.max(0, 1 - age).toFixed(3)})`;
+  fade.addColorStop(0, a(head));
+  fade.addColorStop(head, a(0));
+  fade.addColorStop(Math.min(1, head + 0.0001), a(1 - GAP));
+  fade.addColorStop(1, a(head));
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  ctx.strokeStyle = fade;
+  ctx.shadowColor = `rgba(${TEAL},0.9)`; ctx.shadowBlur = 12;
+  ctx.lineWidth = 2.2; ctx.stroke();
+  ctx.shadowBlur = 0;
+  ctx.lineWidth = 1; ctx.stroke();
+
+  // Head: halo swells with the signal so each R spike reads as a pulse.
+  const beat = Math.max(0, Math.min(1, ecg(t, period)));
+  const r = 16 + 18 * beat;
+  const halo = ctx.createRadialGradient(hx, hy, 0, hx, hy, r);
+  halo.addColorStop(0, `rgba(${TEAL_LIGHT},0.95)`);
+  halo.addColorStop(0.25, `rgba(${TEAL_LIGHT},${(0.3 + 0.25 * beat).toFixed(3)})`);
+  halo.addColorStop(1, `rgba(${TEAL},0)`);
+  ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(hx, hy, r, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(hx, hy, 2.4, 0, Math.PI * 2); ctx.fill();
+}
+
+/** One nice frame (head near the right, a tall beat on screen), no animation. Used for prefers-reduced-motion. */
 export function drawStatic(canvas: HTMLCanvasElement) {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
-  const period = 60 / live.heartbeat.bpm;
-  const draw = () => render(ctx, fit(canvas), (TALL_EVERY - 1) * period + 0.3 * period + WINDOW_S * 0.42);
+  const draw = () => { const size = fit(canvas); render(ctx, size, windowS(size.w) * 1.86); };
   draw();
   new ResizeObserver(draw).observe(canvas);
 }
@@ -124,8 +157,9 @@ export function initHeartbeat(canvas: HTMLCanvasElement, opts: { onFrame?: (t: n
   const ctx = canvas.getContext('2d');
   if (!ctx) return { pause() {}, play() {}, paused: false, destroy() {} } as Loop;
   let size = fit(canvas);
-  let now = 0;
-  const loop = visibleLoop(canvas, (t) => { now = t; render(ctx, size, t); opts.onFrame?.(t); });
+  const t0 = windowS(size.w) * 0.7; // start with most of the screen already traced
+  let now = t0;
+  const loop = visibleLoop(canvas, (t) => { now = t0 + t; render(ctx, size, now); opts.onFrame?.(now); });
   const ro = new ResizeObserver(() => { size = fit(canvas); render(ctx, size, now); });
   ro.observe(canvas);
   render(ctx, size, now);

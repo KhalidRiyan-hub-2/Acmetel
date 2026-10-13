@@ -6,7 +6,7 @@ export interface GeoPoint { name: string; lat: number; lon: number }
 export interface Box { lon0: number; lon1: number; lat0: number; lat1: number }
 
 /** Focus point: the view the globe settles on, and where the pulsing marker + HTML label sit. */
-export const focus = { lat: 30.4, lon: 69.3, label: 'Pakistan · Core network' };
+export const focus = { lat: 30.4, lon: 69.3, label: 'Pakistan, core network' };
 
 export const markets: GeoPoint[] = [
   { name: 'UAE (Dubai)', lat: 25.2, lon: 55.27 },
@@ -55,28 +55,28 @@ export const stops: Stop[] = [
   // PLACEHOLDER: the client copy only places Acmetel in "GCC destinations"; confirm what Dubai is to Acmetel
   // (office, hub, partner base) before this caption says more than geography.
   { id: 'dubai', label: 'Dubai', parent: 'uae', lat: 25.2, lon: 55.27, alt: 0.032, tilt: 1.0, region: 'gulf', osm: true, pick: 0.9,
-    caption: 'Dubai, United Arab Emirates. 25.20°N, 55.27°E.' },
+    caption: 'Dubai, United Arab Emirates (25.20°N, 55.27°E)' },
 
   { id: 'pakistan', label: 'Pakistan', parent: 'global', lat: 30.2, lon: 69.6, alt: 0.62, tilt: 0.2, region: 'route', pick: 8,
     caption: 'Pakistan: Acmetel’s core network, and the start of the Pakistan–China terrestrial fiber.' },
   // PLACEHOLDER: the client copy doesn't mention these cities; captions are geography only until confirmed.
   { id: 'lahore', label: 'Lahore', parent: 'pakistan', lat: 31.55, lon: 74.34, alt: 0.07, tilt: 1.05, region: 'route', pick: 1.2,
-    caption: 'Lahore, Pakistan. 31.55°N, 74.34°E.' },
+    caption: 'Lahore, Pakistan (31.55°N, 74.34°E)' },
   { id: 'islamabad', label: 'Islamabad', parent: 'pakistan', lat: 33.68, lon: 73.05, alt: 0.07, tilt: 1.05, region: 'route', pick: 1.2,
-    caption: 'Islamabad, Pakistan. 33.68°N, 73.05°E.' },
+    caption: 'Islamabad, Pakistan (33.68°N, 73.05°E)' },
   { id: 'karachi', label: 'Karachi', parent: 'pakistan', lat: 24.86, lon: 67.01, alt: 0.07, tilt: 1.05, region: 'route', pick: 1.2,
-    caption: 'Karachi, Pakistan. 24.86°N, 67.01°E.' },
+    caption: 'Karachi, Pakistan (24.86°N, 67.01°E)' },
   { id: 'china', label: 'China', parent: 'pakistan', lat: 38.4, lon: 79.2, alt: 0.6, tilt: 0.28, region: 'route', pick: 4,
     via: [[33.68, 73.05], [36.85, 75.42], [39.47, 75.99]],
     caption: 'The Pakistan–China terrestrial fiber: high-capacity routes connecting regional networks through Pakistan and China.' },
   { id: 'kashgar', label: 'Kashgar', parent: 'china', lat: 39.47, lon: 75.99, alt: 0.07, tilt: 1.05, region: 'route', pick: 1.5,
-    caption: 'Kashgar, China. 39.47°N, 75.99°E.' },
+    caption: 'Kashgar, China (39.47°N, 75.99°E)' },
   { id: 'urumqi', label: 'Urumqi', parent: 'china', lat: 43.83, lon: 87.62, alt: 0.07, tilt: 1.05, region: 'route', pick: 1.5,
-    caption: 'Urumqi, China. 43.83°N, 87.62°E.' },
+    caption: 'Urumqi, China (43.83°N, 87.62°E)' },
 
   // PLACEHOLDER: confirm Acmetel's US presence with the client. The client copy says nothing about the US.
   { id: 'us', label: 'United States', parent: 'global', lat: 39, lon: -97.5, alt: 1.25, tilt: 0.15, region: 'usa', pick: 14,
-    caption: 'United States. 39.0°N, 97.5°W.' },
+    caption: 'United States (39.0°N, 97.5°W)' },
 ];
 export const stopById = Object.fromEntries(stops.map((s) => [s.id, s])) as Record<string, Stop>;
 export const childrenOf = (id: string) => stops.filter((s) => s.parent === id);

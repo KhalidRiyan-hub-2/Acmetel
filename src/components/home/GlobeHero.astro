@@ -1,7 +1,6 @@
 ---
 // Home hero visual: interactive WebGL globe (Three.js, lazy-loaded) over a static fallback image.
 // The box is reserved up front (no layout shift) and sized so the whole globe always fits the viewport.
-// With motion allowed, the globe rises and scales into place as the page scrolls past the headline.
 // The static image stays when reduced motion is on or WebGL is unavailable.
 // Zoom destinations form a tree (src/data/globe.ts): breadcrumbs show where you are, chips show where you
 // can go next; tapping the map or wheel/pinch (once focused) move through the same tree.
@@ -17,7 +16,7 @@ const startChips = childrenOf('global');
 <div data-globe-hero data-live="false" data-data={`${base}/data`} data-stops={JSON.stringify(stops.map(({ id, label, parent, caption }) => ({ id, label, parent, caption })))}
   class:list={['globe-hero group/globe relative mx-auto w-full', className]}>
   <div class="globe-box relative mx-auto aspect-square" data-globe-box>
-    <div class="absolute inset-0 will-change-transform" data-globe-rise>
+    <div class="absolute inset-0">
       <p class="sr-only">Globe showing Acmetel's core network in Pakistan, the Pakistan–China terrestrial fiber route, and markets in the Gulf, Africa and the UK. Use the location controls below the globe to zoom.</p>
 
       <div data-globe-stage aria-hidden="true" class="absolute inset-0">
@@ -80,8 +79,8 @@ const startChips = childrenOf('global');
 </div>
 
 <style>
-  /* The whole globe fits the viewport at rest (svh: stable on mobile when the browser bars move). */
-  .globe-box { width: min(100%, 54rem, calc(100svh - 9.5rem)); }
+  /* Sits beside the headline; the whole globe always fits the viewport (svh: stable when mobile browser bars move). */
+  .globe-box { width: min(100%, 36rem, calc(100svh - 9.5rem)); }
   .globe-tag { position: absolute; left: 0; top: 0; opacity: 0; visibility: hidden; will-change: transform, opacity; }
   .globe-tag-city::before, .globe-tag-waypoint::before {
     content: ""; position: absolute; left: -2px; top: -2px; width: 4px; height: 4px; border-radius: 9999px;
@@ -108,7 +107,7 @@ const startChips = childrenOf('global');
 </style>
 
 <script>
-  import { gsap, onVisible, prefersReducedMotion, SCRUB } from '../../scripts/motion';
+  import { onVisible, prefersReducedMotion } from '../../scripts/motion';
 
   const root = document.querySelector<HTMLElement>('[data-globe-hero]');
   if (root) {
@@ -119,8 +118,6 @@ const startChips = childrenOf('global');
     const kidsOf = (id: string) => stops.filter((s) => s.parent === id);
 
     const stage = root.querySelector<HTMLElement>('[data-globe-stage]')!;
-    const box = root.querySelector<HTMLElement>('[data-globe-box]')!;
-    const rise = root.querySelector<HTMLElement>('[data-globe-rise]')!;
     const img = root.querySelector<HTMLImageElement>('[data-globe-img]')!;
     const hint = root.querySelector<HTMLElement>('[data-globe-hint]');
     const pauseBtn = root.querySelector<HTMLButtonElement>('[data-pause]');
@@ -211,19 +208,6 @@ const startChips = childrenOf('global');
       } catch { return false; }
     })();
     const reduced = prefersReducedMotion();
-
-    // --- Scroll-driven entrance --------------------------------------------------------------------
-    // From the top of the page until the globe is centred below the header, it rises and scales into
-    // place. Scrubbed, so it reverses and survives fast scrolling. Measured on the unmoved box.
-    if (!reduced) {
-      // Rest = centred in the space below the fixed header.
-      const headerH = () => document.querySelector('header')?.getBoundingClientRect().height ?? 0;
-      const restAt = () => Math.max(1, box.getBoundingClientRect().top + scrollY + box.offsetHeight / 2 - (innerHeight + headerH()) / 2);
-      gsap.fromTo(rise, { y: () => box.offsetHeight * 0.14, scale: 0.8 }, {
-        y: 0, scale: 1, ease: 'power1.out',
-        scrollTrigger: { trigger: document.documentElement, start: 0, end: restAt, scrub: SCRUB, invalidateOnRefresh: true },
-      });
-    }
 
     // --- Globe -------------------------------------------------------------------------------------
     // Start the 3D globe on the visitor's first interaction rather than at load. The static image is the

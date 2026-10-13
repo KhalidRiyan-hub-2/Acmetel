@@ -135,6 +135,10 @@
     mask-image: radial-gradient(ellipse 60% 55% at 50% 50%, #000 20%, transparent 75%);
   }
 
+  /* SplitText pieces (assemble, flicker): transforms only apply to inline-block boxes. Words stay unbroken,
+     lines still wrap between them. */
+  .split-word, .split-char { display: inline-block; }
+
   /* Pop-in accents start hidden only when motion will bring them in. */
   .motion [data-pop] { opacity: 0; }
 

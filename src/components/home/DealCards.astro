@@ -14,7 +14,7 @@ const { cards } = Astro.props;
   <div class="deal-copy relative z-20 bg-navy-900 lg:py-6"><slot /></div>
   <ul class="deal-grid relative z-10 grid gap-4 sm:grid-cols-2" role="list">
     {cards.map((c, i) => (
-      <li class:list={['deal-card glass spotlight p-6 transition-[translate,rotate,border-color] duration-300 hover:-translate-y-1.5 hover:rotate-[-1.2deg] hover:border-teal-500/40', i % 2 === 1 && 'sm:translate-y-6 sm:hover:translate-y-4.5']} data-reveal>
+      <li class:list={['deal-card glass spotlight border-transparent p-6 transition-[translate,rotate,background-color] duration-300 hover:-translate-y-1.5 hover:rotate-[-1.2deg] hover:bg-white/[0.03]', i % 2 === 1 && 'sm:translate-y-6 sm:hover:translate-y-4.5']} data-reveal>
         <div class="grid size-11 place-items-center rounded-xl border border-teal-500/30 bg-teal-500/15 text-teal-300"><Icon name={c.icon} /></div>
         <p class="mt-4 font-display font-semibold text-ink">{c.title}</p>
         <p class="mt-1 text-sm text-ink-muted">{c.text}</p>
@@ -22,6 +22,12 @@ const { cards } = Astro.props;
     ))}
   </ul>
 </div>
+
+<style>
+  /* Edgeless cards: no hairline border (border-transparent above) and no spotlight ring on hover; the soft
+     cursor glow (::before) stays. */
+  .deal-card::after { display: none; }
+</style>
 
 <script>
   import { gsap, ScrollTrigger, prefersReducedMotion } from '../../scripts/motion';
