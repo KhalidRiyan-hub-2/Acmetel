@@ -721,7 +721,7 @@ export function initGlobe(container: HTMLElement, opts: GlobeOptions): GlobeApi 
     if (!el) return;
     const deep = target !== 'global' || !atGlobal();
     el.textContent = focused || deep
-      ? (coarse ? 'Pinch to zoom · Tap outside to exit' : 'Scroll to zoom · Esc to step back')
+      ? (coarse ? 'Pinch to zoom, tap outside to exit' : 'Scroll to zoom, Esc to step back')
       : (coarse ? 'Tap to focus, then pinch to zoom' : 'Click to focus, then scroll to zoom');
     el.dataset.show = String(introDone && (focused || hovering));
   };

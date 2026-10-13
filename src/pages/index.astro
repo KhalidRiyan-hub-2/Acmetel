@@ -66,19 +66,20 @@ const posts = [
       <div class="absolute -left-32 top-0 h-[36rem] w-[36rem] animate-aurora rounded-full bg-teal-500/12 blur-3xl"></div>
       <div class="absolute -right-40 top-40 h-[30rem] w-[30rem] animate-aurora rounded-full bg-green-700/25 blur-3xl [animation-delay:-8s]"></div>
     </div>
-    <div class="container-x relative">
-      <!-- Headline, sub-line and CTAs centred; the headline box keeps its text left-aligned (see DynamicHeadline). -->
-      <DynamicHeadline class="text-[2.35rem] font-bold leading-[1.06] text-ink sm:text-[3.4rem] lg:text-[4rem] xl:text-[4.5rem]" data-reveal style="--reveal-delay:80ms" />
-      <p class="mx-auto mt-7 max-w-xl text-center text-lg leading-relaxed text-ink-muted" data-reveal style="--reveal-delay:160ms">
-        Voice, messaging, eSIM and the networks underneath them. One partner for the full connectivity stack.
-      </p>
-      <div class="mt-9 flex flex-wrap justify-center gap-3" data-reveal style="--reveal-delay:240ms">
-        <Button href="#services" size="lg">Explore services</Button>
-        <Button href="/contact" variant="outline" size="lg" arrow={false}>Talk to our team</Button>
+    <div class="container-x relative grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
+      <div>
+        <DynamicHeadline class="text-[2.35rem] font-bold leading-[1.06] text-ink sm:text-[3.4rem] lg:text-[3.6rem] xl:text-[4rem]" data-reveal style="--reveal-delay:80ms" />
+        <p class="mt-7 max-w-xl text-lg leading-relaxed text-ink-muted" data-reveal style="--reveal-delay:160ms">
+          One partner for the full connectivity stack, from voice, messaging and eSIM to the networks underneath them.
+        </p>
+        <div class="mt-10 flex flex-wrap gap-3" data-reveal style="--reveal-delay:240ms">
+          <Button href="#services" size="lg">Explore services</Button>
+          <Button href="/contact" variant="outline" size="lg" arrow={false}>Talk to our team</Button>
+        </div>
       </div>
-      <GlobeHero class="mt-12 sm:mt-16" />
-      <div class="mt-12 sm:mt-14"><StatStrip stats={stats} /></div>
+      <GlobeHero />
     </div>
+    <div class="container-x relative mt-12 sm:mt-14"><StatStrip stats={stats} /></div>
   </section>
 
   <!-- 2. Brand belt -->

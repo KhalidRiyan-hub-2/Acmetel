@@ -49,24 +49,25 @@ if (!reduced) {
     ScrollTrigger.create({ trigger: band, pin: true, start: 'top top', end: () => `+=${hold()}`, invalidateOnRefresh: true });
 
     SplitText.create(text, {
-      type: 'words,chars', tag: 'span', aria: 'none', autoSplit: true,
+      type: 'words,chars', tag: 'span', wordsClass: 'split-word', charsClass: 'split-char', aria: 'none', autoSplit: true,
       onSplit(self) {
         paintGradient(text, self.chars as HTMLElement[]);
-        const vw = () => innerWidth, vh = () => innerHeight;
+        // Scattered state is set explicitly (not as fromTo start values) so letters that haven't started yet are
+        // already scattered before the trigger, never shown in place first. A resize re-splits (autoSplit) and
+        // rebuilds this with the new viewport size, so no invalidateOnRefresh (it would re-record a half-assembled
+        // state as the start).
         const r = gsap.utils.random;
-        return gsap.fromTo(self.chars,
-          {
-            opacity: 0, scale: 0.5,
-            x: () => r(-0.38, 0.38) * vw(), y: () => r(-0.42, 0.42) * vh(), rotation: () => r(-35, 35),
-          },
-          {
-            opacity: 1, scale: 1, x: 0, y: 0, rotation: 0, ease: EASE.inOut,
-            stagger: { amount: 0.25, from: 'random' },
-            scrollTrigger: {
-              trigger: band, start: 'top 75%', end: () => `top+=${hold() * 0.8} top`,
-              scrub: SCRUB, invalidateOnRefresh: true,
-            },
-          });
+        gsap.set(self.chars, {
+          opacity: 0, scale: 0.5,
+          x: () => r(-0.38, 0.38) * innerWidth, y: () => r(-0.42, 0.42) * innerHeight, rotation: () => r(-35, 35),
+        });
+        // Letters fade up early (visible while still scattered) and travel home on the site's in-out ease.
+        // One random arrival order shared by both tweens, so each letter's fade and flight stay together.
+        const order = gsap.utils.shuffle(self.chars.map((_, i) => i));
+        const stagger = (i: number) => (order[i] / Math.max(1, order.length - 1)) * 0.25;
+        return gsap.timeline({ scrollTrigger: { trigger: band, start: 'top 75%', end: () => `top+=${hold() * 0.8} top`, scrub: SCRUB } })
+          .to(self.chars, { scale: 1, x: 0, y: 0, rotation: 0, ease: EASE.inOut, duration: 1, stagger }, 0)
+          .to(self.chars, { opacity: 1, ease: 'power2.out', duration: 0.45, stagger }, 0);
       },
     });
   });
@@ -156,7 +157,7 @@ if (!reduced && finePointer()) {
         sr.textContent = el.textContent;
         el.before(sr);
         el.setAttribute('aria-hidden', 'true');
-        chars = SplitText.create(el, { type: 'words,chars', tag: 'span', aria: 'none' }).chars;
+        chars = SplitText.create(el, { type: 'words,chars', tag: 'span', wordsClass: 'split-word', charsClass: 'split-char', aria: 'none' }).chars;
         split.set(el, chars);
       }
       gsap.fromTo(chars, { opacity: 0.15 }, {

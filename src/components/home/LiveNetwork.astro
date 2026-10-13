@@ -1,21 +1,24 @@
 ---
-// "Live network" band: heartbeat panel + radar panel (both SIMULATED, labelled as such), then an optional default slot. Data and the simulated feed live in src/data/live.ts.
+// "Live network" band: heartbeat panel + radar panel (both SIMULATED; described as example values for screen readers, no visible label), then an optional default slot. Data and the simulated feed live in src/data/live.ts.
 import Section from '../Section.astro';
 import SectionHeading from '../SectionHeading.astro';
 import Icon from '../Icon.astro';
 import PauseButton from '../PauseButton.astro';
 import { acmesimStoreUrl } from '../../data/site';
 import { live, radarLayout } from '../../data/live';
+import { radarLandPath } from '../../data/radarMap';
 
 const hb = live.heartbeat;
 const dests = live.radar.destinations;
 const layout = radarLayout();
+const landPath = radarLandPath();
 const blips = dests.map((d, i) => {
   const { x, y, angle } = layout[i];
   return {
     ...d, x, y, angle, id: `blip-${i}`,
     h: x < 0.3 ? 'left' : x > 0.7 ? 'right' : 'center',
     v: y < 0.5 ? 'below' : 'above',
+    side: x < 0.5 ? 'l' : 'r', // city label sits on the outward side of the dot
   };
 });
 ---
@@ -36,7 +39,7 @@ const blips = dests.map((d, i) => {
         <div class="flex flex-wrap items-center justify-between gap-3">
           <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.18em] text-teal-300"><Icon name="activity" size={16} />Network pulse</p>
           <div class="flex items-center gap-2">
-            <span class="sim-chip">Simulated preview</span>
+            <!-- PLACEHOLDER: these figures are simulated (src/data/live.ts), and the visible "Simulated preview" label was removed on request. Replace with real data, or confirm with the client that example values may be shown unlabelled. -->
             <PauseButton id="pause-heartbeat" />
           </div>
         </div>
@@ -80,18 +83,21 @@ const blips = dests.map((d, i) => {
         <div class="flex flex-wrap items-center justify-between gap-3">
           <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.18em] text-teal-300"><Icon name="radar" size={16} />Traveller radar</p>
           <div class="flex items-center gap-2">
-            <span class="sim-chip">Simulated preview</span>
+            <!-- PLACEHOLDER: simulated traveller data, unlabelled on screen (see above). -->
             <PauseButton id="pause-radar" />
           </div>
         </div>
 
         <div class="relative mx-auto mt-4 aspect-square w-full max-w-[34rem]" data-radar-stage>
+          <!-- Flat world map under the sweep (UN-emblem style), same projection as the blips. -->
+          <svg aria-hidden="true" viewBox="0 0 1000 1000" class="radar-map absolute inset-0 size-full fill-teal-500/10 stroke-teal-400/30"><path d={landPath} /></svg>
           <canvas aria-hidden="true" data-radar-canvas class="absolute inset-0 size-full"></canvas>
           {blips.map((b) => (
-            <div class={`blip blip-h-${b.h} blip-v-${b.v}`} data-blip data-x={b.x.toFixed(4)} data-y={b.y.toFixed(4)} data-angle={b.angle.toFixed(4)} style={`left:${(b.x * 100).toFixed(2)}%;top:${(b.y * 100).toFixed(2)}%`}>
-              <button type="button" class="blip-btn" aria-label={`${b.city} · ${b.network}`} aria-describedby={b.id} aria-expanded="false" data-blip-btn>
+            <div class={`blip blip-h-${b.h} blip-v-${b.v} blip-side-${b.side}`} data-blip data-x={b.x.toFixed(4)} data-y={b.y.toFixed(4)} data-angle={b.angle.toFixed(4)} style={`left:${(b.x * 100).toFixed(2)}%;top:${(b.y * 100).toFixed(2)}%`}>
+              <button type="button" class="blip-btn" aria-label={`${b.city}, ${b.network}`} aria-describedby={b.id} aria-expanded="false" data-blip-btn>
                 <span class="blip-dot" data-net={b.network}></span>
               </button>
+              <span class="blip-label" aria-hidden="true">{b.city}</span>
               <div class="blip-tip" id={b.id} role="group" aria-label={`${b.city} details`}>
                 <p class="font-display text-sm font-semibold text-ink">{b.city}<span class="font-normal text-ink-muted">, {b.country}</span></p>
                 <p class="mt-1 flex items-center gap-2 font-mono text-xs text-ink-muted"><span class="rounded border border-teal-500/50 px-1.5 py-0.5 text-teal-300">{b.network}</span>{b.plan}</p>
@@ -108,7 +114,13 @@ const blips = dests.map((d, i) => {
             <p class="font-mono text-[0.625rem] uppercase tracking-[0.06em] text-ink-faint sm:text-[0.6875rem] sm:tracking-[0.12em]">Active travellers</p>
             <p class="mt-1 font-display text-2xl font-semibold tabular-nums text-ink" data-travellers>1,240</p>
           </div>
-          <p class="text-sm text-ink-muted">ACMeSIM travellers by destination</p>
+          <div class="flex flex-col items-start gap-1.5 sm:items-end">
+            <p class="text-sm text-ink-muted">ACMeSIM travellers by destination</p>
+            <ul class="flex items-center gap-4 font-mono text-[0.6875rem] uppercase tracking-[0.12em] text-ink-faint" aria-label="Dot colour by network">
+              <li class="flex items-center gap-1.5"><span class="blip-dot legend-dot" data-net="5G" aria-hidden="true"></span>5G</li>
+              <li class="flex items-center gap-1.5"><span class="blip-dot legend-dot" data-net="4G" aria-hidden="true"></span>4G</li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>
@@ -118,13 +130,12 @@ const blips = dests.map((d, i) => {
 </Section>
 
 <style>
-  .sim-chip {
-    display: inline-flex; align-items: center; gap: 0.4rem; border-radius: 9999px;
-    border: 1px dashed var(--color-line-strong); background: rgb(14 19 34 / 0.6);
-    padding: 0.25rem 0.65rem; font-family: var(--font-mono); font-size: 0.6875rem;
-    letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-ink-muted);
+  /* Land fades out toward the bezel so it never fights the compass letters and ticks. */
+  .radar-map {
+    stroke-width: 1; stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+    mask-image: radial-gradient(circle closest-side, black 84%, transparent 97%);
   }
-  .sim-chip::before { content: ""; width: 0.375rem; height: 0.375rem; border-radius: 9999px; background: var(--color-teal-400); }
 
   .blip { position: absolute; width: 2.25rem; height: 2.25rem; transform: translate(-50%, -50%); }
   .blip:hover, .blip:focus-within, .blip[data-open] { z-index: 30; }
@@ -141,6 +152,21 @@ const blips = dests.map((d, i) => {
   }
   .blip-dot[data-net='4G'] { background: var(--color-teal-500); box-shadow: 0 0 0 2px rgb(14 19 34 / 0.8), 0 0 10px var(--color-teal-500); }
   .blip:hover .blip-dot, .blip:focus-within .blip-dot, .blip[data-open] .blip-dot { transform: scale(1.5); }
+  .legend-dot { display: inline-block; width: 0.5rem; height: 0.5rem; }
+
+  /* City label: faded in briefly as the sweep passes (--l set by scripts/live/radar.ts). */
+  .blip-label {
+    position: absolute; top: 50%; translate: 0 -50%; white-space: nowrap; pointer-events: none;
+    font-family: var(--font-mono); font-size: 0.625rem; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--color-teal-300); text-shadow: 0 0 6px var(--color-navy-950), 0 0 2px var(--color-navy-950);
+    opacity: var(--l, 0);
+  }
+  .blip-side-l .blip-label { right: 78%; }
+  .blip-side-r .blip-label { left: 78%; }
+  .blip:hover .blip-label, .blip:focus-within .blip-label, .blip[data-open] .blip-label { opacity: 0; }
+  /* Small radars crowd the north-west cluster; there the tap tooltip carries the name instead. */
+  [data-radar-stage] { container-type: inline-size; }
+  @container (max-width: 25.99rem) { .blip-label { display: none; } }
 
   .blip-tip {
     position: absolute; width: 14.5rem; padding: 0.75rem 0.875rem; border-radius: 0.75rem;

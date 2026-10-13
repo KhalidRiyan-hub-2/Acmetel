@@ -7,16 +7,11 @@ import Icon, { type IconName } from '../Icon.astro';
 interface Service { icon: IconName; title: string; text: string; href?: string }
 interface Props { services: Service[]; id?: string }
 const { services, id } = Astro.props;
-const total = String(services.length).padStart(2, '0');
 ---
 
 <section id={id} class="rail relative overflow-hidden py-16 sm:py-20 lg:pt-28" data-rail>
   <div class="container-x relative flex flex-wrap items-end justify-between gap-6">
     <slot />
-    <div class="rail-progress flex items-center gap-4 font-mono text-sm text-ink-muted" aria-hidden="true">
-      <span><span class="rail-current text-ink">01</span> / {total}</span>
-      <span class="relative h-px w-32 bg-line-strong"><span class="rail-bar absolute inset-y-0 left-0 w-full origin-left scale-x-[0.2] bg-teal-400"></span></span>
-    </div>
   </div>
 
   <div class="rail-viewport container-x relative mt-10 overflow-x-auto snap-x snap-mandatory scroll-px-4 sm:scroll-px-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -52,13 +47,9 @@ const total = String(services.length).padStart(2, '0');
     const viewport = rail.querySelector<HTMLElement>('.rail-viewport')!;
     const track = rail.querySelector<HTMLElement>('.rail-track')!;
     const cards = [...rail.querySelectorAll<HTMLElement>('.rail-card')];
-    const current = rail.querySelector<HTMLElement>('.rail-current')!;
-    const bar = rail.querySelector<HTMLElement>('.rail-bar')!;
 
     // Highlight the card nearest the viewport's left content edge; dim the rest.
     const setActive = (idx: number) => {
-      current.textContent = String(idx + 1).padStart(2, '0');
-      bar.style.transform = `scaleX(${(idx + 1) / cards.length})`;
       cards.forEach((c, i) => { c.style.opacity = i === idx ? '1' : '0.5'; c.style.scale = i === idx ? '1' : '0.97'; });
     };
     const nearest = () => {

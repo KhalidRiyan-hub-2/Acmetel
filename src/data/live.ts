@@ -1,6 +1,7 @@
 // Live-network data for the homepage "Live network" band.
 // IMPORTANT: every value here is SIMULATED (a random walk around the base values below).
-// The UI labels both panels "Simulated preview". To wire a real API, replace the generator inside
+// The panels no longer show a visible "Simulated preview" label (screen-reader text still says so; see the
+// PLACEHOLDER in LiveNetwork.astro). To wire a real API, replace the generator inside
 // `subscribe()` (the setInterval body) with a fetch/WebSocket that calls the same callbacks with the
 // same `LiveSample` shape. Nothing else in the components needs to change.
 
@@ -21,22 +22,22 @@ export const live = {
     origin: { city: 'Karachi', lat: 24.8607, lon: 67.0011 },
     initialTravelers: 1240,
     destinations: [
-      { city: 'London', country: 'United Kingdom', lat: 51.5074, lon: -0.1278, network: '5G', plan: '10 GB · 30 days' },
-      { city: 'Dubai', country: 'United Arab Emirates', lat: 25.2048, lon: 55.2708, network: '5G', plan: '5 GB · 15 days' },
-      { city: 'Riyadh', country: 'Saudi Arabia', lat: 24.7136, lon: 46.6753, network: '4G', plan: '5 GB · 15 days' },
-      { city: 'Doha', country: 'Qatar', lat: 25.2854, lon: 51.531, network: '5G', plan: '3 GB · 7 days' },
-      { city: 'Istanbul', country: 'Türkiye', lat: 41.0082, lon: 28.9784, network: '4G', plan: '10 GB · 30 days' },
-      { city: 'Paris', country: 'France', lat: 48.8566, lon: 2.3522, network: '5G', plan: '20 GB · 30 days' },
-      { city: 'New York', country: 'United States', lat: 40.7128, lon: -74.006, network: '5G', plan: '20 GB · 30 days' },
-      { city: 'Tokyo', country: 'Japan', lat: 35.6762, lon: 139.6503, network: '5G', plan: '10 GB · 15 days' },
-      { city: 'Singapore', country: 'Singapore', lat: 1.3521, lon: 103.8198, network: '5G', plan: '5 GB · 15 days' },
-      { city: 'Bangkok', country: 'Thailand', lat: 13.7563, lon: 100.5018, network: '4G', plan: '10 GB · 30 days' },
-      { city: 'Kuala Lumpur', country: 'Malaysia', lat: 3.139, lon: 101.6869, network: '4G', plan: '5 GB · 15 days' },
-      { city: 'Nairobi', country: 'Kenya', lat: -1.2921, lon: 36.8219, network: '4G', plan: '3 GB · 7 days' },
-      { city: 'Cairo', country: 'Egypt', lat: 30.0444, lon: 31.2357, network: '4G', plan: '5 GB · 15 days' },
-      { city: 'Johannesburg', country: 'South Africa', lat: -26.2041, lon: 28.0473, network: '4G', plan: '10 GB · 30 days' },
-      { city: 'Toronto', country: 'Canada', lat: 43.6532, lon: -79.3832, network: '5G', plan: '10 GB · 30 days' },
-      { city: 'Sydney', country: 'Australia', lat: -33.8688, lon: 151.2093, network: '5G', plan: '20 GB · 30 days' },
+      { city: 'London', country: 'United Kingdom', lat: 51.5074, lon: -0.1278, network: '5G', plan: '10 GB, 30 days' },
+      { city: 'Dubai', country: 'United Arab Emirates', lat: 25.2048, lon: 55.2708, network: '5G', plan: '5 GB, 15 days' },
+      { city: 'Riyadh', country: 'Saudi Arabia', lat: 24.7136, lon: 46.6753, network: '4G', plan: '5 GB, 15 days' },
+      { city: 'Doha', country: 'Qatar', lat: 25.2854, lon: 51.531, network: '5G', plan: '3 GB, 7 days' },
+      { city: 'Istanbul', country: 'Türkiye', lat: 41.0082, lon: 28.9784, network: '4G', plan: '10 GB, 30 days' },
+      { city: 'Paris', country: 'France', lat: 48.8566, lon: 2.3522, network: '5G', plan: '20 GB, 30 days' },
+      { city: 'New York', country: 'United States', lat: 40.7128, lon: -74.006, network: '5G', plan: '20 GB, 30 days' },
+      { city: 'Tokyo', country: 'Japan', lat: 35.6762, lon: 139.6503, network: '5G', plan: '10 GB, 15 days' },
+      { city: 'Singapore', country: 'Singapore', lat: 1.3521, lon: 103.8198, network: '5G', plan: '5 GB, 15 days' },
+      { city: 'Bangkok', country: 'Thailand', lat: 13.7563, lon: 100.5018, network: '4G', plan: '10 GB, 30 days' },
+      { city: 'Kuala Lumpur', country: 'Malaysia', lat: 3.139, lon: 101.6869, network: '4G', plan: '5 GB, 15 days' },
+      { city: 'Nairobi', country: 'Kenya', lat: -1.2921, lon: 36.8219, network: '4G', plan: '3 GB, 7 days' },
+      { city: 'Cairo', country: 'Egypt', lat: 30.0444, lon: 31.2357, network: '4G', plan: '5 GB, 15 days' },
+      { city: 'Johannesburg', country: 'South Africa', lat: -26.2041, lon: 28.0473, network: '4G', plan: '10 GB, 30 days' },
+      { city: 'Toronto', country: 'Canada', lat: 43.6532, lon: -79.3832, network: '5G', plan: '10 GB, 30 days' },
+      { city: 'Sydney', country: 'Australia', lat: -33.8688, lon: 151.2093, network: '5G', plan: '20 GB, 30 days' },
     ] as Destination[],
   },
 };
@@ -57,21 +58,27 @@ export function bearingDistance(origin: LatLon, dest: LatLon): { bearing: number
 export interface BlipPos { x: number; y: number; angle: number }
 
 /**
- * Radar layout: angle = bearing, radius = log-scaled distance. Positions are normalised (0-1 across the square
- * radar, centre 0.5/0.5). A small relaxation pass nudges blips that would overlap (e.g. London/Paris,
- * Singapore/Kuala Lumpur) so each stays clickable. `angle` is radians clockwise from north of the FINAL
- * position, which is what the sweep uses to light the blip.
+ * Radar projection: angle = bearing from the origin, radius = log-scaled distance (linear inside 900 km so the
+ * centre doesn't blow up). Returns screen offsets from the centre, normalised to the square (north = up).
+ * Shared by the blips and the land map under them (src/data/radarMap.ts) so every dot sits on its city.
+ * The whole globe fits: the antipode lands at r ≈ 0.47, just inside the disc.
+ */
+export function radarProject(p: LatLon, origin: LatLon = live.radar.origin): { x: number; y: number } {
+  const minR = 0.12, maxR = 0.42, near = 900, far = 13000;
+  const { bearing, distanceKm } = bearingDistance(origin, p);
+  const r = distanceKm < near ? (minR * distanceKm) / near : minR + ((maxR - minR) * Math.log(distanceKm / near)) / Math.log(far / near);
+  const a = rad(bearing);
+  return { x: r * Math.sin(a), y: -r * Math.cos(a) };
+}
+
+/**
+ * Radar layout: positions from `radarProject`, normalised (0-1 across the square radar, centre 0.5/0.5).
+ * A small relaxation pass nudges blips that would overlap (e.g. London/Paris, Singapore/Kuala Lumpur) so each
+ * stays clickable. `angle` is radians clockwise from north of the FINAL position, which is what the sweep uses
+ * to light the blip.
  */
 export function radarLayout(): BlipPos[] {
-  const { origin, destinations } = live.radar;
-  const maxR = 0.42, minR = 0.12;
-  const pts = destinations.map((d) => {
-    const { bearing, distanceKm } = bearingDistance(origin, d);
-    const t = Math.min(1, Math.max(0, Math.log(distanceKm / 900) / Math.log(13000 / 900)));
-    const r = minR + (maxR - minR) * t;
-    const a = rad(bearing);
-    return { x: r * Math.sin(a), y: -r * Math.cos(a) }; // screen coords relative to centre (north = up)
-  });
+  const pts = live.radar.destinations.map((d) => radarProject(d));
   const minDist = 0.085;
   for (let it = 0; it < 80; it++) {
     for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) {

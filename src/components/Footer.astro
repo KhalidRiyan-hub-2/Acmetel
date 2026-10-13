@@ -7,7 +7,8 @@ const groups = nav.filter((n) => 'children' in n);
 const year = new Date().getFullYear();
 ---
 
-<footer class="relative mt-24 overflow-hidden border-t border-line bg-navy-800">
+<!-- Flush with the last section; when that's a raised navy-800 band its own border-b already draws the seam. -->
+<footer class="relative overflow-hidden border-t border-line bg-navy-800 [main:has(>.bg-navy-800:last-child)+&]:border-t-transparent">
   <div aria-hidden="true" class="pointer-events-none absolute -top-40 left-1/2 h-80 w-[60rem] -translate-x-1/2 rounded-full bg-teal-500/10 blur-3xl"></div>
   <div class="container-x relative grid gap-12 py-16 md:grid-cols-2 lg:grid-cols-5">
     <div class="lg:col-span-2">
