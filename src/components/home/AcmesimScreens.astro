@@ -1,23 +1,28 @@
 ---
-// The four ACMeSIM app screens shown inside the homepage phone. AcmesimStory drives them with scroll.
+// The four ACMeSIM app screens shown inside the homepage phone. AcmesimStory drives them with scroll until the
+// visitor taps the phone; from then on the buttons here work like the app (pick a destination, a plan, Continue,
+// install, connected, start over).
 // PLACEHOLDER: destinations, plan sizes and usage figures are illustrative mock UI, not real ACMeSIM plans or prices.
 import Icon from '../Icon.astro';
 const destinations = ['United Kingdom', 'Türkiye', 'Japan', 'Saudi Arabia', 'Egypt', 'United Arab Emirates', 'Singapore', 'Thailand'];
 const pick = destinations.indexOf('United Arab Emirates');
 const plans = ['5 GB, 15 days', '10 GB, 30 days', '20 GB, 30 days'];
+const plan = 1;
 ---
-<div class="relative h-[24.5rem] overflow-hidden" data-screens>
+<div class="relative h-[24.5rem] overflow-hidden" data-screens data-pick={pick} data-plan={plan}>
   <!-- 1. Destination -->
   <div class="screen absolute inset-0" data-screen="1">
     <p class="text-[0.65rem] text-ink-faint">Where to?</p>
     <div class="mt-2 flex items-center gap-2 rounded-xl border border-line-strong bg-white/[0.04] px-3 py-2 text-[0.7rem] text-ink-muted"><Icon name="search" size={13} />Search destination</div>
-    <div class="relative mt-3 h-[19rem] overflow-hidden [mask-image:linear-gradient(transparent,black_8%,black_88%,transparent)]">
-      <ul class="relative space-y-2" data-dest-list style={`--pick:${pick}`}>
-        <span aria-hidden="true" class="dest-hl absolute inset-x-0 top-0 h-[2.5rem] rounded-xl border border-teal-400 bg-teal-500/10" data-dest-hl></span>
-        {destinations.map((d) => (
-          <li class="relative flex h-[2.5rem] items-center justify-between rounded-xl border border-line bg-white/[0.03] px-3 text-[0.7rem] text-ink">
-            <span class="flex items-center gap-2"><Icon name="map-pin" size={13} class="text-teal-400" />{d}</span>
-            <Icon name="chevron-down" size={13} class="-rotate-90 text-ink-faint" />
+    <div class="dest-scroll relative mt-3 h-[19rem] overflow-hidden [mask-image:linear-gradient(transparent,black_8%,black_88%,transparent)]" data-dest-scroll>
+      <ul class="relative space-y-2 py-2" data-dest-list style={`--pick:${pick}`}>
+        <span aria-hidden="true" class="dest-hl pointer-events-none absolute inset-x-0 top-2 h-[2.5rem] rounded-xl border border-teal-400 bg-teal-500/10" data-dest-hl></span>
+        {destinations.map((d, i) => (
+          <li class="relative">
+            <button type="button" class="flex h-[2.5rem] w-full cursor-pointer items-center justify-between rounded-xl border border-line bg-white/[0.03] px-3 text-left text-[0.7rem] text-ink transition-colors hover:bg-white/[0.07]" data-dest={i} data-name={d}>
+              <span class="flex items-center gap-2"><Icon name="map-pin" size={13} class="text-teal-400" />{d}</span>
+              <Icon name="chevron-down" size={13} class="-rotate-90 text-ink-faint" />
+            </button>
           </li>
         ))}
       </ul>
@@ -26,22 +31,24 @@ const plans = ['5 GB, 15 days', '10 GB, 30 days', '20 GB, 30 days'];
 
   <!-- 2. Plan -->
   <div class="screen absolute inset-0" data-screen="2">
-    <p class="text-[0.65rem] text-ink-faint">United Arab Emirates</p>
+    <button type="button" class="-ml-1 flex cursor-pointer items-center gap-0.5 rounded px-1 text-[0.65rem] text-ink-faint transition-colors hover:text-ink" data-back aria-label="Back to destinations">
+      <Icon name="chevron-down" size={12} class="rotate-90" /><span data-dest-name>{destinations[pick]}</span>
+    </button>
     <p class="font-display text-base font-semibold text-ink">Select your plan</p>
     <div class="relative mt-3 space-y-2">
-      <span aria-hidden="true" class="absolute inset-x-0 top-0 h-[3.25rem] rounded-xl border border-teal-400 bg-teal-500/10" style="transform:translateY(3.75rem)" data-plan-hl></span>
+      <span aria-hidden="true" class="pointer-events-none absolute inset-x-0 top-0 h-[3.25rem] rounded-xl border border-teal-400 bg-teal-500/10" style={`transform:translateY(${plan * 3.75}rem)`} data-plan-hl></span>
       {plans.map((p, j) => (
-        <div class="relative flex h-[3.25rem] items-center justify-between rounded-xl border border-line bg-white/[0.03] px-3 text-xs text-ink">
+        <button type="button" class="relative flex h-[3.25rem] w-full cursor-pointer items-center justify-between rounded-xl border border-line bg-white/[0.03] px-3 text-left text-xs text-ink transition-colors hover:bg-white/[0.07]" data-plan-opt={j} data-name={p} aria-pressed={j === plan ? 'true' : 'false'}>
           <span class="font-display text-[0.8rem] font-semibold">{p}</span>
-          <span class="grid size-4 place-items-center rounded-full border border-line-strong">{j === 1 && <span class="size-2 rounded-full bg-teal-400" data-plan-check></span>}</span>
-        </div>
+          <span class="grid size-4 place-items-center rounded-full border border-line-strong"><span class:list={['size-2 rounded-full bg-teal-400', j !== plan && 'opacity-0']} data-plan-dot data-plan-check={j === plan ? '' : undefined}></span></span>
+        </button>
       ))}
     </div>
     <ul class="mt-4 space-y-1.5 text-[0.65rem] text-ink-muted">
       <li class="flex items-center gap-1.5"><Icon name="check" size={12} class="text-teal-400" />No roaming charges</li>
       <li class="flex items-center gap-1.5"><Icon name="check" size={12} class="text-teal-400" />No activation fees</li>
     </ul>
-    <div class="mt-5 rounded-full bg-teal-500 py-2.5 text-center text-xs font-semibold text-navy-950" data-plan-cta>Continue</div>
+    <button type="button" class="mt-5 block w-full cursor-pointer rounded-full bg-teal-500 py-2.5 text-center text-xs font-semibold text-navy-950 transition-colors hover:bg-teal-400" data-plan-cta>Continue</button>
   </div>
 
   <!-- 3. Install -->
@@ -54,7 +61,7 @@ const plans = ['5 GB, 15 days', '10 GB, 30 days', '20 GB, 30 days'];
       <span class="text-teal-300 opacity-0" data-install-sim><Icon name="sim" size={34} /></span>
       <span class="absolute grid size-14 place-items-center rounded-full bg-teal-500 text-navy-950" data-install-done><Icon name="check" size={28} /></span>
     </div>
-    <div class="relative mt-6 h-12 w-full text-center">
+    <div class="relative mt-6 h-12 w-full text-center" aria-live="polite">
       <p class="absolute inset-x-0 font-display text-base font-semibold text-ink opacity-0" data-install-a>Installing eSIM</p>
       <p class="absolute inset-x-0 font-display text-base font-semibold text-ink" data-install-b>eSIM installed</p>
       <p class="absolute inset-x-0 top-6 text-[0.7rem] text-ink-muted">One tap, no QR codes</p>
@@ -62,12 +69,12 @@ const plans = ['5 GB, 15 days', '10 GB, 30 days', '20 GB, 30 days'];
   </div>
 
   <!-- 4. Connected -->
-  <div class="screen absolute inset-0" data-screen="4">
+  <div class="screen absolute inset-0 flex flex-col" data-screen="4">
     <p class="text-[0.65rem] text-ink-faint">Connected in</p>
-    <p class="font-display text-base font-semibold text-ink">United Arab Emirates</p>
+    <p class="font-display text-base font-semibold text-ink" data-dest-name>{destinations[pick]}</p>
     <div class="mt-3 rounded-xl bg-gradient-to-br from-teal-500 to-green-700 p-3 text-navy-950">
       <p class="text-[0.6rem] font-semibold opacity-80">ACTIVE PLAN</p>
-      <p class="mt-0.5 font-display text-lg font-bold">10 GB, 30 days</p>
+      <p class="mt-0.5 font-display text-lg font-bold" data-plan-name>{plans[plan]}</p>
       <div class="mt-2 h-1 rounded-full bg-navy-950/20"><div class="h-full w-full origin-left rounded-full bg-navy-950/70" style="transform:scaleX(0.32)" data-usage></div></div>
       <p class="mt-1.5 flex justify-between text-[0.6rem] font-semibold opacity-80"><span>Data used</span><span>Live</span></p>
     </div>
@@ -76,9 +83,15 @@ const plans = ['5 GB, 15 days', '10 GB, 30 days', '20 GB, 30 days'];
         <div class="flex items-center justify-between rounded-lg border border-line bg-white/[0.03] px-2.5 py-2 text-[0.65rem] text-ink" data-status-row><span>{t}</span><span class="size-1.5 rounded-full bg-teal-400"></span></div>
       ))}
     </div>
+    <button type="button" class="mx-auto mt-auto cursor-pointer rounded-full px-3 py-1.5 text-[0.65rem] font-semibold text-teal-300 transition-colors hover:text-ink" data-restart>Start over</button>
   </div>
 </div>
 
 <style>
   .dest-hl { transform: translateY(calc(var(--pick) * 3rem)); }
+  /* Hands-on mode: the destination list scrolls natively. */
+  [data-screens][data-manual] .dest-scroll { overflow-y: auto; scrollbar-width: none; }
+  [data-screens][data-manual] .dest-scroll::-webkit-scrollbar { display: none; }
+  /* Scroll demo: the whole screen is one tap target that hands the phone over. */
+  [data-screens]:not([data-manual]) { cursor: pointer; }
 </style>

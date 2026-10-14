@@ -1,13 +1,30 @@
 ---
-// Page section wrapper. tone: 'base' = navy-900, 'raised' = brand navy-800 band, 'glow' = base with teal aurora.
+// Page section wrapper. tone: 'base' = navy-900, 'raised' = brand navy-800 band, 'glow' = base with teal aurora,
+// 'terminal' = navy-950 band with teal code rain, CRT scanlines and mono type (use sparingly: one per page).
 // bg: fade in a fixed background layer while the section is on screen (base/glow tones only; raised is opaque).
-interface Props { id?: string; tone?: 'base' | 'raised' | 'glow'; bg?: 'glow' | 'grid'; class?: string; tight?: boolean }
-const { id, tone = 'base', bg, class: className = '', tight = false } = Astro.props;
+// rain: the terminal's teal code rain behind any non-terminal band, without the CRT or mono type.
+// Both rain and terminal also get falling beams that burst on the band's floor (data-beams, src/scripts/beams.ts).
+interface Props { id?: string; tone?: 'base' | 'raised' | 'glow' | 'terminal'; bg?: 'glow' | 'grid'; rain?: boolean; class?: string; tight?: boolean }
+const { id, tone = 'base', bg, rain = false, class: className = '', tight = false } = Astro.props;
+const terminal = tone === 'terminal';
 ---
-<section id={id} data-bg={bg} class:list={['relative', tight ? 'py-12 sm:py-14' : 'py-16 sm:py-20', tone === 'raised' && 'bg-navy-800 border-y border-line', tone === 'glow' && 'overflow-hidden', className]}>
+<section id={id} data-bg={bg} class:list={['relative', tight ? 'py-12 sm:py-14' : 'py-16 sm:py-20', tone === 'raised' && 'bg-navy-800 border-y border-line', (tone === 'glow' || rain) && 'overflow-hidden', terminal && 'terminal overflow-hidden border-y border-teal-500/20 bg-navy-950 sm:py-24', className]}>
   {tone === 'glow' && (
     <div aria-hidden="true" class="pointer-events-none absolute inset-0">
       <div class="absolute left-1/2 top-1/2 h-[36rem] w-[36rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-teal-500/10 blur-3xl"></div>
+    </div>
+  )}
+  {rain && !terminal && (
+    <div aria-hidden="true" class="pointer-events-none absolute inset-0">
+      <canvas class="section-rain absolute inset-0 size-full" data-code-rain></canvas>
+      <canvas class="absolute inset-0 size-full" data-beams></canvas>
+    </div>
+  )}
+  {terminal && (
+    <div aria-hidden="true" class="pointer-events-none absolute inset-0">
+      <canvas class="terminal-rain absolute inset-0 size-full" data-code-rain></canvas>
+      <canvas class="absolute inset-0 size-full" data-beams></canvas>
+      <div class="terminal-crt absolute inset-0"></div>
     </div>
   )}
   <div class="container-x relative"><slot /></div>

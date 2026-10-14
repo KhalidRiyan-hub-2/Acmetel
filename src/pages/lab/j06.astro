@@ -1,0 +1,255 @@
+---
+// LAB J06 (docs/agents/QUEUE.md): Fraud Management as a dedicated homepage section, with a generic anonymous mask
+// (a plain domino eye-mask, no recognisable design, no face behind it) that breaks into pixels.
+// Same text column in every direction (verbatim from content/source/voice.md "Fraud Management & Revenue
+// Assurance"); only the visual changes. All three sample the mask into a grid of cells on a Canvas 2D.
+//   A  Scan & scatter  a detection line sweeps down the mask; cells it passes flash teal and scatter away; what is
+//                      left is the mask's outline, flagged. ~2.4 s on first view, replays on hover.
+//   B  Evidence sort   scrubbed to scroll: the mask dissolves left to right and its cells fly down into four tidy
+//                      stacks (one per source feature) under it. Plays forwards and backwards with the page.
+//   C  Mask → shield   the mask's cells fly into a shield and turn teal; a check draws over it. ~2 s, replays on hover.
+// Decorative (aria-hidden). Tokens only. Not linked, noindex.
+import Lab from './_Lab.astro';
+import Section from '../../components/Section.astro';
+import SectionHeading from '../../components/SectionHeading.astro';
+import SplitSection from '../../components/SplitSection.astro';
+import CheckList from '../../components/CheckList.astro';
+import Button from '../../components/Button.astro';
+
+const features = ['Real-time fraud detection', 'Intelligent automation', 'Test call generation', 'Revenue leakage prevention'];
+const dirs = [
+  { id: 'a', name: 'Scan & scatter', note: 'A detection line sweeps down the mask; the cells it passes scatter. The mask outline stays behind, flagged. Time-based, replays on hover.' },
+  { id: 'b', name: 'Evidence sort', note: 'Scroll-scrubbed. The mask dissolves left to right and its cells settle into four stacks, one per feature. Plays backwards when you scroll up.' },
+  { id: 'c', name: 'Mask to shield', note: 'The mask\'s cells fly into a shield and turn teal, then a check draws over it. Time-based, replays on hover.' },
+];
+---
+<Lab title="J06 Fraud Management">
+  <header class="container-x pt-16 pb-6">
+    <p class="eyebrow">Lab · J06</p>
+    <h1 class="mt-3 text-3xl font-semibold text-ink sm:text-4xl">Fraud Management section, mask into pixels</h1>
+    <p class="mt-3 max-w-2xl text-ink-muted">Three directions for the dedicated homepage section. Text column is identical (source copy); the visual sits on the left, mirroring the SMS Firewall section above it.</p>
+  </header>
+
+  {dirs.map((d, i) => (
+    <Section tone={i % 2 ? 'base' : 'raised'}>
+      <div class="mb-10 flex flex-wrap items-end justify-between gap-4 border-b border-line pb-6">
+        <div>
+          <p class="font-mono text-xs text-teal-300">Direction {d.id.toUpperCase()}</p>
+          <h2 class="mt-1 text-xl font-semibold text-ink">{d.name}</h2>
+          <p class="mt-2 max-w-2xl text-sm text-ink-muted">{d.note}</p>
+        </div>
+        <button type="button" class="rounded-full border border-line-strong px-4 py-2 text-sm font-semibold text-teal-300 hover:border-teal-500/60" data-replay={d.id}>Replay</button>
+      </div>
+      <SplitSection reverse>
+        <SectionHeading eyebrow="Fraud Management" title="Fraud management &" highlight="revenue assurance" lede="Protect your network and revenue streams with advanced fraud detection technologies." />
+        <CheckList items={features} columns={2} class="mt-8" />
+        <div class="mt-8"><Button href="/services/voice#fraud-management" variant="outline">Explore Fraud Management</Button></div>
+        <div slot="visual" class="relative aspect-[4/3]" data-mask-box={d.id}>
+          <canvas class="absolute inset-0 size-full" data-mask={d.id} aria-hidden="true"></canvas>
+        </div>
+      </SplitSection>
+    </Section>
+  ))}
+  <div class="h-[60vh]"></div>
+</Lab>
+
+<script>
+  import { visibleLoop, prefersReducedMotion, finePointer, ScrollTrigger, SCRUB } from '../../scripts/motion';
+  import { initReveal, tokens, fit, replays, bindReplays, whenSeen, clamp01, ease, easeOut, type Fit } from './_kit';
+
+  initReveal(); bindReplays();
+  const reduced = prefersReducedMotion();
+  const C = tokens();
+
+  // Generic domino eye-mask in a 240 × 120 box (evenodd: the eye holes are cut out).
+  const MASK = 'M12 46 C12 18 64 8 120 24 C176 8 228 18 228 46 C228 82 198 106 160 106 C140 106 128 92 120 84 C112 92 100 106 80 106 C42 106 12 82 12 46 Z '
+    + 'M48 58 C56 42 92 40 104 58 C92 72 58 74 48 58 Z M136 58 C148 40 184 42 192 58 C182 74 148 72 136 58 Z';
+  // Shield in a 100 × 120 box.
+  const SHIELD = 'M50 4 L94 20 V56 C94 86 74 106 50 116 C26 106 6 86 6 56 V20 Z';
+
+  type Cell = { hx: number; hy: number; x: number; y: number; tx: number; ty: number; vx: number; vy: number; r: number; shade: number };
+  interface Layout { f: Fit; cell: number; box: { x: number; y: number; w: number; h: number }; path: Path2D; cells: Cell[] }
+
+  /** Fits the mask into the canvas and samples it into cells (one per grid square whose centre is inside). */
+  function layout(canvas: HTMLCanvasElement, widthK = 0.84, centreY = 0.42): Layout {
+    const f = fit(canvas);
+    const bw = Math.min(f.w * widthK, f.h * 1.5), bh = bw / 2;
+    const box = { x: (f.w - bw) / 2, y: f.h * centreY - bh / 2, w: bw, h: bh };
+    const cell = Math.max(5, Math.round(bw / 58));
+    const m = new DOMMatrix().translate(box.x, box.y).scale(bw / 240, bh / 120);
+    const path = new Path2D(); path.addPath(new Path2D(MASK), m);
+    const probe = document.createElement('canvas').getContext('2d')!;
+    const cells: Cell[] = [];
+    for (let y = box.y; y < box.y + bh; y += cell) for (let x = box.x; x < box.x + bw; x += cell) {
+      if (!probe.isPointInPath(path, x + cell / 2, y + cell / 2, 'evenodd')) continue;
+      // Shade: lighter at the top of the mask, like a lit surface.
+      const shade = 1 - (y - box.y) / bh * 0.5 + (Math.random() - 0.5) * 0.12;
+      cells.push({ hx: x, hy: y, x, y, tx: x, ty: y, vx: 0, vy: 0, r: Math.random(), shade });
+    }
+    return { f, cell, box, path, cells };
+  }
+
+  /** Mask cell colour: ink-muted greys (a pale mask on navy), blending to teal by `k`. */
+  const maskFill = (shade: number, k: number, a = 1) => {
+    const g = Math.round(150 + 70 * shade); // within the ink-muted → ink range
+    const r = Math.round(g * (1 - k) + 127 * k), gg = Math.round(g * (1 - k) + 220 * k), b = Math.round(Math.min(255, g + 20) * (1 - k) + 213 * k);
+    return `rgb(${r} ${gg} ${b} / ${a})`;
+  };
+
+  function drawFlag(ctx: CanvasRenderingContext2D, x: number, y: number, a: number) {
+    ctx.globalAlpha = a;
+    ctx.fillStyle = C.n800; ctx.strokeStyle = C.t300; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(x, y, 15, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x - 5, y + 7); ctx.lineTo(x - 5, y - 7); ctx.lineTo(x + 6, y - 4); ctx.lineTo(x - 5, y); ctx.stroke(); // flag
+    ctx.globalAlpha = 1;
+  }
+
+  // --- A: Scan & scatter ------------------------------------------------------------------------------------------
+  function scanScatter(canvas: HTMLCanvasElement) {
+    let L = layout(canvas);
+    let t = 0;
+    const DUR = 1.4; // scan time
+    const draw = () => {
+      const { f, cells, cell, box, path } = L; const { ctx, w, h } = f;
+      ctx.clearRect(0, 0, w, h);
+      const scanY = box.y - 10 + (box.h + 20) * clamp01(t / DUR);
+      // Outline revealed behind the scan line.
+      ctx.save(); ctx.beginPath(); ctx.rect(0, 0, w, scanY); ctx.clip();
+      ctx.strokeStyle = C.t300; ctx.lineWidth = 1.5; ctx.shadowColor = C.t400; ctx.shadowBlur = 8; ctx.stroke(path); ctx.restore();
+      for (const c of cells) {
+        const since = t - c.r * 0.08 - ((c.hy - box.y) / box.h) * DUR;
+        if (since < 0) { ctx.fillStyle = maskFill(c.shade, 0); ctx.fillRect(c.hx, c.hy, cell - 1, cell - 1); continue; }
+        const a = Math.max(0, 1 - since / 1.1);
+        if (a <= 0) continue;
+        ctx.fillStyle = maskFill(c.shade, Math.min(1, since * 4), a);
+        ctx.fillRect(c.x, c.y, cell - 1, cell - 1);
+      }
+      if (t < DUR + 0.2) { // the scan line
+        ctx.fillStyle = C.t300; ctx.globalAlpha = 0.9; ctx.fillRect(box.x - 20, scanY, box.w + 40, 1.5);
+        ctx.globalAlpha = 0.25; ctx.fillRect(box.x - 20, scanY - 6, box.w + 40, 6); ctx.globalAlpha = 1;
+      }
+      drawFlag(ctx, box.x + box.w * 0.92, box.y + box.h * 0.06, clamp01((t - DUR) / 0.4));
+    };
+    const step = (dt: number) => {
+      const { cells, box } = L;
+      t += dt;
+      const cx = box.x + box.w / 2, cy = box.y + box.h / 2;
+      for (const c of cells) {
+        const since = t - c.r * 0.08 - ((c.hy - box.y) / box.h) * DUR;
+        if (since < 0) continue;
+        if (c.vx === 0 && c.vy === 0) { const dx = c.hx - cx, dy = c.hy - cy, d = Math.hypot(dx, dy) || 1; const sp = 40 + c.r * 140; c.vx = (dx / d) * sp; c.vy = (dy / d) * sp - 30; }
+        c.x += c.vx * dt; c.y += c.vy * dt; c.vy += 60 * dt;
+      }
+    };
+    const reset = () => { t = 0; L.cells.forEach((c) => { c.x = c.hx; c.y = c.hy; c.vx = c.vy = 0; }); };
+    const end = () => { reset(); t = DUR + 2; draw(); };
+    new ResizeObserver(() => { L = layout(canvas); if (reduced) end(); else draw(); }).observe(canvas);
+    if (reduced) { end(); return; }
+    reset(); draw();
+    let playing = false;
+    const loop = visibleLoop(canvas, (_e, dt) => { if (!playing) return; step(dt); draw(); if (t > DUR + 1.6) { playing = false; loop.pause(); } });
+    const play = () => { reset(); playing = true; loop.play(); };
+    whenSeen(canvas, play, 0.5);
+    replays.a = play;
+    if (finePointer()) canvas.parentElement!.addEventListener('pointerenter', () => { if (!playing) play(); });
+  }
+
+  // --- B: Evidence sort (scroll-scrubbed) -------------------------------------------------------------------------
+  function evidence(canvas: HTMLCanvasElement) {
+    let L = layout(canvas, 0.78, 0.33);
+    let p = reduced ? 1 : 0;
+    const assign = () => {
+      // Four stacks along the bottom; each cell goes to the stack under its column band, packed bottom-up.
+      const { f, cells, cell, box } = L;
+      const per = Math.ceil(cells.length / 4), maxRows = Math.max(4, Math.floor((f.h * 0.34) / cell));
+      const cols = Math.ceil(per / maxRows);
+      const base = f.h * 0.94, stackW = cell * cols, gap = (f.w - stackW * 4) / 5;
+      const counts = [0, 0, 0, 0];
+      const sorted = [...cells].sort((a, b) => a.hx - b.hx || b.hy - a.hy);
+      sorted.forEach((c, i) => {
+        const k = Math.min(3, Math.floor((i / sorted.length) * 4));
+        const n = counts[k]++;
+        c.tx = gap + k * (stackW + gap) + (n % cols) * cell; c.ty = base - (Math.floor(n / cols) + 1) * cell;
+      });
+      void box;
+    };
+    const draw = () => {
+      const { f, cells, cell, box, path } = L; const { ctx, w, h } = f;
+      ctx.clearRect(0, 0, w, h);
+      ctx.strokeStyle = C.t300; ctx.globalAlpha = clamp01((p - 0.55) / 0.3) * 0.9; ctx.lineWidth = 1.5; ctx.stroke(path); ctx.globalAlpha = 1;
+      for (const c of cells) {
+        const th = ((c.hx - box.x) / box.w) * 0.55 + c.r * 0.15;
+        const k = ease((p - th) / 0.3);
+        const x = c.hx + (c.tx - c.hx) * k, y = c.hy + (c.ty - c.hy) * k - Math.sin(k * Math.PI) * 30;
+        ctx.fillStyle = maskFill(c.shade, k);
+        ctx.fillRect(x, y, cell - 1, cell - 1);
+      }
+      ctx.strokeStyle = C.line; ctx.beginPath(); ctx.moveTo(w * 0.04, h * 0.94 + 1); ctx.lineTo(w * 0.96, h * 0.94 + 1); ctx.stroke();
+    };
+    new ResizeObserver(() => { L = layout(canvas, 0.78, 0.33); assign(); draw(); }).observe(canvas);
+    assign(); draw();
+    if (reduced) return;
+    ScrollTrigger.create({
+      trigger: canvas, start: 'top 75%', end: 'bottom 35%', scrub: SCRUB,
+      onUpdate: (self) => { p = self.progress; draw(); },
+    });
+    replays.b = () => {};
+  }
+
+  // --- C: Mask → shield -------------------------------------------------------------------------------------------
+  function toShield(canvas: HTMLCanvasElement) {
+    let L = layout(canvas);
+    let shield = new Path2D(), check: [number, number][] = [];
+    let t = 0;
+    const assign = () => {
+      const { f, cells, cell } = L;
+      const sh = f.h * 0.78, sw = sh * (100 / 120), sx = (f.w - sw) / 2, sy = f.h * 0.42 - sh / 2;
+      const m = new DOMMatrix().translate(sx, sy).scale(sw / 100, sh / 120);
+      shield = new Path2D(); shield.addPath(new Path2D(SHIELD), m);
+      const probe = document.createElement('canvas').getContext('2d')!;
+      const targets: [number, number][] = [];
+      for (let y = sy; y < sy + sh; y += cell) for (let x = sx; x < sx + sw; x += cell) if (probe.isPointInPath(shield, x + cell / 2, y + cell / 2)) targets.push([x, y]);
+      const byX = [...cells].sort((a, b) => a.hx - b.hx || a.hy - b.hy);
+      targets.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+      byX.forEach((c, i) => { const tg = targets[Math.floor((i / byX.length) * targets.length)]; c.tx = tg[0]; c.ty = tg[1]; });
+      check = [[sx + sw * 0.3, sy + sh * 0.5], [sx + sw * 0.45, sy + sh * 0.64], [sx + sw * 0.72, sy + sh * 0.36]];
+    };
+    const D = 1.6;
+    const draw = () => {
+      const { f, cells, cell, box } = L; const { ctx, w, h } = f;
+      ctx.clearRect(0, 0, w, h);
+      const cx = box.x + box.w / 2;
+      for (const c of cells) {
+        const delay = (Math.abs(c.hx - cx) / (box.w / 2)) * 0.5 + c.r * 0.15;
+        const k = easeOut((t - delay) / (D - 0.5));
+        const x = c.hx + (c.tx - c.hx) * k, y = c.hy + (c.ty - c.hy) * k;
+        ctx.fillStyle = maskFill(c.shade, k);
+        ctx.fillRect(x, y, cell - 1, cell - 1);
+      }
+      // Check mark draws over the shield once the cells are home.
+      const ck = clamp01((t - D) / 0.45);
+      if (ck > 0) {
+        ctx.strokeStyle = C.n950; ctx.lineWidth = Math.max(4, cell * 1.2); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        ctx.beginPath(); ctx.moveTo(...check[0]);
+        const seg1 = Math.min(1, ck * 2.4), seg2 = clamp01(ck * 2.4 - 1) / 1.4;
+        ctx.lineTo(check[0][0] + (check[1][0] - check[0][0]) * seg1, check[0][1] + (check[1][1] - check[0][1]) * seg1);
+        if (seg2 > 0) ctx.lineTo(check[1][0] + (check[2][0] - check[1][0]) * Math.min(1, seg2), check[1][1] + (check[2][1] - check[1][1]) * Math.min(1, seg2));
+        ctx.stroke();
+      }
+    };
+    new ResizeObserver(() => { L = layout(canvas); assign(); draw(); }).observe(canvas);
+    assign();
+    if (reduced) { t = D + 2; draw(); return; }
+    draw();
+    let playing = false;
+    const loop = visibleLoop(canvas, (_e, dt) => { if (!playing) return; t += dt; draw(); if (t > D + 0.8) { playing = false; loop.pause(); } });
+    const play = () => { t = 0; playing = true; loop.play(); };
+    whenSeen(canvas, () => setTimeout(play, 300), 0.5);
+    replays.c = play;
+    if (finePointer()) canvas.parentElement!.addEventListener('pointerenter', () => { if (!playing) play(); });
+  }
+
+  document.fonts.ready.then(() => {
+    document.querySelectorAll<HTMLCanvasElement>('canvas[data-mask]').forEach((c) => ({ a: scanScatter, b: evidence, c: toShield })[c.dataset.mask as 'a' | 'b' | 'c'](c));
+  });
+</script>

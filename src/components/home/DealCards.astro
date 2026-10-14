@@ -10,8 +10,8 @@ const { cards } = Astro.props;
 ---
 
 <div class="deal grid items-center gap-12 lg:grid-cols-2 lg:gap-20" data-deal>
-  <!-- Opaque so the deck is hidden behind it before the deal. -->
-  <div class="deal-copy relative z-20 bg-navy-900 lg:py-6"><slot /></div>
+  <!-- No background: the parked deck is invisible (opacity 0) and each card fades in as it leaves the copy. -->
+  <div class="deal-copy relative z-20 lg:py-6"><slot /></div>
   <ul class="deal-grid relative z-10 grid gap-4 sm:grid-cols-2" role="list">
     {cards.map((c, i) => (
       <li class:list={['deal-card glass spotlight border-transparent p-6 transition-[translate,rotate,background-color] duration-300 hover:-translate-y-1.5 hover:rotate-[-1.2deg] hover:bg-white/[0.03]', i % 2 === 1 && 'sm:translate-y-6 sm:hover:translate-y-4.5']} data-reveal>
@@ -60,7 +60,7 @@ const { cards } = Astro.props;
         place();
 
         const tl = gsap.timeline({ paused: true });
-        tl.to(cards, { opacity: 1, duration: 0.2, stagger: 0.22 }, 0)
+        tl.to(cards, { opacity: 1, duration: 0.3, stagger: 0.22 }, 0.2)
           .to(cards, {
             x: 0, y: 0, rotation: 0, scale: 1,
             duration: 0.85, ease: 'back.out(1.5)', stagger: 0.22,

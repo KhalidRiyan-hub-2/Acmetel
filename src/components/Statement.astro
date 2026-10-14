@@ -6,7 +6,7 @@
 interface Props { text: string; highlight?: string; eyebrow?: string; as?: 'h2' | 'p'; bg?: 'glow' | 'grid'; class?: string }
 const { text, highlight, eyebrow, as: Tag = 'h2', bg, class: className = '' } = Astro.props;
 ---
-<section class:list={['statement relative', className]} data-assemble data-bg={bg}>
+<section class:list={['statement relative overflow-x-clip', className]} data-assemble data-bg={bg}>
   <div class="container-x flex min-h-svh flex-col items-center justify-center py-24 text-center">
     {eyebrow && <p class="eyebrow mb-8">{eyebrow}</p>}
     <Tag class="max-w-5xl font-display text-[2.6rem] font-bold leading-[1.04] text-ink sm:text-6xl lg:text-7xl xl:text-[5.25rem]">

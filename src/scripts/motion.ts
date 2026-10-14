@@ -148,11 +148,13 @@ export function visibleLoop(el: Element, tick: (t: number, dt: number) => void):
 
   const running = () => onScreen && !userPaused && !document.hidden;
   const frame = (now: number) => {
+    raf = 0;
     const dt = last ? Math.min((now - last) / 1000, 0.1) : 0;
     last = now;
     elapsed += dt;
     tick(elapsed, dt);
-    raf = requestAnimationFrame(frame);
+    // Reschedule only if still running: tick may have paused (or already restarted) the loop.
+    if (running() && !raf) raf = requestAnimationFrame(frame);
   };
   const sync = () => {
     if (running() && !raf) { last = 0; raf = requestAnimationFrame(frame); }

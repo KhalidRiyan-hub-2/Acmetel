@@ -1,0 +1,80 @@
+---
+// LAB J09 board renderer (one direction): two decorative SVGs (desktop ≥768px, phone below) plus one set of real
+// links laid over them at the same coordinates. Lab only; delete with j09.astro once J09 ships.
+import Icon from '../../components/Icon.astro';
+import PauseButton from '../../components/PauseButton.astro';
+import { sisPages, SIS_BASE } from '../../data/site';
+import { pct, type Layout, type Trace } from './_j09';
+
+interface Props { id: string; kind: 'a' | 'b' | 'c'; d: Layout; m: Layout }
+const { id, kind, d, m } = Astro.props;
+
+// Packet timing per trace: different periods per chip so the buses never pulse in lockstep.
+const dur = (k: number) => (2.6 + ((k * 0.53) % 1.3)).toFixed(2);
+const pkStyle = (t: Trace, n: number) => {
+  if (kind === 'a') return `--dur:${dur(t.k)}s;--dl:-${((n * 0.83) % 2.6).toFixed(2)}s`;
+  if (kind === 'b') return '';
+  return `--dl:${(1.7 + t.k * 1.2).toFixed(2)}s`;
+};
+// Boot delay (direction C): how far along the bus the card sits.
+// The bus draws linearly in 0.9 s, so a card's stub starts when the bus front reaches it (x on desktop, y on phones).
+const boot = (L: Layout, k: number) => {
+  if (k < 0) return 0;
+  const c = L.chips[k];
+  const f = L.W < 500 ? (c.y + c.h / 2 - L.core.y - L.core.h) / (L.H - L.core.y - L.core.h) : (c.x + c.w / 2 - L.core.x - L.core.w) / (L.W - L.core.x - L.core.w);
+  return Math.max(0, f) * 0.9;
+};
+---
+<div class:list={['board', `board-${kind}`]} data-board={id}>
+  <div class="board-box relative" style={`--ar:${d.W}/${d.H};--mar:${m.W}/${m.H}`}>
+    {[d, m].map((L, li) => (
+      <svg aria-hidden="true" class:list={['absolute inset-0 size-full', li ? 'mob' : 'desk']} viewBox={`0 0 ${L.W} ${L.H}`} fill="none">
+        {kind === 'b' && (
+          <defs>
+            <pattern id={`cells-${id}-${li}`} width="6" height="9" patternUnits="userSpaceOnUse">
+              <path d="M0 4.5H6" class="cellrow" />
+              <path d="M2 0v3M5 5v3" class="cellcut" />
+            </pattern>
+          </defs>
+        )}
+        {/* Board plate / die */}
+        {kind === 'b'
+          ? <rect class="plate" x="6" y="6" width={L.W - 12} height={L.H - 12} rx="4" />
+          : <rect class="plate" x="2" y="2" width={L.W - 4} height={L.H - 4} rx="18" />}
+        {kind !== 'b' && [[18, 18], [L.W - 18, 18], [18, L.H - 18], [L.W - 18, L.H - 18]].map(([x, y]) => <circle class="hole" cx={x} cy={y} r="6" />)}
+        {L.pads?.map((p) => <rect class="pad" x={p.x} y={p.y} width={p.w} height={p.h} rx="1" />)}
+        {kind === 'b' && [...L.chips, ...(L.regions ?? [])].map((r) => <rect class="cells" x={r.x} y={r.y} width={r.w} height={r.h} fill={`url(#cells-${id}-${li})`} />)}
+        {kind === 'b' && L.regions?.map((r) => <rect class="spare" x={r.x} y={r.y} width={r.w} height={r.h} />)}
+        {L.deco.map((p) => <path class="deco" d={p} />)}
+        {L.fingers?.map((p) => <path class="finger" d={p} />)}
+        {L.traces.map((t) => <path class="tr" data-k={t.k} d={t.d} pathLength="100" style={kind === 'c' ? `--bd:${boot(L, t.k).toFixed(2)}s` : undefined} />)}
+        {kind === 'c' && L.traces.filter((t) => t.pk).map((t) => <path class="route" data-k={t.k} d={t.d} />)}
+        {L.ticks?.map((t) => <path class="tk" data-k={t.k} d={t.d} style={`--depth:${t.depth ?? 0}`} />)}
+        {L.traces.filter((t) => t.pk).map((t, n) => <path class:list={['pk', t.rev && 'rev']} data-k={t.k} d={t.d} pathLength="100" style={pkStyle(t, n)} />)}
+        {L.vias.map(([x, y]) => <circle class="via" cx={x} cy={y} r={li ? 2.6 : 3.4} />)}
+        {L.labels?.map((l) => <text class="silk" x={l.x} y={l.y} text-anchor={l.anchor ?? 'start'}>{l.t}</text>)}
+      </svg>
+    ))}
+
+    <a href={SIS_BASE} class="core group" style={`${pct(d.core, d)};${pct(m.core, m, 'm')}`}>
+      <span class="core-die">
+        <Icon name="layers" size={22} class="text-teal-300" />
+        <span class="mt-2 block font-display text-base font-semibold leading-tight text-ink sm:text-lg">Sovereign Intelligence Stack</span>
+        <span class="mt-1.5 inline-flex items-center gap-1.5 text-xs font-semibold text-teal-300">Explore the stack<Icon name="arrow-right" size={14} class="transition-transform group-hover:translate-x-0.5" /></span>
+      </span>
+    </a>
+
+    {sisPages.map((p, k) => (
+      <a href={p.href} class="chip group" data-k={k} style={`${pct(d.chips[k], d)};${pct(m.chips[k], m, 'm')};--bd:${boot(d, k).toFixed(2)}s;--mbd:${boot(m, k).toFixed(2)}s;--pl:${(1.7 + k * 1.2 + 0.75).toFixed(2)}s`}>
+        <span class="chip-icon"><Icon name={p.icon as any} size={18} /></span>
+        <span class="min-w-0">
+          <span class="block font-display text-sm font-semibold leading-snug text-ink transition-colors group-hover:text-teal-300">{p.label}</span>
+          <span class="chip-desc mt-0.5 block text-xs leading-snug text-ink-muted">{p.description}</span>
+        </span>
+        {kind !== 'b' && <span class="led" aria-hidden="true"></span>}
+      </a>
+    ))}
+
+    <PauseButton class="absolute -top-12 right-0 z-10" />
+  </div>
+</div>

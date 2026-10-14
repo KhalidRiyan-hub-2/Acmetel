@@ -7,6 +7,10 @@
 // Desktop with motion: the phone slides in from the right edge as the section arrives, the section pins, and
 // four scroll steps play on the screen. The cards start stacked where the phone came from and dock one by one
 // beside the phone as their step plays. Mobile: no pin; the phone slides in and its screens follow scroll.
+//
+// Hands-on mode: tapping the phone (or "Try it yourself") stops scroll from driving the screens and the app works
+// for real: scroll the list, pick a destination and plan, install, start over. Cards still dock on scroll and the
+// one for the current step lights. Reduced motion starts in hands-on mode on the connected screen.
 import Icon, { type IconName } from '../Icon.astro';
 import Button from '../Button.astro';
 import PhoneMockup from '../PhoneMockup.astro';
@@ -56,7 +60,8 @@ const steps = ['Choose your destination', 'Select your data plan', 'Install your
       <div class="acm-stage relative" data-acm-stage>
         <ul role="list" class="acm-grid relative grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-[minmax(0,1fr)_13.5rem_minmax(0,1fr)] lg:grid-rows-3 lg:gap-x-7 lg:gap-y-4 xl:grid-cols-[minmax(0,1fr)_15rem_minmax(0,1fr)] xl:gap-x-9">
           <li class="acm-phone col-span-2 row-start-1 mb-6 lg:col-span-1 lg:col-start-2 lg:row-span-3 lg:row-start-1 lg:mb-0 lg:self-center" data-acm-phone>
-            <PhoneMockup tilt={false} class="w-60! lg:w-[13.5rem]! xl:w-60!"><AcmesimScreens /></PhoneMockup>
+            <PhoneMockup tilt={false} interactive class="w-60! lg:w-[13.5rem]! xl:w-60!"><AcmesimScreens /></PhoneMockup>
+            <button type="button" hidden class="mx-auto mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-teal-500/40 bg-teal-500/10 px-3.5 py-1.5 font-mono text-[0.65rem] uppercase tracking-[0.16em] text-teal-300 transition-colors hover:bg-teal-500/20" data-acm-try><Icon name="smartphone" size={13} />Try it yourself</button>
           </li>
           {cards.map((c) => (
             <li class:list={['acm-card relative', place[c.slot]]} data-acm-card data-slot={c.slot} data-step={c.step}>
@@ -102,11 +107,19 @@ const steps = ['Choose your destination', 'Select your data plan', 'Install your
     const links = cards.map((c) => c.querySelector<HTMLElement>('.acm-link')!);
     const stepEls = [...root.querySelectorAll<HTMLElement>('.acm-step')];
     const q = <T extends Element = HTMLElement>(s: string) => root.querySelector<T>(s)!;
+    const qa = <T extends Element = HTMLElement>(s: string) => [...root.querySelectorAll<T>(s)];
+    const screensEl = q('[data-screens]');
     const screens = [1, 2, 3, 4].map((n) => q(`[data-screen="${n}"]`));
+    const destScroll = q('[data-dest-scroll]');
     const destList = q('[data-dest-list]');
     const destHl = q('[data-dest-hl]');
+    const destBtns = qa<HTMLButtonElement>('[data-dest]');
+    const destNames = qa('[data-dest-name]');
     const planHl = q('[data-plan-hl]');
     const planCheck = q('[data-plan-check]');
+    const planBtns = qa<HTMLButtonElement>('[data-plan-opt]');
+    const planDots = qa('[data-plan-dot]');
+    const planName = q('[data-plan-name]');
     const planCta = q('[data-plan-cta]');
     const ring = q<SVGCircleElement>('[data-install-ring]');
     const sim = q('[data-install-sim]');
@@ -114,16 +127,142 @@ const steps = ['Choose your destination', 'Select your data plan', 'Install your
     const instA = q('[data-install-a]');
     const instB = q('[data-install-b]');
     const usage = q('[data-usage]');
-    const rows = [...root.querySelectorAll<HTMLElement>('[data-status-row]')];
-    const pick = Number(getComputedStyle(destList).getPropertyValue('--pick')) || 5;
-    const screenParts = [...screens, destList, destHl, planHl, planCheck, planCta, ring, sim, done, instA, instB, usage, ...rows];
+    const rows = qa('[data-status-row]');
+    const tryBtn = q<HTMLButtonElement>('[data-acm-try]');
+    const pick = Number(screensEl.dataset.pick) || 5;
+    const screenParts = [...screens, destList, destHl, planHl, ...planDots, planCta, ring, sim, done, instA, instB, usage, ...rows];
 
-    if (prefersReducedMotion()) return; // markup already shows the final composition and the connected screen
-
+    const reduced = prefersReducedMotion();
     const rem = () => parseFloat(getComputedStyle(document.documentElement).fontSize);
     const ease = 'power3.inOut';
     const ir = { immediateRender: false };
+    const d = (s: number) => (reduced ? 0 : s);
+    // The install ring uses pathLength=1, so its dash offset runs 0–1: its tweens set autoRound: false so GSAP
+    // doesn't round it to whole pixels (which would jump straight from empty to full).
 
+    // ------------------------------------------------------------------ hands-on mode
+    const app = { manual: false, screen: 4, plan: Number(screensEl.dataset.plan) || 1 };
+    let stopDemo: (() => void) | null = null; // set by whichever scroll demo is running
+    let installTl: gsap.core.Timeline | null = null;
+
+    const markStep = (step: number) => {
+      stepEls.forEach((el, i) => { el.toggleAttribute('data-current', i + 1 === step); el.toggleAttribute('data-done', i + 1 < step); });
+      cards.forEach((c) => c.toggleAttribute('data-active', Number(c.dataset.step) === step));
+    };
+    const selectDest = (i: number, animate: boolean) => {
+      gsap.to(destHl, { y: i * 3 * rem(), duration: animate ? d(0.3) : 0, ease: 'power2.out' });
+      destNames.forEach((el) => { el.textContent = destBtns[i].dataset.name!; });
+    };
+    const selectPlan = (j: number, animate: boolean) => {
+      app.plan = j;
+      planBtns.forEach((b, k) => b.setAttribute('aria-pressed', String(k === j)));
+      planDots.forEach((dot, k) => gsap.to(dot, { opacity: k === j ? 1 : 0, scale: k === j ? 1 : 0.4, duration: animate ? d(0.25) : 0, ease: 'back.out(2)' }));
+      gsap.to(planHl, { y: j * 3.75 * rem(), duration: animate ? d(0.3) : 0, ease: 'power2.out' });
+      planName.textContent = planBtns[j].dataset.name!;
+    };
+    const runInstall = () => {
+      installTl?.kill();
+      gsap.set(ring, { strokeDashoffset: 1 });
+      gsap.set(sim, { opacity: 1, scale: 1 });
+      gsap.set(done, { opacity: 0, scale: 0.5 });
+      gsap.set(instA, { opacity: 1 });
+      gsap.set(instB, { opacity: 0 });
+      installTl = gsap.timeline({ onComplete: () => { installTl = null; if (app.screen === 3) show(4); } })
+        .to(ring, { strokeDashoffset: 0, duration: 1.4, ease: 'power1.inOut', autoRound: false }, 0.35)
+        .to(sim, { opacity: 0, scale: 0.6, duration: 0.2 }, 1.75)
+        .to(done, { opacity: 1, scale: 1, duration: 0.35, ease: 'back.out(1.8)' }, 1.78)
+        .to(instA, { opacity: 0, duration: 0.15 }, 1.75)
+        .to(instB, { opacity: 1, duration: 0.15 }, 1.82)
+        .to({}, { duration: 0.7 });
+    };
+    // Prepare a screen's contents as it opens.
+    const enter = (n: number) => {
+      if (n === 1) {
+        gsap.set(destList, { y: 0 });
+        const active = destBtns.findIndex((b) => b.dataset.name === destNames[0].textContent);
+        destScroll.scrollTop = Math.max(0, (active - 2) * 3 * rem());
+      }
+      if (n === 3) runInstall();
+      if (n === 4) {
+        gsap.fromTo(rows, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: d(0.35), stagger: d(0.08), delay: d(0.2), ease: 'power2.out' });
+        gsap.fromTo(usage, { scaleX: 0 }, { scaleX: 0.32, duration: d(0.8), delay: d(0.3), ease: 'power1.out' });
+      }
+    };
+    function show(n: number, animate = true) {
+      const prev = app.screen;
+      app.screen = n;
+      screens.forEach((s, i) => { s.inert = i + 1 !== n; });
+      gsap.killTweensOf(screens);
+      if (!animate || reduced || prev === n) {
+        gsap.set(screens, { opacity: 0, xPercent: 0 });
+        gsap.set(screens[n - 1], { opacity: 1 });
+      } else {
+        const dir = n > prev ? 1 : -1;
+        gsap.set(screens.filter((_, i) => i !== prev - 1 && i !== n - 1), { opacity: 0, xPercent: 0 });
+        gsap.to(screens[prev - 1], { xPercent: -28 * dir, opacity: 0, duration: 0.4, ease });
+        gsap.fromTo(screens[n - 1], { xPercent: 28 * dir, opacity: 0 }, { xPercent: 0, opacity: 1, duration: 0.4, ease, delay: 0.04 });
+      }
+      markStep(n);
+      enter(n);
+    }
+
+    // Stop the scroll demo and hand the phone over, on whichever screen the demo was showing.
+    const takeOver = () => {
+      if (app.manual) return;
+      let n = 4, max = -1;
+      screens.forEach((s, i) => { const o = Number(gsap.getProperty(s, 'opacity')); if (o > max) { max = o; n = i + 1; } });
+      const listY = Number(gsap.getProperty(destList, 'y')) || 0;
+      stopDemo?.();
+      stopDemo = null;
+      gsap.killTweensOf(screenParts);
+      app.manual = true;
+      screensEl.setAttribute('data-manual', '');
+      tryBtn.inert = true;
+      gsap.to(tryBtn, { autoAlpha: 0, duration: d(0.3) });
+      // Every screen settles into its finished state, then the visible one opens without a transition.
+      selectDest(pick, false);
+      selectPlan(app.plan, false);
+      gsap.set(ring, { strokeDashoffset: 0 });
+      gsap.set([sim, instA], { opacity: 0 });
+      gsap.set([done, instB], { opacity: 1, scale: 1 });
+      app.screen = n;
+      show(n, false);
+      if (n === 1) destScroll.scrollTop = -listY; // keep the list where the demo left it
+    };
+
+    screensEl.addEventListener('click', (e) => {
+      if (!app.manual) {
+        takeOver();
+        // The screen is live now: act on whatever was under the pointer.
+        const hit = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>('button');
+        if (hit && screensEl.contains(hit)) hit.click();
+        return;
+      }
+      const btn = (e.target as Element).closest<HTMLElement>('button');
+      if (!btn) return;
+      const { dataset } = btn;
+      if (dataset.dest) { selectDest(Number(dataset.dest), true); gsap.delayedCall(d(0.28), () => show(2)); }
+      else if (dataset.planOpt) selectPlan(Number(dataset.planOpt), true);
+      else if ('planCta' in dataset) show(3);
+      else if ('back' in dataset) show(1);
+      else if ('restart' in dataset) show(1);
+    });
+    tryBtn.addEventListener('click', () => {
+      takeOver();
+      screens[app.screen - 1].querySelector<HTMLElement>('button')?.focus({ preventScroll: true });
+    });
+
+    if (reduced) {
+      // Markup already shows the final composition; the phone is hands-on from the start.
+      app.manual = true;
+      screensEl.setAttribute('data-manual', '');
+      show(4, false);
+      return;
+    }
+    tryBtn.hidden = false;
+    screens.forEach((s) => { s.inert = true; });
+
+    // ------------------------------------------------------------------ scroll demo
     // Screen sequence, shared by desktop (pinned) and mobile (unpinned). Times are 0–1 of the timeline.
     const buildScreens = (tl: gsap.core.Timeline) => {
       gsap.set(screens, { opacity: 0, xPercent: 0 });
@@ -153,7 +292,7 @@ const steps = ['Choose your destination', 'Select your data plan', 'Install your
         .fromTo(planCta, { scale: 1 }, { scale: 0.95, duration: 0.012, yoyo: true, repeat: 1, ...ir }, 0.43);
       swap(1, 2, 0.47);
       // 3. Install: ring fills, the SIM icon gives way to a check.
-      tl.fromTo(ring, { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.14, ease: 'power1.inOut', ...ir }, 0.53)
+      tl.fromTo(ring, { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 0.14, ease: 'power1.inOut', autoRound: false, ...ir }, 0.53)
         .fromTo(sim, { opacity: 1, scale: 1 }, { opacity: 0, scale: 0.6, duration: 0.03, ...ir }, 0.665)
         .fromTo(done, { opacity: 0, scale: 0.5 }, { opacity: 1, scale: 1, duration: 0.04, ease: 'back.out(1.8)', ...ir }, 0.67)
         .fromTo(instA, { opacity: 1 }, { opacity: 0, duration: 0.02, ...ir }, 0.665)
@@ -221,6 +360,7 @@ const steps = ['Choose your destination', 'Select your data plan', 'Install your
         let last = -1;
         const bounds = [0.24, 0.47, 0.71];
         const syncState = (p: number) => {
+          if (app.manual) return;
           const step = p < bounds[0] ? 1 : p < bounds[1] ? 2 : p < bounds[2] ? 3 : 4;
           const key = step * 2 + (p > 0.02 ? 1 : 0);
           if (key === last) return;
@@ -236,7 +376,12 @@ const steps = ['Choose your destination', 'Select your data plan', 'Install your
             onRefresh: () => { measure(); layout(tl.time()); },
           },
         });
-        buildScreens(tl);
+        if (!app.manual) {
+          const screensTl = gsap.timeline({ defaults: { ease } });
+          buildScreens(screensTl);
+          tl.add(screensTl, 0);
+          stopDemo = () => { tl.remove(screensTl); screensTl.kill(); };
+        }
         // One driver for the cards and the step list, spanning the whole timeline.
         const driver = { t: 0 };
         tl.fromTo(driver, { t: 0 }, { t: 1, duration: 1, ease: 'none', immediateRender: false, onUpdate: () => { layout(driver.t); syncState(driver.t); } }, 0);
@@ -247,7 +392,10 @@ const steps = ['Choose your destination', 'Select your data plan', 'Install your
         return () => {
           entry.scrollTrigger?.kill(); entry.kill();
           tl.scrollTrigger?.kill(); tl.kill();
-          gsap.set([phone, ...cards, ...bodies, ...links, ...screenParts], { clearProps: 'all' });
+          stopDemo = null;
+          gsap.set([phone, ...cards, ...bodies, ...links], { clearProps: 'all' });
+          if (app.manual) return;
+          gsap.set(screenParts, { clearProps: 'all' });
           stepEls.forEach((el) => { el.removeAttribute('data-current'); el.removeAttribute('data-done'); });
           cards.forEach((c) => c.removeAttribute('data-active'));
         };
@@ -259,12 +407,18 @@ const steps = ['Choose your destination', 'Select your data plan', 'Install your
           x: 0, rotation: 0, ease: 'back.out(1.2)',
           scrollTrigger: { trigger: phone, start: 'top bottom', end: 'top 50%', scrub: SCRUB, invalidateOnRefresh: true },
         });
-        const tl = gsap.timeline({ defaults: { ease }, scrollTrigger: { trigger: phone, start: 'top 45%', end: 'bottom 30%', scrub: SCRUB } });
-        buildScreens(tl);
+        let tl: gsap.core.Timeline | null = null;
+        if (!app.manual) {
+          tl = gsap.timeline({ defaults: { ease }, scrollTrigger: { trigger: phone, start: 'top 45%', end: 'bottom 30%', scrub: SCRUB } });
+          buildScreens(tl);
+          stopDemo = () => { tl?.scrollTrigger?.kill(); tl?.kill(); tl = null; };
+        }
         return () => {
           entry.scrollTrigger?.kill(); entry.kill();
-          tl.scrollTrigger?.kill(); tl.kill();
-          gsap.set([phone, ...screenParts], { clearProps: 'all' });
+          stopDemo?.();
+          stopDemo = null;
+          gsap.set(phone, { clearProps: 'all' });
+          if (!app.manual) gsap.set(screenParts, { clearProps: 'all' });
         };
       },
     });

@@ -1,0 +1,300 @@
+---
+// LAB J03 (docs/agents/QUEUE.md): hero statistics as a Matrix-style simulation. Three directions, same figures.
+//   A  Rain lock   one canvas of teal code rain behind the strip; a drop falls onto every character of every figure,
+//                  the character scrambles until its drop lands, then locks. Rain stops, canvas sleeps.
+//   B  Glyph reels DOM only: every character is a one-line window; a strip of rain glyphs drops through it and
+//                  decelerates onto the real character (GSAP, transforms only).
+//   C  Terminal    the strip as a mini `terminal` band: initCodeRain via data-code-rain (ambient, endless),
+//                  CRT scanlines, mono figures decoded by data-scramble (patterns.ts), unchanged.
+// Figures are the homepage `stats` (src/pages/index.astro). Not linked, noindex.
+import Lab from './_Lab.astro';
+
+const stats = [
+  { value: '150', suffix: '+', label: 'Clients across markets' },
+  { value: '6', suffix: 'B+', label: 'Voice minutes terminated yearly' },
+  { value: '2', suffix: 'B+', label: 'Messages delivered' },
+  { value: '16', suffix: '', label: 'Years in the industry' },
+];
+const chars = (s: (typeof stats)[number]) => [...(s.value + s.suffix)];
+const dirs = [
+  { id: 'a', name: 'Rain lock', note: 'Canvas rain behind the strip; one drop per character lands and locks it. About 2.5 s, then the canvas stops.' },
+  { id: 'b', name: 'Glyph reels', note: 'DOM only. Each character is a reel of rain glyphs that decelerates onto the figure. Hover the strip to replay.' },
+  { id: 'c', name: 'Terminal strip', note: 'Existing terminal tone in miniature: endless ambient code rain, CRT lines, mono figures decoded by data-scramble.' },
+];
+---
+<Lab title="J03 stats">
+  <header class="container-x pt-16 pb-6">
+    <p class="eyebrow">Lab · J03</p>
+    <h1 class="mt-3 text-3xl font-semibold text-ink sm:text-4xl">Hero statistics, Matrix-style</h1>
+    <p class="mt-3 max-w-2xl text-ink-muted">Three directions for the StatStrip under the globe. Same four figures, same box size as the real strip. Use Replay to run each again.</p>
+  </header>
+
+  {dirs.map((d) => (
+    <section class="relative overflow-hidden border-t border-line py-14 sm:py-20" data-dir={d.id}>
+      <div aria-hidden="true" class="pointer-events-none absolute inset-0">
+        <div class="bg-grid absolute inset-0"></div>
+        <div class="absolute -left-32 -top-20 h-[30rem] w-[30rem] rounded-full bg-teal-500/12 blur-3xl"></div>
+      </div>
+      <div class="container-x relative">
+        <div class="mb-8 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p class="font-mono text-xs text-teal-300">Direction {d.id.toUpperCase()}</p>
+            <h2 class="mt-1 text-2xl font-semibold text-ink">{d.name}</h2>
+            <p class="mt-2 max-w-xl text-sm text-ink-muted">{d.note}</p>
+          </div>
+          <button type="button" class="rounded-full border border-line-strong px-4 py-2 text-sm font-semibold text-teal-300 hover:border-teal-500/60" data-replay={d.id}>Replay</button>
+        </div>
+
+        {d.id === 'a' && (
+          <div class="rl relative overflow-hidden rounded-2xl border border-line bg-navy-900" data-rainlock>
+            <canvas class="pointer-events-none absolute inset-0 size-full" aria-hidden="true"></canvas>
+            <dl class="relative grid grid-cols-2 lg:grid-cols-4">
+              {stats.map((s) => (
+                <div class="rl-cell px-5 py-7 sm:px-7">
+                  <dt class="text-sm text-ink-muted">{s.label}</dt>
+                  <dd class="mt-2 font-display text-3xl font-semibold tabular-nums text-ink sm:text-4xl">
+                    <span class="sr-only">{s.value}{s.suffix}</span>
+                    <span aria-hidden="true" class="inline-flex">
+                      {chars(s).map((c) => <span class="g" data-final={c}><span class="g-size">{c}</span><span class="g-live">{c}</span></span>)}
+                    </span>
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        )}
+
+        {d.id === 'b' && (
+          <dl class="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-line bg-line lg:grid-cols-4" data-reels>
+            {stats.map((s) => (
+              <div class="bg-navy-900 px-5 py-7 sm:px-7">
+                <dt class="text-sm text-ink-muted">{s.label}</dt>
+                <dd class="mt-2 font-display text-3xl font-semibold leading-none tabular-nums text-ink sm:text-4xl">
+                  <span class="sr-only">{s.value}{s.suffix}</span>
+                  <span aria-hidden="true" class="inline-flex py-[0.12em]">
+                    {chars(s).map((c) => <span class="reel" data-final={c}><span class="reel-size">{c}</span><span class="reel-strip"></span></span>)}
+                  </span>
+                </dd>
+              </div>
+            ))}
+          </dl>
+        )}
+
+        {d.id === 'c' && (
+          <div class="terminal relative overflow-hidden rounded-2xl border border-teal-500/20 bg-navy-950">
+            <div aria-hidden="true" class="pointer-events-none absolute inset-0">
+              <canvas class="terminal-rain absolute inset-0 size-full" data-code-rain></canvas>
+              <div class="terminal-crt absolute inset-0"></div>
+            </div>
+            <dl class="relative grid grid-cols-2 lg:grid-cols-4">
+              {stats.map((s) => (
+                <div class="tm-cell px-5 py-7 sm:px-7">
+                  <dt class="font-mono text-xs text-teal-300/90"><span aria-hidden="true">&gt; </span>{s.label}</dt>
+                  <dd class="mt-3 font-mono text-3xl font-semibold tabular-nums text-ink sm:text-4xl">
+                    <span class="sr-only">{s.value}{s.suffix}</span>
+                    <span aria-hidden="true" class="tm-num" data-scramble data-c-num>{s.value}{s.suffix}</span>
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        )}
+      </div>
+    </section>
+  ))}
+</Lab>
+
+<style>
+  /* A: cells are transparent so the canvas shows; hairlines drawn by shadows (the outer ones clip at the border). */
+  .rl-cell { box-shadow: 1px 0 0 var(--color-line), 0 1px 0 var(--color-line); }
+  .g, .reel { display: inline-grid; }
+  .g > *, .reel > * { grid-area: 1 / 1; }
+  .g-size, .reel-size { visibility: hidden; }
+  .g-live { justify-self: center; }
+  /* Waiting for its drop: dim, scrambling. The drop's bright head lands on it and it locks. */
+  .g[data-state='scramble'] .g-live {
+    color: color-mix(in srgb, var(--color-teal-500) 70%, transparent); font-family: var(--font-mono); font-weight: 400;
+  }
+  .g[data-state='lock'] .g-live { animation: g-lock 900ms var(--ease-out-expo) both; }
+  @keyframes g-lock {
+    from { color: var(--color-teal-300); text-shadow: 0 0 18px var(--color-teal-400); }
+    to { color: var(--color-ink); text-shadow: 0 0 0 transparent; }
+  }
+
+  /* B: one-line window, strip of glyphs stacked above the final character. */
+  .reel { overflow: hidden; height: 1em; grid-template-rows: 1em; }
+  .reel-strip { display: flex; flex-direction: column; justify-self: center; align-self: start; will-change: transform; }
+  .reel-strip > span { display: block; height: 1em; line-height: 1em; text-align: center; }
+  .reel-strip > .rg { color: var(--color-teal-300); font-family: var(--font-mono); font-weight: 400; }
+
+  /* C: cells darken the rain behind the figures. */
+  .tm-cell { background: color-mix(in srgb, var(--color-navy-950) 55%, transparent); box-shadow: 1px 0 0 color-mix(in srgb, var(--color-teal-500) 18%, transparent), 0 1px 0 color-mix(in srgb, var(--color-teal-500) 18%, transparent); }
+  .tm-num { color: var(--color-teal-300); text-shadow: 0 0 18px color-mix(in srgb, var(--color-teal-400) 45%, transparent); }
+</style>
+
+<script>
+  import { gsap, visibleLoop, prefersReducedMotion, EASE } from '../../scripts/motion';
+
+  // Same glyph set as src/scripts/coderain.ts (the real build should export it from there).
+  const GLYPHS = 'ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ0123456789';
+  const pick = () => GLYPHS[(Math.random() * GLYPHS.length) | 0];
+  const reduced = prefersReducedMotion();
+  const css = getComputedStyle(document.documentElement);
+  const token = (n: string) => css.getPropertyValue(n).trim();
+  const replays: Record<string, () => void> = {};
+  document.querySelectorAll<HTMLButtonElement>('[data-replay]').forEach((b) => b.addEventListener('click', () => replays[b.dataset.replay!]?.()));
+
+  /** Runs `cb` once when `el` is half on screen. */
+  const whenSeen = (el: Element, cb: () => void) => {
+    const io = new IntersectionObserver((e) => { if (e.some((x) => x.isIntersecting)) { io.disconnect(); cb(); } }, { threshold: 0.5 });
+    io.observe(el);
+  };
+
+  // --- A: Rain lock ------------------------------------------------------------------------------------------
+  document.querySelectorAll<HTMLElement>('[data-rainlock]').forEach((root) => {
+    const canvas = root.querySelector('canvas')!;
+    const ctx = canvas.getContext('2d')!;
+    const glyphs = [...root.querySelectorAll<HTMLElement>('.g')];
+    const ink = token('--color-ink'), head = token('--color-teal-300'), trail = token('--color-teal-500'), ground = token('--color-navy-900');
+    let w = 0, h = 0, size = 16;
+    type Col = { x: number; y: number; speed: number; len: number; g: string[] };
+    let cols: Col[] = [];
+    let drops: { el: HTMLElement; live: HTMLElement; x: number; y: number; arrive: number; speed: number; g: string[]; locked: boolean }[] = [];
+    let t = 0, ending = false, fade = 1, lastArrive = 0, swap = 0;
+
+    const measure = () => {
+      const dpr = Math.min(devicePixelRatio || 1, 2);
+      const r = canvas.getBoundingClientRect();
+      w = r.width; h = r.height;
+      canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      size = w < 640 ? 13 : 15;
+      // Character targets in canvas space: the drop's head stops on the character's centre.
+      drops.forEach((d) => {
+        const g = d.el.getBoundingClientRect();
+        d.x = g.left - r.left + g.width / 2 - size * 0.3; d.y = g.top - r.top + g.height / 2 - size / 2;
+      });
+    };
+    const spawnCols = () => {
+      const n = Math.ceil(w / (size * 1.2));
+      cols = Array.from({ length: n }, (_, i) => ({
+        x: i * (w / n), y: -Math.random() * h * 1.2, speed: size * (9 + Math.random() * 10),
+        len: 5 + ((Math.random() * 9) | 0), g: Array.from({ length: 16 }, pick),
+      }));
+    };
+
+    const draw = () => {
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = ground; ctx.fillRect(0, 0, w, h);
+      ctx.font = `${size}px "JetBrains Mono Variable", ui-monospace, monospace`;
+      ctx.textBaseline = 'top';
+      // Ambient rain: dim, behind everything.
+      for (const c of cols) for (let k = 0; k < c.len; k++) {
+        const y = c.y - k * size;
+        if (y < -size || y > h) continue;
+        ctx.globalAlpha = fade * (k === 0 ? 0.42 : (1 - k / c.len) * 0.22);
+        ctx.fillStyle = k === 0 ? head : trail;
+        ctx.fillText(c.g[(k + ((c.y / size) | 0)) % c.g.length], c.x, y);
+      }
+      // Lock drops: bright, one per character; the trail fades after landing.
+      for (const d of drops) {
+        const hy = d.locked ? d.y : d.y - d.speed * (d.arrive - t);
+        const since = d.locked ? t - d.arrive : 0;
+        const a = d.locked ? Math.max(0, 1 - since / 0.7) : 1;
+        if (a <= 0) continue;
+        if (!d.locked && hy > -size) { ctx.globalAlpha = 1; ctx.fillStyle = ink; ctx.shadowColor = head; ctx.shadowBlur = 10; ctx.fillText(d.g[0], d.x, hy); ctx.shadowBlur = 0; }
+        for (let k = 1; k < 9; k++) {
+          const y = hy - k * size;
+          if (y < -size || y > h) continue;
+          ctx.globalAlpha = a * (1 - k / 9) * 0.9;
+          ctx.fillStyle = k === 1 ? head : trail;
+          ctx.fillText(d.g[k], d.x, y);
+        }
+      }
+      ctx.globalAlpha = 1;
+    };
+
+    const loop = reduced ? null : visibleLoop(root, (_e, dt) => {
+      t += dt;
+      for (const c of cols) {
+        c.y += c.speed * dt;
+        if (Math.random() < 0.05) c.g[(Math.random() * c.g.length) | 0] = pick();
+        if (c.y - c.len * size > h && !ending) { c.y = -Math.random() * h * 0.5; c.speed = size * (9 + Math.random() * 10); }
+      }
+      swap += dt;
+      const scramble = swap > 0.055; if (scramble) swap = 0;
+      for (const d of drops) {
+        if (!d.locked && t >= d.arrive) { d.locked = true; d.el.dataset.state = 'lock'; d.live.textContent = d.el.dataset.final!; }
+        else if (!d.locked && scramble) d.live.textContent = pick();
+      }
+      if (t > lastArrive + 0.6) ending = true;
+      if (ending) fade = Math.max(0, fade - dt / 1.2);
+      draw();
+      if (ending && fade === 0 && t > lastArrive + 1) loop!.pause(); // settled: the canvas sleeps
+    });
+
+    const start = () => {
+      t = 0; ending = false; fade = 1;
+      measure(); spawnCols();
+      // Left to right across the strip, a little random, all home within ~1.6 s.
+      drops = glyphs.map((el, i) => ({
+        el, live: el.querySelector<HTMLElement>('.g-live')!, x: 0, y: 0,
+        arrive: 0.45 + i * 0.09 + Math.random() * 0.25, speed: size * 34, g: Array.from({ length: 10 }, pick), locked: false,
+      }));
+      measure();
+      lastArrive = Math.max(...drops.map((d) => d.arrive));
+      glyphs.forEach((el) => { el.dataset.state = 'scramble'; });
+      loop?.play();
+    };
+
+    measure(); spawnCols();
+    new ResizeObserver(() => { measure(); draw(); }).observe(canvas);
+    if (reduced) { cols = []; draw(); return; }
+    // Pre-state before it is seen: characters already scrambled, rain parked above.
+    glyphs.forEach((el) => { el.dataset.state = 'scramble'; el.querySelector('.g-live')!.textContent = pick(); });
+    loop!.pause();
+    whenSeen(root, start);
+    replays.a = start;
+  });
+
+  // --- B: Glyph reels ----------------------------------------------------------------------------------------
+  document.querySelectorAll<HTMLElement>('[data-reels]').forEach((root) => {
+    const reels = [...root.querySelectorAll<HTMLElement>('.reel')];
+    const N = 14;
+    reels.forEach((r) => {
+      const strip = r.querySelector<HTMLElement>('.reel-strip')!;
+      const final = document.createElement('span'); final.textContent = r.dataset.final!;
+      strip.append(final);
+      if (reduced) return;
+      for (let i = 1; i < N; i++) { const s = document.createElement('span'); s.className = 'rg'; s.textContent = pick(); s.style.opacity = String(1 - i / (N + 4)); strip.append(s); }
+    });
+    if (reduced) return;
+    const strips = reels.map((r) => r.querySelector<HTMLElement>('.reel-strip')!);
+    // y in "em" lines: -(N-1) shows the last glyph, 0 shows the figure. Moving down = falling.
+    const park = () => gsap.set(strips, { yPercent: -100 * (N - 1) / N });
+    const play = () => {
+      park();
+      strips.forEach((s) => s.querySelectorAll('.rg').forEach((g) => { g.textContent = pick(); }));
+      gsap.to(strips, { yPercent: 0, duration: 1.7, ease: EASE.out, stagger: { each: 0.08 }, overwrite: true });
+    };
+    park();
+    whenSeen(root, play);
+    replays.b = play;
+    let last = 0;
+    root.addEventListener('pointerenter', () => { if (performance.now() - last > 2500) { last = performance.now(); play(); } });
+  });
+
+  // --- C: Terminal strip -------------------------------------------------------------------------------------
+  // The decode itself is data-scramble from patterns.ts (once, on scroll). Replay re-runs the same logic here.
+  replays.c = () => {
+    const G = '0123456789ABCDEFXZ<>/=*+#%';
+    document.querySelectorAll<HTMLElement>('[data-c-num]').forEach((el) => {
+      const text = el.dataset.text ?? (el.dataset.text = el.textContent!);
+      const s = { p: 0 };
+      gsap.to(s, { p: 1, duration: 0.5 + text.length * 0.02 + 0.6, ease: 'none', onUpdate: () => {
+        const done = Math.floor(s.p * text.length);
+        el.textContent = [...text].map((ch, i) => (i < done ? ch : G[(Math.random() * G.length) | 0])).join('');
+      }, onComplete: () => { el.textContent = text; } });
+    });
+  };
+</script>

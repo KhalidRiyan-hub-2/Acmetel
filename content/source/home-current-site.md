@@ -18,6 +18,8 @@ Acmetel is a leading provider of innovative and reliable telecommunication solut
 
 **Our Partners** (logos): Mobily, e&, du, Sinch, stc
 
+Partner/carrier logos in the acmetel.com home page HTML (alt text, checked 2026-10-13; not in the screenshots above): Mobily, e&, sinch, stc, omantel, zain, airtel, bics, orange (file: Orange-Jordan.png), ptcl, twilio, zong, Duo, TikTok, Etisalat Misr. NOTE: "du" from the screenshots does not appear in the HTML; "Duo" does. Confirm with the client.
+
 **The Primary Services We Offer**
 - Voice: As a leading player in the Voice messaging industry, our operations span across the globe with strong footholds in Pakistan and GCC destinations. Our focus now gravitates towards Africa, where we recognize the immense potential for growth.
 - Messaging: We are proud to work closely with EMEA region mobile operators to ensure excellent service and smooth operations. Our commitment to professional standards ensures that each message sent reaches its destination seamlessly.

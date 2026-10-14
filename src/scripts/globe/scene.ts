@@ -6,18 +6,19 @@
 // layers and labels show) follows from the camera pose, so flights, wheel and pinch can all be reversed at
 // any point.
 import {
-  AdditiveBlending, BackSide, BufferAttribute, BufferGeometry, CanvasTexture, CatmullRomCurve3, CircleGeometry, Group, Line,
+  AdditiveBlending, BackSide, DoubleSide, BufferAttribute, BufferGeometry, CanvasTexture, CatmullRomCurve3, CircleGeometry, CylinderGeometry, Group, Line,
   LineSegments, LinearMipmapLinearFilter, Matrix4, Mesh, PerspectiveCamera, Points, Quaternion, Ray, Scene,
-  ShaderMaterial, Sphere, SphereGeometry, TubeGeometry, Vector2, Vector3, Vector4, WebGLRenderer,
+  ShaderMaterial, ShapeUtils, Sphere, SphereGeometry, TubeGeometry, Vector2, Vector3, Vector4, WebGLRenderer,
 } from 'three';
 import { gsap, visibleLoop, bindPauseButton, scrollKick } from '../motion';
 import {
-  type Box, type Stop, chinaRoute, childrenOf, cityStops, focus, latLonToVec3, markets, osmRegion, pathTo, regionCities, regions,
-  stopById, worldCities,
+  type Box, type CityLayer, type Stop, chinaRoute, childrenOf, cityLayers, cityStops, focus, latLonToVec3, markets, osmRegion, pathTo,
+  regionCities, regions, stopById, stops, worldCities,
 } from '../../data/globe';
-import { decodeBoxed, decodeDots, decodeLines, linesToSegments, ringsToCoast, type Lines } from './data';
+import { decodeBoxed, decodeBuildings, decodeDots, decodeLines, linesToSegments, ringsToCoast, type Lines } from './data';
 
-export interface GlobeTag { el: HTMLElement; lat: number; lon: number; z: readonly [number, number]; near?: number }
+/** `h`: metres above the ground (rooftop labels). `rank`: lower wins when labels overlap (ties: earlier wins). */
+export interface GlobeTag { el: HTMLElement; lat: number; lon: number; z: readonly [number, number]; near?: number; h?: number; rank?: number }
 export interface GlobeState {
   /** Stop the camera is resting at, or null while between stops. */
   stop: string | null; lat: number; lon: number; altKm: number; focused: boolean;
@@ -49,8 +50,9 @@ const FOV = 30;
 const IDLE_MS = 4000;
 const TAU = Math.PI * 2;
 const EARTH_KM = 6371;
+const M = 1 / (EARTH_KM * 1000); // one metre in globe radii
 const DEG = Math.PI / 180;
-const CUTS = 4; // boxes a layer can be hidden inside (where a more detailed layer takes over)
+const CUTS = 5; // boxes a layer can be hidden inside (where a more detailed layer takes over)
 
 // Brand tokens as raw sRGB triples (shaders output sRGB directly, so no colour-space conversion).
 const hex = (h: string) => new Vector3(parseInt(h.slice(1, 3), 16) / 255, parseInt(h.slice(3, 5), 16) / 255, parseInt(h.slice(5, 7), 16) / 255);
@@ -70,7 +72,8 @@ const wrap = (a: number) => a - Math.round(a / TAU) * TAU;
 const yawFor = (lon: number) => -Math.PI / 2 - lon * DEG;
 const boxVec = (b: Box) => new Vector4(b.lon0, b.lon1, b.lat0, b.lat1);
 
-// Zoom level from altitude: 0 = orbit, 1 = country (alt 0.62), 2 = city (alt 0.07), continuous on a log scale.
+// Zoom level from altitude: 0 = orbit, 1 = country (alt 0.62), 2 = city (alt 0.07), continuous on a log scale
+// (Dubai street map ≈ 2.4, Downtown ≈ 4.1, Burj Khalifa rooftop ≈ 4.7).
 const L_ORBIT = Math.log(3.8), L_COUNTRY = Math.log(0.62), L_CITY = Math.log(0.07);
 const levelOf = (alt: number) => {
   const a = Math.log(alt);
@@ -109,7 +112,7 @@ const SPHERE_VERT = /* glsl */ `
 
 // Ocean body: key light from the upper left, a soft specular sheen and a teal rim that becomes the horizon line up close.
 const BODY_FRAG = /* glsl */ `
-  uniform vec3 uDark; uniform vec3 uLit; uniform vec3 uRim; uniform float uOpacity;
+  uniform vec3 uDark; uniform vec3 uLit; uniform vec3 uRim; uniform float uOpacity; uniform float uRimK;
   varying vec3 vN; varying vec3 vV;
   void main() {
     vec3 n = normalize(vN); vec3 v = normalize(vV);
@@ -117,8 +120,8 @@ const BODY_FRAG = /* glsl */ `
     float f = clamp(dot(n, v), 0.0, 1.0);
     float diff = max(dot(n, l), 0.0);
     vec3 col = mix(uDark, uLit, pow(diff, 1.25) * 0.8);
-    col += uRim * pow(max(dot(reflect(-l, n), v), 0.0), 36.0) * 0.07;
-    col += uRim * pow(1.0 - f, 3.0) * 0.55;
+    col += uRim * pow(max(dot(reflect(-l, n), v), 0.0), 36.0) * 0.07 * uRimK;
+    col += uRim * pow(1.0 - f, 3.0) * 0.55 * uRimK;
     gl_FragColor = vec4(col, 0.95 * uOpacity);
   }`;
 
@@ -298,8 +301,145 @@ const FLOW_FRAG = /* glsl */ `
     gl_FragColor = vec4(mix(uA, uB, dash), a);
   }`;
 
+// City layers live in a local east/north/up frame (globe radii) around an anchor, so they use modelViewMatrix
+// directly: the camera-relative transform is small and stays precise in float32 down to rooftop height.
+// Shared: fade toward the edges of the data box (uBox, local x/y) and into distance fog (uFog, near/far).
+const CITY_FADE_GLSL = /* glsl */ `
+  uniform vec4 uBox; uniform vec2 uFog;
+  varying float vDist; varying vec2 vXY;
+  float cityFade() {
+    float fx = (uBox.y - uBox.x) * 0.07, fy = (uBox.w - uBox.z) * 0.07;
+    float e = smoothstep(uBox.x, uBox.x + fx, vXY.x) * (1.0 - smoothstep(uBox.y - fx, uBox.y, vXY.x))
+            * smoothstep(uBox.z, uBox.z + fy, vXY.y) * (1.0 - smoothstep(uBox.w - fy, uBox.w, vXY.y));
+    return e * (1.0 - smoothstep(uFog.x, uFog.y, vDist));
+  }`;
+const CITY_VERT = /* glsl */ `
+  uniform float uLift;
+  varying float vDist; varying vec2 vXY; varying vec2 vKm;
+  void main() {
+    vXY = position.xy; vKm = position.xy * ${EARTH_KM.toFixed(1)};
+    vec4 mv = modelViewMatrix * vec4(position + vec3(0.0, 0.0, uLift), 1.0);
+    vDist = length(mv.xyz);
+    gl_Position = projectionMatrix * mv;
+  }`;
+const CITY_LINE_FRAG = /* glsl */ `
+  uniform vec3 uColor; uniform float uOpacity;
+  ${CITY_FADE_GLSL}
+  void main() {
+    float a = uOpacity * cityFade();
+    if (a < 0.003) discard;
+    gl_FragColor = vec4(uColor, a);
+  }`;
+// Land: the same scale-aware dot field as the regional layers, so the hand-off from them is seamless.
+const CITY_GROUND_FRAG = /* glsl */ `
+  uniform vec3 uFill; uniform vec3 uDot; uniform float uOpacity;
+  varying vec2 vKm;
+  ${CITY_FADE_GLSL}
+  float grid(vec2 p, float s, float r, float aa) {
+    vec2 g = (fract(p / s + 0.5) - 0.5) * s;
+    return 1.0 - smoothstep(r - aa, r + aa, length(g));
+  }
+  void main() {
+    float px = max(length(fwidth(vKm)) * 0.7071, 1e-6);
+    float lvl = log2(px * 7.0);
+    float s0 = exp2(floor(lvl));
+    float g = mix(grid(vKm, s0, px * 1.05, px * 0.6), grid(vKm, s0 * 2.0, px * 1.05, px * 0.6), fract(lvl));
+    float a = uOpacity * cityFade() * mix(0.6, 1.0, g);
+    if (a < 0.003) discard;
+    gl_FragColor = vec4(mix(uFill, uDot, g), a);
+  }`;
+// Buildings: extruded footprints that rise out of the ground as the camera comes down (uRise). Flat-shaded from a
+// fixed sun, floor lines every 4 m on the walls (faded out when they'd crowd), landmark parts in glass teal.
+const BUILDING_VERT = /* glsl */ `
+  attribute float aH; attribute vec3 aN; attribute float aLm;
+  uniform float uRise;
+  varying vec3 vN; varying float vH; varying float vLm; varying float vDist; varying vec2 vXY;
+  void main() {
+    vN = aN; vH = aH * uRise; vLm = aLm; vXY = position.xy;
+    vec4 mv = modelViewMatrix * vec4(position + vec3(0.0, 0.0, aH * uRise * ${M.toExponential(6)}), 1.0);
+    vDist = length(mv.xyz);
+    gl_Position = projectionMatrix * mv;
+  }`;
+const BUILDING_FRAG = /* glsl */ `
+  uniform vec3 uWall; uniform vec3 uRoof; uniform vec3 uGlass; uniform vec3 uLine; uniform vec3 uSun; uniform float uOpacity;
+  varying vec3 vN; varying float vH; varying float vLm;
+  ${CITY_FADE_GLSL}
+  void main() {
+    float roof = step(0.9, vN.z);
+    float diff = max(dot(normalize(vN), uSun), 0.0);
+    vec3 col = mix(mix(uWall, uRoof, roof), uGlass, vLm * 0.6) * (0.5 + 0.7 * diff);
+    float f = vH / 4.0, w = fwidth(f);
+    float floorLine = (1.0 - smoothstep(0.0, w * 1.2, abs(fract(f + 0.5) - 0.5))) * (1.0 - smoothstep(0.12, 0.35, w));
+    col += uLine * floorLine * (1.0 - roof) * mix(0.12, 0.3, vLm);
+    float a = uOpacity * cityFade();
+    if (a < 0.003) discard;
+    gl_FragColor = vec4(col, a);
+  }`;
+const BUILDING_EDGE_VERT = /* glsl */ `
+  attribute float aH; attribute float aLm;
+  uniform float uRise;
+  varying float vLm; varying float vDist; varying vec2 vXY;
+  void main() {
+    vLm = aLm; vXY = position.xy;
+    vec4 mv = modelViewMatrix * vec4(position + vec3(0.0, 0.0, aH * uRise * ${M.toExponential(6)}), 1.0);
+    vDist = length(mv.xyz);
+    gl_Position = projectionMatrix * mv;
+  }`;
+const BUILDING_EDGE_FRAG = /* glsl */ `
+  uniform vec3 uColor; uniform float uOpacity;
+  varying float vLm;
+  ${CITY_FADE_GLSL}
+  void main() {
+    float a = uOpacity * mix(0.22, 0.75, vLm) * cityFade();
+    if (a < 0.003) discard;
+    gl_FragColor = vec4(uColor, a);
+  }`;
+// Horizon haze at street level: the inside of a tall open cylinder around the city, brightest at its foot.
+const HAZE_VERT = /* glsl */ `
+  varying float vY;
+  void main() { vY = uv.y; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
+const HAZE_FRAG = /* glsl */ `
+  uniform vec3 uColor; uniform float uOpacity;
+  varying float vY;
+  void main() { float a = pow(1.0 - vY, 5.0) * uOpacity; gl_FragColor = vec4(uColor * a, a); }`;
+
+// Aviation-style beacon on the landmark's spire.
+const BEACON_VERT = /* glsl */ `
+  uniform float uPx; uniform float uLift;
+  void main() {
+    vec4 mv = modelViewMatrix * vec4(position + vec3(0.0, 0.0, uLift), 1.0);
+    gl_PointSize = uPx;
+    gl_Position = projectionMatrix * mv;
+  }`;
+const BEACON_FRAG = /* glsl */ `
+  uniform float uTime; uniform float uOpacity; uniform vec3 uColor;
+  void main() {
+    float d = length(gl_PointCoord - 0.5);
+    float pulse = 0.5 + 0.5 * sin(uTime * 2.6);
+    float a = (smoothstep(0.16, 0.06, d) + exp(-d * d * 26.0) * (0.25 + 0.55 * pulse)) * uOpacity;
+    gl_FragColor = vec4(mix(uColor, vec3(1.0), smoothstep(0.12, 0.0, d)), a);
+  }`;
+
+// Acmetel offices: a column of light standing on the office, with a signal pulse running up it, and rings pulsing
+// out across the ground. Local city frame (modelViewMatrix, precise at street level); uv.y runs 0 → 1 up the column.
+const OFFICE_BEAM_M = 90;
+const OFFICE_BEAM_VERT = /* glsl */ `
+  varying float vY;
+  void main() { vY = uv.y; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
+const OFFICE_BEAM_FRAG = /* glsl */ `
+  uniform vec3 uColor; uniform float uOpacity; uniform float uTime;
+  varying float vY;
+  void main() {
+    float pulse = smoothstep(0.12, 0.0, abs(vY - fract(uTime * 0.38)));
+    float a = (mix(0.6, 0.14, vY) + pulse * 0.7) * smoothstep(1.0, 0.92, vY) * uOpacity;
+    gl_FragColor = vec4(mix(uColor, vec3(1.0), pulse * 0.6) * a, a);
+  }`;
+const OFFICE_RING_VERT = /* glsl */ `
+  varying vec2 vUv; varying float vFacing;
+  void main() { vUv = uv; vFacing = 1.0; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
+
 interface Pos { p: string; c: string; t: number }
-interface Pose { yaw: number; pitch: number; alt: number; tilt: number }
+interface Pose { yaw: number; pitch: number; alt: number; tilt: number; elev: number; head: number }
 interface Leg { p: string; c: string; from: number; to: number }
 
 export function initGlobe(container: HTMLElement, opts: GlobeOptions): GlobeApi {
@@ -332,7 +472,7 @@ export function initGlobe(container: HTMLElement, opts: GlobeOptions): GlobeApi 
   // --- Body, halo, atmosphere, graticule ----------------------------------------------------
   const bodyMat = track(new ShaderMaterial({
     vertexShader: SPHERE_VERT, fragmentShader: BODY_FRAG, transparent: true,
-    uniforms: { uDark: { value: NAVY_950 }, uLit: { value: NAVY_700 }, uRim: { value: TEAL_500 }, uOpacity: { value: 1 } },
+    uniforms: { uDark: { value: NAVY_950 }, uLit: { value: NAVY_700 }, uRim: { value: TEAL_500 }, uOpacity: { value: 1 }, uRimK: { value: 1 } },
   }));
   const body = new Mesh(track(new SphereGeometry(0.995, coarse ? 160 : 256, coarse ? 100 : 160)), bodyMat);
   body.renderOrder = 0;
@@ -371,7 +511,20 @@ export function initGlobe(container: HTMLElement, opts: GlobeOptions): GlobeApi 
   const borderMat = lineMat(TEAL_400, 0.12);
   const worldCut = [pointsMat, coastMat, borderMat];
 
-  const load = (name: string) => fetch(`${opts.dataUrl}/${name}`).then((r) => { if (!r.ok) throw new Error(name); return r.arrayBuffer(); });
+  // One request per file, shared by every layer that needs it (the Dubai OSM land feeds two); a failure is forgotten
+  // so a later flight can retry.
+  const loads = new Map<string, Promise<ArrayBuffer>>();
+  const load = (name: string) => {
+    let p = loads.get(name);
+    if (!p) {
+      p = fetch(`${opts.dataUrl}/${name}`).then((r) => { if (!r.ok) throw new Error(name); return r.arrayBuffer(); });
+      p.catch(() => loads.delete(name));
+      loads.set(name, p);
+    }
+    return p;
+  };
+  // Yields to the next frame, so long builds (Dubai's ~14k buildings) are spread out instead of freezing a flight.
+  const nextFrame = () => new Promise<void>((r) => { requestAnimationFrame(() => r()); setTimeout(r, 100); });
 
   load('globe-dots.bin').then((buf) => {
     if (destroyed) return;
@@ -392,6 +545,7 @@ export function initGlobe(container: HTMLElement, opts: GlobeOptions): GlobeApi 
   interface Layer {
     id: string; box: Box; file: string; osm: boolean; ready: boolean; fade: { v: number }; loading: boolean;
     patch: ShaderMaterial; coast: ShaderMaterial; border: ShaderMaterial; hi: ShaderMaterial;
+    prov: ShaderMaterial; river: ShaderMaterial; road: ShaderMaterial; rail: ShaderMaterial;
   }
   const regionMat = (box: Box) => {
     const kmLon = 111.32 * Math.cos(((box.lat0 + box.lat1) / 2) * DEG);
@@ -407,24 +561,27 @@ export function initGlobe(container: HTMLElement, opts: GlobeOptions): GlobeApi 
   const makeLayer = (id: string, box: Box, file: string, osm: boolean): Layer => ({
     id, box, file, osm, ready: false, loading: false, fade: { v: 0 },
     patch: regionMat(box), coast: lineMat(osm ? TEAL_300 : TEAL_400, 0), border: lineMat(TEAL_500, 0), hi: lineMat(TEAL_300, 0),
+    prov: lineMat(TEAL_400, 0), river: lineMat(TEAL_500, 0), road: lineMat(TEAL_300, 0), rail: lineMat(INK, 0),
   });
+  const layerMats = (L: Layer) => [L.patch, L.coast, L.border, L.hi, L.prov, L.river, L.road, L.rail];
   const layers: Layer[] = [...regions.map((r) => makeLayer(r.id, r.box, r.file, false)), makeLayer(osmRegion.id, osmRegion.box, osmRegion.file, true)];
   const layerById = Object.fromEntries(layers.map((l) => [l.id, l])) as Record<string, Layer>;
   const osmLayer = layerById[osmRegion.id];
   // The world layer is cut inside every regional box; the Gulf layer is cut inside the Dubai OSM box.
   layers.forEach((l, i) => worldCut.forEach((m) => { (m.uniforms.uCut.value as Vector4[])[i] = boxVec(l.box); }));
   const gulf = layerById.gulf;
-  [gulf.patch, gulf.coast, gulf.border, gulf.hi].forEach((m) => { (m.uniforms.uCut.value as Vector4[])[0] = boxVec(osmLayer.box); });
+  layerMats(gulf).forEach((m) => { (m.uniforms.uCut.value as Vector4[])[0] = boxVec(osmLayer.box); });
 
   const buildLayer = (L: Layer, buf: ArrayBuffer) => {
     const B = L.box;
     let coast: Lines, borders: Lines = [], hiLine: Lines = [], land: Lines, hiLand: Lines = [];
+    let prov: Lines = [], rivers: Lines = [], lakes: Lines = [], roads: Lines = [], rail: Lines = [];
     if (L.osm) {
       const [rings, loose] = decodeBoxed(buf);
       land = rings;
       coast = [...ringsToCoast(rings, B), ...loose];
     } else {
-      [coast, borders, hiLine, land, hiLand] = decodeBoxed(buf);
+      [coast, borders, hiLine, land, hiLand, prov = [], rivers = [], lakes = [], roads = [], rail = []] = decodeBoxed(buf);
     }
     const W = L.osm ? (coarse ? 1536 : 2048) : (coarse ? 1024 : 2048);
     const kmLon = 111.32 * Math.cos(((B.lat0 + B.lat1) / 2) * DEG);
@@ -448,6 +605,7 @@ export function initGlobe(container: HTMLElement, opts: GlobeOptions): GlobeApi 
     };
     fill(land, '#ff0000');
     if (hiLand.length) fill(hiLand, '#ffff00');
+    if (lakes.length) fill(lakes, '#000000'); // lakes read as water
     const tex = track(new CanvasTexture(cv));
     tex.minFilter = LinearMipmapLinearFilter;
     tex.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
@@ -457,7 +615,9 @@ export function initGlobe(container: HTMLElement, opts: GlobeOptions): GlobeApi 
     const span = Math.max(B.lon1 - B.lon0, B.lat1 - B.lat0);
     const NX = clamp(Math.round(((B.lon1 - B.lon0) / span) * 128), 16, 128);
     const NY = clamp(Math.round(((B.lat1 - B.lat0) / span) * 128), 16, 128);
-    const rr = L.osm ? 1.00025 : 1.0002;
+    // Close to true ground height (a few metres up), so street-level layers drawn at the ground line up with it.
+    // Layers that don't write depth only need to stay above the ocean body (r = 0.995), so chord sag is harmless.
+    const rr = L.osm ? 1 + 3 * M : 1 + 2 * M;
     const pos = new Float32Array((NX + 1) * (NY + 1) * 3);
     const uv = new Float32Array((NX + 1) * (NY + 1) * 2);
     const km = new Float32Array((NX + 1) * (NY + 1) * 2);
@@ -485,9 +645,9 @@ export function initGlobe(container: HTMLElement, opts: GlobeOptions): GlobeApi 
     const patch = new Mesh(geo, L.patch);
     patch.renderOrder = L.osm ? 3.5 : 3;
     patch.frustumCulled = false;
-    globe.add(patch, lineObj(coast, L.coast, L.osm ? 1.00045 : 1.0004, 6));
-    if (borders.length) globe.add(lineObj(borders, L.border, 1.0004, 6));
-    if (hiLine.length) globe.add(lineObj(hiLine, L.hi, 1.0005, 6));
+    globe.add(patch, lineObj(coast, L.coast, 1 + 5 * M, 6));
+    const extra: [Lines, ShaderMaterial][] = [[borders, L.border], [hiLine, L.hi], [prov, L.prov], [rivers, L.river], [roads, L.road], [rail, L.rail]];
+    for (const [ls, m] of extra) if (ls.length) globe.add(lineObj(ls, m, 1 + 4 * M, 6));
     L.ready = true;
     gsap.to(L.fade, { v: 1, duration: 0.6, ease: 'power2.out' });
   };
@@ -497,7 +657,233 @@ export function initGlobe(container: HTMLElement, opts: GlobeOptions): GlobeApi 
     L.loading = true;
     load(L.file).then((b) => { if (!destroyed) buildLayer(L, b); }).catch(() => { L.loading = false; });
   };
-  const ensureFor = (s: Stop) => { ensureLayer(s.region); if (s.osm) ensureLayer(osmRegion.id); };
+  const ensureFor = (s: Stop) => {
+    [s.region ?? []].flat().forEach(ensureLayer);
+    if (s.osm) ensureLayer(osmRegion.id);
+    if (s.city) ensureCity(s.city);
+  };
+
+  // --- City layers: street-level OpenStreetMap detail ---------------------------------------
+  // Roads, rail, waterways and water (plus, for Dubai, land and 3D buildings) in a local east/north/up frame at
+  // the city's anchor, in globe radii. The group rides on the globe; its geometry stays small and precise.
+  interface City {
+    cfg: CityLayer; dir: Vector3; east: Vector3; north: Vector3; group: Group; box: Vector4;
+    ready: boolean; loading: boolean; fade: { v: number }; w: number; ground: number;
+    lines: { mat: ShaderMaterial; base: number; z: [number, number] }[];
+    groundMat: ShaderMaterial | null; bldMat: ShaderMaterial | null; edgeMat: ShaderMaterial | null; beaconMat: ShaderMaterial | null; beaconH: number;
+    hazeMat: ShaderMaterial | null;
+    offices: ShaderMaterial[];
+    all: ShaderMaterial[];
+  }
+  const cityMat = (o: { frag: string; vert?: string; uniforms?: Record<string, { value: unknown }>; depthWrite?: boolean; blending?: typeof AdditiveBlending }) => mat({
+    vertexShader: o.vert ?? CITY_VERT, fragmentShader: o.frag, depthWrite: o.depthWrite ?? false, ...(o.blending ? { blending: o.blending } : {}),
+    uniforms: { uOpacity: { value: 0 }, uLift: { value: 0 }, uBox: { value: new Vector4() }, uFog: { value: new Vector2(1, 2) }, ...o.uniforms },
+  });
+  const citiesL: City[] = cityLayers.map((cfg) => {
+    const dir = latLonToVec3(cfg.anchor.lat, cfg.anchor.lon, 1);
+    const east = new Vector3(0, 1, 0).cross(dir).normalize();
+    const north = dir.clone().cross(east).normalize();
+    const group = new Group();
+    group.position.copy(dir);
+    group.quaternion.setFromRotationMatrix(new Matrix4().makeBasis(east, north, dir));
+    group.visible = false;
+    globe.add(group);
+    return { cfg, dir, east, north, group, box: new Vector4(), ready: false, loading: false, fade: { v: 0 }, w: 0, ground: 0, lines: [], groundMat: null, bldMat: null, edgeMat: null, beaconMat: null, beaconH: 0, hazeMat: null, offices: [], all: [] };
+  });
+  const cityById = Object.fromEntries(citiesL.map((c) => [c.cfg.id, c])) as Record<string, City>;
+  const lv = new Vector3();
+  // Lat/lon (+ metres up) → local frame. Done in doubles before the Float32 copy, which is what keeps it precise.
+  const toLocal = (C: City, lat: number, lon: number, h = 0): [number, number, number] => {
+    lv.copy(latLonToVec3(lat, lon, 1 + h * M)).sub(C.dir);
+    return [lv.dot(C.east), lv.dot(C.north), lv.dot(C.dir)];
+  };
+  // Straight into a preallocated buffer, with the same maths as toLocal inlined: the street layers run to a few
+  // hundred thousand points, and per-point arrays made this the slowest step of a city build.
+  const localSegs = (C: City, lines: Lines) => {
+    let n = 0;
+    for (const l of lines) n += Math.max(0, l.length / 2 - 1);
+    const out = new Float32Array(n * 6);
+    const { dir: d, east: e, north: no } = C;
+    let k = 0, px = 0, py = 0, pz = 0;
+    for (const l of lines) {
+      for (let i = 0; i < l.length; i += 2) {
+        const phi = l[i + 1] * DEG, lam = l[i] * DEG, cp = Math.cos(phi);
+        const x = cp * Math.cos(lam) - d.x, y = Math.sin(phi) - d.y, z = -cp * Math.sin(lam) - d.z;
+        const lx = x * e.x + y * e.y + z * e.z, ly = x * no.x + y * no.y + z * no.z, lz = x * d.x + y * d.y + z * d.z;
+        if (i) { out[k++] = px; out[k++] = py; out[k++] = pz; out[k++] = lx; out[k++] = ly; out[k++] = lz; }
+        px = lx; py = ly; pz = lz;
+      }
+    }
+    return out;
+  };
+  // Closed rings → triangles (earcut via ShapeUtils), z on the curved ground.
+  const localFill = (C: City, rings: Lines) => {
+    const pos: number[] = [];
+    for (const r of rings) {
+      const pts = [];
+      for (let i = 0; i < r.length; i += 2) pts.push(toLocal(C, r[i + 1], r[i]));
+      if (pts.length > 3 && pts[0][0] === pts[pts.length - 1][0] && pts[0][1] === pts[pts.length - 1][1]) pts.pop();
+      if (pts.length < 3) continue;
+      for (const [a, b, c] of ShapeUtils.triangulateShape(pts.map(([x, y]) => new Vector2(x, y)), [])) pos.push(...pts[a], ...pts[b], ...pts[c]);
+    }
+    return new Float32Array(pos);
+  };
+  const cityObj = <T extends Mesh | LineSegments | Points>(C: City, o: T, order: number) => { o.renderOrder = order; o.frustumCulled = false; C.group.add(o); return o; };
+
+  const buildCity = (C: City, buf: ArrayBuffer, land: ArrayBuffer | null) => {
+    const B = C.cfg.box;
+    const corners = [toLocal(C, B.lat0, B.lon0), toLocal(C, B.lat0, B.lon1), toLocal(C, B.lat1, B.lon0), toLocal(C, B.lat1, B.lon1)];
+    C.box.set(Math.max(corners[0][0], corners[2][0]), Math.min(corners[1][0], corners[3][0]), Math.max(corners[0][1], corners[1][1]), Math.min(corners[2][1], corners[3][1]));
+    const [motorway, primary, tertiary, minor, rail, waterways, water] = decodeBoxed(buf);
+    const share = (m: ShaderMaterial) => { m.uniforms.uBox.value = C.box; C.all.push(m); return m; };
+
+    if (land) {
+      // Dubai: land from the OpenStreetMap coastline, so the coast stays crisp all the way down.
+      const [rings, loose] = decodeBoxed(land);
+      const g = segGeo(localFill(C, rings));
+      C.groundMat = share(cityMat({ frag: CITY_GROUND_FRAG, uniforms: { uFill: { value: NAVY_800 }, uDot: { value: TEAL_600 } } }));
+      cityObj(C, new Mesh(g, C.groundMat), 3.6);
+      const coastMat = share(cityMat({ frag: CITY_LINE_FRAG, uniforms: { uColor: { value: TEAL_300 } } }));
+      C.lines.push({ mat: coastMat, base: 0.8, z: [-1, -1] }); // follows the ground weight
+      cityObj(C, new LineSegments(segGeo(localSegs(C, [...ringsToCoast(rings, osmLayer.box), ...loose])), coastMat), 6.4);
+      const hz = track(new CylinderGeometry(32 / EARTH_KM, 32 / EARTH_KM, 14 / EARTH_KM, 128, 1, true));
+      hz.rotateX(Math.PI / 2);
+      hz.translate(0, 0, 6.6 / EARTH_KM); // foot just below the horizon from rooftop height
+      C.hazeMat = mat({ vertexShader: HAZE_VERT, fragmentShader: HAZE_FRAG, side: BackSide, blending: AdditiveBlending, uniforms: { uColor: { value: TEAL_500 }, uOpacity: { value: 0 } } });
+      cityObj(C, new Mesh(hz, C.hazeMat), 9.2);
+    }
+    const waterMat = share(cityMat({ frag: CITY_LINE_FRAG, uniforms: { uColor: { value: NAVY_950 }, uLift: { value: 0.3 * M } } }));
+    C.lines.push({ mat: waterMat, base: 0.85, z: [1.95, 2.3] });
+    cityObj(C, new Mesh(segGeo(localFill(C, water)), waterMat), 3.7);
+    // [lines, colour, opacity, level range it fades in over]
+    const classes: [Lines, Vector3, number, [number, number]][] = [
+      [water, TEAL_500, 0.45, [1.95, 2.3]],
+      [waterways, TEAL_500, 0.7, [1.95, 2.3]],
+      [minor, TEAL_500, 0.24, [2.5, 3.1]],
+      [tertiary, TEAL_400, 0.3, [2.15, 2.6]],
+      [primary, TEAL_400, 0.5, [1.95, 2.35]],
+      [rail, INK, 0.38, [1.95, 2.35]],
+      [motorway, TEAL_300, 0.78, [1.9, 2.25]],
+    ];
+    for (const [ls, color, base, z] of classes) {
+      if (!ls.length) continue;
+      const m = share(cityMat({ frag: CITY_LINE_FRAG, uniforms: { uColor: { value: color } } }));
+      C.lines.push({ mat: m, base, z });
+      cityObj(C, new LineSegments(segGeo(localSegs(C, ls)), m), 6.5);
+    }
+    for (const s of officeStops) if (s.city === C.cfg.id) addOffice(C, s);
+    C.ready = true;
+    gsap.to(C.fade, { v: 1, duration: 0.6, ease: 'power2.out' });
+  };
+
+  const officeStops = stops.filter((s) => s.office);
+  const addOffice = (C: City, s: Stop) => {
+    const [x, y, z] = toLocal(C, s.lat, s.lon);
+    const beamGeo = track(new CylinderGeometry(4 * M, 4 * M, OFFICE_BEAM_M * M, 20, 1, true));
+    beamGeo.rotateX(Math.PI / 2); // axis along local up, uv.y = 1 at the top
+    beamGeo.translate(x, y, z + (OFFICE_BEAM_M / 2) * M);
+    const beam = mat({
+      vertexShader: OFFICE_BEAM_VERT, fragmentShader: OFFICE_BEAM_FRAG, side: DoubleSide, blending: AdditiveBlending,
+      uniforms: { uColor: { value: TEAL_300 }, uOpacity: { value: 0 }, uTime: { value: 0 } },
+    });
+    cityObj(C, new Mesh(beamGeo, beam), 9.8);
+    const padGeo = track(new CircleGeometry(70 * M, 64));
+    padGeo.translate(x, y, z + 1 * M);
+    const ring = mat({
+      vertexShader: OFFICE_RING_VERT, fragmentShader: MARKER_FRAG, blending: AdditiveBlending,
+      uniforms: {
+        uTime: { value: 0 }, uPeriod: { value: 2.6 }, uPhase: { value: 0 }, uIntensity: { value: 0.9 }, uCore: { value: 0.08 }, uRings: { value: 1 },
+        uHalo: { value: 0.6 }, uColor: { value: TEAL_300 }, uOpacity: { value: 0 },
+      },
+    });
+    cityObj(C, new Mesh(padGeo, ring), 9.4);
+    C.offices.push(beam, ring);
+  };
+
+  const buildBuildings = async (C: City, buf: ArrayBuffer) => {
+    const d = decodeBuildings(buf);
+    const pos: number[] = [], nrm: number[] = [], hgt: number[] = [], lmk: number[] = [];
+    const epos: number[] = [], ehgt: number[] = [], elmk: number[] = [];
+    let beacon: { x: number; y: number; z: number; h: number } | null = null;
+    const rings: [Float32Array, number][] = [...d.footprints.map((r) => [r, 0] as [Float32Array, number]), ...d.landmark.map((r) => [r, 1] as [Float32Array, number])];
+    let budget = performance.now();
+    for (let i = 0; i < rings.length; i++) {
+      // About 6 ms of extrusion per frame.
+      if ((i & 63) === 0 && performance.now() - budget > 6) {
+        await nextFrame();
+        if (destroyed) return;
+        budget = performance.now();
+      }
+      const [r, lm] = rings[i];
+      const h = d.height[i], h0 = d.min[i];
+      const pts: [number, number, number][] = [];
+      for (let k = 0; k < r.length; k += 2) pts.push(toLocal(C, r[k + 1], r[k]));
+      if (pts.length > 3 && pts[0][0] === pts[pts.length - 1][0] && pts[0][1] === pts[pts.length - 1][1]) pts.pop();
+      if (pts.length < 3) continue;
+      let area = 0;
+      for (let k = 0; k < pts.length; k++) { const a = pts[k], b = pts[(k + 1) % pts.length]; area += a[0] * b[1] - b[0] * a[1]; }
+      if (area < 0) pts.reverse(); // counter-clockwise, so walls face out
+      const vert = (p: [number, number, number], n: [number, number, number], hh: number) => { pos.push(...p); nrm.push(...n); hgt.push(hh); lmk.push(lm); };
+      for (let k = 0; k < pts.length; k++) {
+        const a = pts[k], b = pts[(k + 1) % pts.length];
+        const dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy) || 1;
+        const n: [number, number, number] = [dy / len, -dx / len, 0];
+        vert(a, n, h0); vert(b, n, h0); vert(b, n, h);
+        vert(a, n, h0); vert(b, n, h); vert(a, n, h);
+        epos.push(...a, ...b); ehgt.push(h, h); elmk.push(lm, lm); // roof outline
+        if (lm || h > 60) { epos.push(...a, ...a); ehgt.push(h0, h); elmk.push(lm, lm); } // corner edge on towers
+      }
+      for (const [a, b, c] of ShapeUtils.triangulateShape(pts.map(([x, y]) => new Vector2(x, y)), [])) {
+        const [p, q, t] = [pts[a], pts[b], pts[c]];
+        const ccw = (q[0] - p[0]) * (t[1] - p[1]) - (q[1] - p[1]) * (t[0] - p[0]) > 0;
+        for (const v of ccw ? [p, q, t] : [p, t, q]) vert(v, [0, 0, 1], h);
+      }
+      if (lm && (!beacon || h > beacon.h)) {
+        const c = pts.reduce((s, p) => [s[0] + p[0] / pts.length, s[1] + p[1] / pts.length, s[2] + p[2] / pts.length], [0, 0, 0]);
+        beacon = { x: c[0], y: c[1], z: c[2], h };
+      }
+    }
+    const g = track(new BufferGeometry());
+    g.setAttribute('position', new BufferAttribute(new Float32Array(pos), 3));
+    g.setAttribute('aN', new BufferAttribute(new Float32Array(nrm), 3));
+    g.setAttribute('aH', new BufferAttribute(new Float32Array(hgt), 1));
+    g.setAttribute('aLm', new BufferAttribute(new Float32Array(lmk), 1));
+    const share = (m: ShaderMaterial) => { m.uniforms.uBox.value = C.box; C.all.push(m); return m; };
+    const sun = new Vector3(-0.45, -0.55, 0.7).normalize(); // from the south-west, high
+    C.bldMat = share(cityMat({
+      vert: BUILDING_VERT, frag: BUILDING_FRAG, depthWrite: true,
+      uniforms: { uRise: { value: 0 }, uWall: { value: NAVY_700 }, uRoof: { value: TEAL_600 }, uGlass: { value: TEAL_400 }, uLine: { value: TEAL_300 }, uSun: { value: sun } },
+    }));
+    cityObj(C, new Mesh(g, C.bldMat), 9.5);
+    const eg = track(new BufferGeometry());
+    eg.setAttribute('position', new BufferAttribute(new Float32Array(epos), 3));
+    eg.setAttribute('aH', new BufferAttribute(new Float32Array(ehgt), 1));
+    eg.setAttribute('aLm', new BufferAttribute(new Float32Array(elmk), 1));
+    C.edgeMat = share(cityMat({ vert: BUILDING_EDGE_VERT, frag: BUILDING_EDGE_FRAG, uniforms: { uRise: { value: 0 }, uColor: { value: TEAL_300 } } }));
+    cityObj(C, new LineSegments(eg, C.edgeMat), 9.6);
+    // Office cities mark the office with its light column instead of a beacon.
+    if (beacon && !officeStops.some((s) => s.city === C.cfg.id)) {
+      const b = beacon as { x: number; y: number; z: number; h: number };
+      C.beaconH = b.h;
+      C.beaconMat = mat({
+        vertexShader: BEACON_VERT, fragmentShader: BEACON_FRAG, blending: AdditiveBlending, depthTest: false,
+        uniforms: { uTime: { value: 0 }, uOpacity: { value: 0 }, uColor: { value: TEAL_300 }, uPx: { value: 22 * dpr0 }, uLift: { value: 0 } },
+      });
+      cityObj(C, new Points(segGeo(new Float32Array([b.x, b.y, b.z])), C.beaconMat), 9.7);
+    }
+  };
+
+  const ensureCity = (id: string) => {
+    const C = cityById[id];
+    if (!C || C.ready || C.loading) return;
+    C.loading = true;
+    const land = id === osmRegion.id ? load(osmRegion.file) : Promise.resolve(null);
+    Promise.all([load(C.cfg.file), land]).then(([b, l]) => {
+      if (destroyed) return;
+      buildCity(C, b, l);
+      if (C.cfg.buildingsFile) load(C.cfg.buildingsFile).then((bb) => { if (!destroyed) buildBuildings(C, bb); }).catch(() => { /* optional layer */ });
+    }).catch(() => { C.loading = false; });
+  };
 
   // --- Cities --------------------------------------------------------------------------------
   const spriteLayer = (pts: { lat: number; lon: number }[], color: Vector3, px: number, r: number) => {
@@ -512,7 +898,7 @@ export function initGlobe(container: HTMLElement, opts: GlobeOptions): GlobeApi 
   };
   const dpr0 = Math.min(window.devicePixelRatio || 1, 2);
   const worldCityMat = spriteLayer(worldCities, TEAL_300, 2.6 * dpr0, 1.0012);
-  const regionCityMat = spriteLayer(regionCities, INK, 3.5 * dpr0, 1.0006);
+  const regionCityMat = spriteLayer(regionCities, INK, 3.5 * dpr0, 1 + 8 * M);
 
   // --- Routes and arcs -----------------------------------------------------------------------
   const flowMat = (o: { reps: number; speed: number; base: number }) => mat({
@@ -536,7 +922,7 @@ export function initGlobe(container: HTMLElement, opts: GlobeOptions): GlobeApi 
   route.renderOrder = 8;
   globe.add(route);
 
-  const ground = routeCurve.getPoints(900).map((p) => p.normalize().multiplyScalar(1.0009));
+  const ground = routeCurve.getPoints(900).map((p) => p.normalize().multiplyScalar(1 + 6 * M));
   const groundPos = new Float32Array(ground.length * 3), groundU = new Float32Array(ground.length);
   ground.forEach((p, i) => { groundPos.set([p.x, p.y, p.z], i * 3); groundU[i] = i / (ground.length - 1); });
   const groundGeo = segGeo(groundPos);
@@ -579,7 +965,7 @@ export function initGlobe(container: HTMLElement, opts: GlobeOptions): GlobeApi 
   const markerMats: ShaderMaterial[] = [];
   const markerList: { mesh: Mesh; size: number }[] = [];
   const zAxis = new Vector3(0, 0, 1);
-  const addMarker = (lat: number, lon: number, size: number, intensity: number, o: { phase?: number; period?: number; rings?: number; core?: number; halo?: number; color?: Vector3; fixed?: boolean } = {}) => {
+  const addMarker = (lat: number, lon: number, size: number, intensity: number, o: { phase?: number; period?: number; rings?: number; core?: number; halo?: number; color?: Vector3; fixed?: boolean; r?: number } = {}) => {
     const m = mat({
       vertexShader: MARKER_VERT, fragmentShader: MARKER_FRAG, blending: AdditiveBlending,
       uniforms: {
@@ -590,7 +976,7 @@ export function initGlobe(container: HTMLElement, opts: GlobeOptions): GlobeApi 
     markerMats.push(m);
     const mesh = new Mesh(markerGeo, m);
     const dir = latLonToVec3(lat, lon, 1);
-    mesh.position.copy(dir).multiplyScalar(1.0015);
+    mesh.position.copy(dir).multiplyScalar(o.r ?? 1.0015);
     mesh.quaternion.copy(new Quaternion().setFromUnitVectors(zAxis, dir));
     mesh.scale.setScalar(size);
     mesh.renderOrder = 8;
@@ -612,7 +998,7 @@ export function initGlobe(container: HTMLElement, opts: GlobeOptions): GlobeApi 
     const east = new Vector3(0, 1, 0).cross(c).normalize();
     const north = c.clone().cross(east).normalize();
     const pt = (km: number, a: number) => c.clone().multiplyScalar(Math.cos(km / EARTH_KM))
-      .add(east.clone().multiplyScalar(Math.sin(km / EARTH_KM) * Math.cos(a))).add(north.clone().multiplyScalar(Math.sin(km / EARTH_KM) * Math.sin(a))).multiplyScalar(1.0008);
+      .add(east.clone().multiplyScalar(Math.sin(km / EARTH_KM) * Math.cos(a))).add(north.clone().multiplyScalar(Math.sin(km / EARTH_KM) * Math.sin(a))).multiplyScalar(1 + 6 * M);
     for (const km of [10, 25, 50]) {
       for (let i = 0; i < 120; i++) {
         if (km === 50 && i % 4 === 3) continue; // dashed outer ring
@@ -632,8 +1018,8 @@ export function initGlobe(container: HTMLElement, opts: GlobeOptions): GlobeApi 
     const isMarket = s.id === 'dubai';
     return {
       stop: s, dir: latLonToVec3(s.lat, s.lon, 1), ring, isMarket,
-      marker: addMarker(s.lat, s.lon, isMarket ? 0.06 : 0.04, 0, { period: 3, rings: 0.7, core: 0.22 }),
-      sweep: addMarker(s.lat, s.lon, 50 / EARTH_KM, 0, { period: 4.5, rings: 1, core: 0, halo: 0, fixed: true }),
+      marker: addMarker(s.lat, s.lon, isMarket ? 0.06 : 0.04, 0, { period: 3, rings: 0.7, core: 0.22, r: 1 + 8 * M }),
+      sweep: addMarker(s.lat, s.lon, 50 / EARTH_KM, 0, { period: 4.5, rings: 1, core: 0, halo: 0, fixed: true, r: 1 + 7 * M }),
     };
   });
 
@@ -659,7 +1045,10 @@ export function initGlobe(container: HTMLElement, opts: GlobeOptions): GlobeApi 
   let flight: gsap.core.Tween | null = null;
   let panTween: gsap.core.Tween | null = null;
   const parallax = { x: 0, y: 0, tx: 0, ty: 0 };
-  const cur = { yaw: 0, pitch: 0, alt: stopById.global.alt, tilt: 0, lat: 0, lon: 0, level: 0 };
+  // Street level: dragging circles the camera around the point it looks at instead of panning the globe.
+  const orbit = { h: 0, t: 0 };
+  const ORBIT_L = 3.5;
+  const cur = { yaw: 0, pitch: 0, alt: stopById.global.alt, tilt: 0, elev: 0, head: 0, lat: 0, lon: 0, level: 0 };
   let freeYaw = 0, freePitch = 0;
   let width = 1;
   let height = 1;
@@ -670,8 +1059,8 @@ export function initGlobe(container: HTMLElement, opts: GlobeOptions): GlobeApi 
   const atGlobal = () => pos.p === pos.c || (pos.p === 'global' && pos.t < 0.05);
 
   const poseOf = (s: Stop): Pose => s.id === 'global'
-    ? { yaw: freeYaw, pitch: freePitch, alt: s.alt, tilt: s.tilt }
-    : { yaw: yawFor(s.lon), pitch: s.lat * DEG, alt: s.alt, tilt: s.tilt };
+    ? { yaw: freeYaw, pitch: freePitch, alt: s.alt, tilt: s.tilt, elev: 0, head: 0 }
+    : { yaw: yawFor(s.lon), pitch: s.lat * DEG, alt: s.alt, tilt: s.tilt, elev: (s.elev ?? 0) * M, head: s.head ?? 0 };
   const logMix = (a: number, b: number, t: number) => Math.exp(mix(Math.log(a), Math.log(b), t));
 
   // Pose along one edge. Normal edges turn toward the child first, then descend. Edges with `via` follow those
@@ -687,7 +1076,7 @@ export function initGlobe(container: HTMLElement, opts: GlobeOptions): GlobeApi 
       const f = lens[i] ? d / lens[i] : 0;
       const lat = mix(pts[i][0], pts[i + 1][0], f), lon = mix(pts[i][1], pts[i + 1][1], f);
       const dip = Math.sin(Math.PI * t);
-      return { yaw: yawFor(lon), pitch: lat * DEG, alt: logMix(P.alt, C.alt, smooth(0, 1, t)) * (1 - 0.45 * dip), tilt: mix(P.tilt, C.tilt, t) + 0.3 * dip };
+      return { yaw: yawFor(lon), pitch: lat * DEG, alt: logMix(P.alt, C.alt, smooth(0, 1, t)) * (1 - 0.45 * dip), tilt: mix(P.tilt, C.tilt, t) + 0.3 * dip, elev: mix(P.elev, C.elev, t), head: P.head + wrap(C.head - P.head) * t };
     }
     const oa = smooth(0, 0.7, t);
     return {
@@ -695,6 +1084,8 @@ export function initGlobe(container: HTMLElement, opts: GlobeOptions): GlobeApi 
       pitch: mix(P.pitch, C.pitch, oa),
       alt: logMix(P.alt, C.alt, smooth(0.12, 1, t)),
       tilt: mix(P.tilt, C.tilt, smooth(0.3, 1, t)),
+      elev: mix(P.elev, C.elev, smooth(0.3, 1, t)),
+      head: P.head + wrap(C.head - P.head) * smooth(0.3, 1, t),
     };
   };
   const solve = (): Pose => (pos.p === pos.c ? poseOf(stopById.global) : solveEdge(stopById[pos.p], stopById[pos.c], pos.t));
@@ -881,10 +1272,16 @@ export function initGlobe(container: HTMLElement, opts: GlobeOptions): GlobeApi 
       velYaw = dx * k * 60 * 0.35 + velYaw * 0.5;
       velPitch = dy * k * 60 * 0.35 + velPitch * 0.5;
     } else {
-      // Zoomed in: drag pans around the stop, within a limit, and springs back after a moment.
-      const lim = 0.32 * cur.alt + 0.004;
-      pan.yaw = clamp(pan.yaw + dx * k, -lim, lim);
-      pan.pitch = clamp(pan.pitch + dy * k, -lim * 0.7, lim * 0.7);
+      // Zoomed in: drag pans around the stop, within a limit, and springs back after a moment. At street level
+      // it circles the camera around the point it's looking at instead (and that stays where you leave it).
+      if (cur.level > ORBIT_L) {
+        orbit.h = wrap(orbit.h - dx * 0.006);
+        orbit.t = clamp(orbit.t - dy * 0.003, -0.55, 0.22);
+      } else {
+        const lim = 0.32 * cur.alt + 0.004 * Math.min(1, cur.alt / 0.03);
+        pan.yaw = clamp(pan.yaw + dx * k, -lim, lim);
+        pan.pitch = clamp(pan.pitch + dy * k, -lim * 0.7, lim * 0.7);
+      }
     }
   };
   const onUp = (e: PointerEvent) => {
@@ -961,7 +1358,18 @@ export function initGlobe(container: HTMLElement, opts: GlobeOptions): GlobeApi 
   const pivot = new Vector3();
   const camDir = new Vector3();
   let lastState = '';
-  const tagState = (opts.tags ?? []).map((t) => ({ ...t, pos: latLonToVec3(t.lat, t.lon, 1.002), dir: latLonToVec3(t.lat, t.lon, 1), w: undefined as number | undefined }));
+  // Anchored just above the ground (or `h` metres up), so labels stay on their spot down to street level.
+  // `ext`: the label's box relative to its point (measured once shown, and again after a flip); `k`: eased
+  // 1/0 for "not covered by a higher-priority label". Sorted by priority so the collision pass is one sweep.
+  const tagState = (opts.tags ?? [])
+    .map((t, i) => ({ ...t, i, pos: latLonToVec3(t.lat, t.lon, 1 + (t.h ?? 30) * M), dir: latLonToVec3(t.lat, t.lon, 1), w: undefined as number | undefined, ext: null as number[] | null, k: 1, dx: 0 }))
+    .sort((a, b) => (a.rank ?? 9) - (b.rank ?? 9) || a.i - b.i);
+  const placed: number[][] = [];
+  const measure = (el: HTMLElement) => {
+    const o = el.getBoundingClientRect();
+    const rs = [...el.children].map((c) => c.getBoundingClientRect()).filter((r) => r.width > 2 && r.height > 2);
+    return rs.length ? [Math.min(...rs.map((r) => r.left)) - o.left, Math.min(...rs.map((r) => r.top)) - o.top, Math.max(...rs.map((r) => r.right)) - o.left, Math.max(...rs.map((r) => r.bottom)) - o.top] : null;
+  };
   const nearness = (dir: Vector3, deg: number) => 1 - smooth(deg * 0.6, deg, camDir.angleTo(dir) / DEG);
 
   const frame = (_t: number, dt: number) => {
@@ -1023,22 +1431,31 @@ export function initGlobe(container: HTMLElement, opts: GlobeOptions): GlobeApi 
     const alt = introDone ? pose.alt : intro.alt;
     const yaw = pose.yaw + pan.yaw;
     const pitch = clamp(pose.pitch + pan.pitch, -1.4, 1.4);
-    cur.yaw = yaw; cur.pitch = pitch; cur.alt = alt; cur.tilt = pose.tilt;
+    const L = levelOf(alt);
+    // Street-level orbit: idle slowly circles the tower; climbing back out unwinds it.
+    const ow = smooth(ORBIT_L - 0.4, ORBIT_L + 0.3, L);
+    if (ow > 0.5 && !dragging && !flight && !motionPaused && now - lastInteract > 2500 && restingAt()) orbit.h = wrap(orbit.h + dt * 0.045);
+    if (ow === 0) { orbit.h = 0; orbit.t = 0; }
+    cur.yaw = yaw; cur.pitch = pitch; cur.alt = alt;
+    cur.tilt = clamp(pose.tilt + orbit.t * ow, 0, 1.5); cur.elev = pose.elev; cur.head = pose.head + orbit.h * ow;
     cur.lat = pitch / DEG;
     cur.lon = ((-Math.PI / 2 - yaw) / DEG + 540) % 360 - 180;
-    const L = levelOf(alt);
     cur.level = L;
     camDir.copy(latLonToVec3(cur.lat, cur.lon, 1));
 
     globe.rotation.set(pitch, yaw, 0);
     globe.scale.setScalar(intro.s);
     const s = intro.s;
-    pivot.set(0, 0, s);
-    camera.position.set(0, -Math.sin(cur.tilt) * alt, s + Math.cos(cur.tilt) * alt);
+    // The camera looks at a point `elev` above the ground, from `alt` away, leaning `tilt` from straight down
+    // and turned `head` around that point's vertical (0 = from the south, north up).
+    pivot.set(0, 0, s * (1 + cur.elev));
+    const st = Math.sin(cur.tilt), ct = Math.cos(cur.tilt), sh = Math.sin(cur.head), ch = Math.cos(cur.head);
+    camera.position.set(st * sh * alt, -st * ch * alt, pivot.z + ct * alt);
+    camera.up.set(-ct * sh, ct * ch, st);
     camera.lookAt(pivot);
     const surf = camera.position.length() - s;
-    // Near plane tracks the altitude (precision up close); far plane always covers the whole globe.
-    const near = clamp(surf * 0.25, 0.0002, 0.1);
+    // Near plane tracks the altitude (precision up close, down to rooftop height); far plane always covers the whole globe.
+    const near = clamp(surf * 0.25, 5e-7, 0.1);
     const far = camera.position.length() + 2;
     if (Math.abs(camera.near - near) / near > 0.05 || Math.abs(camera.far - far) > 0.05) { camera.near = near; camera.far = far; camera.updateProjectionMatrix(); }
     globe.updateMatrixWorld(true);
@@ -1047,40 +1464,85 @@ export function initGlobe(container: HTMLElement, opts: GlobeOptions): GlobeApi 
     const detail = smooth(0.25, 0.85, L); // regional layers in, world layer out (inside their boxes)
     const deep = smooth(1.3, 1.9, L);     // city focal elements
     haloMat.uniforms.uOpacity.value = 1 - smooth(0.1, 0.6, L);
+    // Near the ground the ocean rises from 32 km down (where it never touches the land layers from orbit) to just
+    // under sea level, so the horizon sits where it should, and drops the rim light that's meant for the limb.
+    const sea = smooth(2.5, 3.2, L);
+    body.scale.setScalar(mix(1, 0.99996 / 0.995, sea));
+    bodyMat.uniforms.uRimK.value = 1 - 0.9 * sea;
     atmosMat.uniforms.uStrength.value = mix(0.55, 0.38, smooth(0.6, 1.8, L));
     gratMat.uniforms.uOpacity.value = 0.05 * (1 - smooth(0.2, 0.7, L));
     pointsMat.uniforms.uOpacity.value = mix(1, 0.4, smooth(0.3, 1, L));
     coastMat.uniforms.uOpacity.value = mix(0.32, 0.22, smooth(0.3, 1, L));
-    const osmW = osmLayer.ready ? smooth(1.25, 1.75, L) * osmLayer.fade.v : 0;
+    // Street-level city layers: lines from city zoom, then (Dubai) crisp land and 3D buildings below ~25 km.
+    const hKm = surf * EARTH_KM;
+    let cityOnScreen = false;
+    for (const C of citiesL) {
+      const lw = C.ready ? smooth(1.9, 2.25, L) * nearness(C.dir, 1.4) * C.fade.v : 0;
+      C.w = lw;
+      C.ground = C.groundMat ? smooth(2.9, 3.3, L) * lw : 0;
+      C.group.visible = lw > 0.002;
+      if (!C.group.visible) continue;
+      cityOnScreen ||= lw > 0.05;
+      const fog = C.all[0].uniforms.uFog.value as Vector2;
+      fog.set((4 + 5 * hKm) / EARTH_KM, (10 + 12 * hKm) / EARTH_KM);
+      C.all.forEach((m) => { m.uniforms.uFog.value = fog; });
+      for (const l of C.lines) l.mat.uniforms.uOpacity.value = l.base * (l.z[0] < 0 ? C.ground : lw * smooth(l.z[0], l.z[1], L));
+      if (C.groundMat) C.groundMat.uniforms.uOpacity.value = C.ground;
+      if (C.hazeMat) C.hazeMat.uniforms.uOpacity.value = 0.32 * smooth(3.3, 3.9, L) * lw;
+      if (C.bldMat && C.edgeMat) {
+        const rise = smooth(3.0, 3.85, L);
+        C.bldMat.uniforms.uRise.value = C.edgeMat.uniforms.uRise.value = rise;
+        C.bldMat.uniforms.uOpacity.value = smooth(2.9, 3.3, L) * lw;
+        C.edgeMat.uniforms.uOpacity.value = smooth(2.9, 3.3, L) * lw;
+      }
+      if (C.beaconMat) {
+        C.beaconMat.uniforms.uOpacity.value = smooth(3.4, 3.9, L) * lw;
+        C.beaconMat.uniforms.uTime.value = animT;
+        C.beaconMat.uniforms.uLift.value = C.beaconH * M * smooth(3.0, 3.85, L); // rides up with the tower
+      }
+      const offW = smooth(2.9, 3.4, L) * lw;
+      for (const m of C.offices) { m.uniforms.uOpacity.value = offW; m.uniforms.uTime.value = animT; }
+    }
+    const dubaiGround = cityById[osmRegion.id]?.ground ?? 0;
+    // The OpenStreetMap patch hands over to the city layer's crisp land; it keeps cutting the coarser layers.
+    const osmW = osmLayer.ready ? smooth(1.25, 1.75, L) * osmLayer.fade.v * (1 - dubaiGround) : 0;
+    const osmCut = Math.max(osmW, dubaiGround);
     layers.forEach((Ly, i) => {
       const w = Ly.ready ? (Ly.osm ? osmW : detail * Ly.fade.v) : 0;
-      worldCut.forEach((m) => { (m.uniforms.uCutW.value as number[])[i] = w; });
+      worldCut.forEach((m) => { (m.uniforms.uCutW.value as number[])[i] = Ly.osm ? osmCut : w; });
       Ly.patch.uniforms.uOpacity.value = w;
       Ly.coast.uniforms.uOpacity.value = (Ly.osm ? 0.85 : 0.7) * w;
       Ly.border.uniforms.uOpacity.value = 0.35 * w;
       Ly.hi.uniforms.uOpacity.value = 0.95 * w;
+      Ly.prov.uniforms.uOpacity.value = 0.4 * w;
+      Ly.river.uniforms.uOpacity.value = 0.6 * w;
+      Ly.road.uniforms.uOpacity.value = 0.2 * w * smooth(0.7, 1.0, L);
+      Ly.rail.uniforms.uOpacity.value = 0.16 * w * smooth(0.7, 1.0, L);
       // Brighten the dot field around the view centre.
       const B = Ly.box;
       const kmLon = Ly.patch.uniforms.uKmLon.value as number;
       (Ly.patch.uniforms.uFocus.value as Vector2).set((cur.lon - B.lon0) * kmLon, (cur.lat - B.lat0) * 110.57);
       Ly.patch.uniforms.uFocusKm.value = Math.max(8, alt * EARTH_KM * 0.12);
     });
-    [gulf.patch, gulf.coast, gulf.border, gulf.hi].forEach((m) => { (m.uniforms.uCutW.value as number[])[0] = osmW; });
+    layerMats(gulf).forEach((m) => { (m.uniforms.uCutW.value as number[])[0] = osmCut; });
     worldCityMat.uniforms.uOpacity.value = 0.5 * (1 - smooth(0.3, 0.9, L)) * intro.label;
     regionCityMat.uniforms.uOpacity.value = 0.8 * smooth(1.1, 1.7, L);
     routeMat.uniforms.uOpacity.value = 1 - smooth(0.2, 0.6, L);
     groundMat.uniforms.uOpacity.value = smooth(0.3, 0.7, L);
     waypointMats.forEach((m) => { m.uniforms.uIntensity.value = 0.7 * smooth(0.4, 0.9, L); });
-    arcMat.uniforms.uOpacity.value = mix(1, 0.3, smooth(0.4, 1.1, L)); // illustrative links recede below orbit
+    arcMat.uniforms.uOpacity.value = mix(1, 0.3, smooth(0.4, 1.1, L)) * (1 - smooth(2.4, 2.9, L)); // illustrative links recede below orbit
     coreMarker.uniforms.uOpacity.value = 1 - smooth(0.3, 0.9, L);
     marketMats.forEach((m) => { m.uniforms.uOpacity.value = 1 - smooth(0.6, 1.3, L); });
+    // City markers and range rings step aside once the street-level layers are down at the ground.
+    const street = 1 - smooth(3.05, 3.45, L); // after Lahore (level ≈ 3.0), before Downtown Dubai (≈ 4.1)
     for (const c of cities) {
       const n = nearness(c.dir, 1.5);
-      c.ring.uniforms.uOpacity.value = 0.38 * deep * n;
-      c.sweep.uniforms.uIntensity.value = 0.28 * deep * n;
-      c.marker.uniforms.uIntensity.value = c.isMarket ? mix(0.62, 0.95, smooth(0.4, 1.2, L)) : 0.85 * smooth(0.4, 0.9, L);
+      c.ring.uniforms.uOpacity.value = 0.38 * deep * n * street;
+      c.sweep.uniforms.uIntensity.value = 0.28 * deep * n * street;
+      c.marker.uniforms.uIntensity.value = (c.isMarket ? mix(0.62, 0.95, smooth(0.4, 1.2, L)) : 0.85 * smooth(0.4, 0.9, L)) * street;
     }
-    const osmOnScreen = osmW > 0.05 && nearness(latLonToVec3((osmLayer.box.lat0 + osmLayer.box.lat1) / 2, (osmLayer.box.lon0 + osmLayer.box.lon1) / 2, 1), 2) > 0.01;
+    regionCityMat.uniforms.uOpacity.value *= street;
+    const osmOnScreen = cityOnScreen || (osmW > 0.05 && nearness(latLonToVec3((osmLayer.box.lat0 + osmLayer.box.lat1) / 2, (osmLayer.box.lon0 + osmLayer.box.lon1) / 2, 1), 2) > 0.01);
 
     for (const m of [...flowMats, ...markerMats]) m.uniforms.uTime.value = animT;
     // Markers: scale with camera distance so they keep a similar on-screen size from orbit to street level.
@@ -1092,7 +1554,8 @@ export function initGlobe(container: HTMLElement, opts: GlobeOptions): GlobeApi 
     }
     canvas.style.opacity = String(intro.o);
 
-    // HTML tags.
+    // HTML tags. A label that would overlap one already placed (higher priority) fades out until it's clear.
+    placed.length = 0;
     for (const t of tagState) {
       tmp.copy(t.pos).applyMatrix4(globe.matrixWorld);
       const facing = tmp2.copy(tmp).normalize().dot(camera.position.clone().sub(tmp).normalize());
@@ -1102,20 +1565,41 @@ export function initGlobe(container: HTMLElement, opts: GlobeOptions): GlobeApi 
       tmp.project(camera);
       const x = (tmp.x * 0.5 + 0.5) * width;
       const y = (-tmp.y * 0.5 + 0.5) * height;
-      const vis = clamp((facing - 0.05) / 0.2, 0, 1) * w * intro.label * (tmp.z < 1 ? 1 : 0);
+      // Far side of the globe hides a tag; at street level the camera looks across, so only the true horizon does.
+      const vis = clamp((facing - mix(0.05, -0.3, smooth(2.8, 3.4, L))) / 0.2, 0, 1) * w * intro.label * (tmp.z < 1 ? 1 : 0);
       t.el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
-      t.el.style.opacity = vis.toFixed(3);
-      t.el.style.visibility = vis < 0.01 ? 'hidden' : 'visible';
-      // Labels that read rightwards flip to the left when they'd run past the right edge.
-      if (t.w === undefined && vis > 0) t.w = Math.max(0, ...[...t.el.children].map((c) => (c as HTMLElement).offsetWidth));
-      const flip = x + (t.w ?? 0) + 16 > width;
-      if ((t.el.dataset.flip === 'true') !== flip) t.el.dataset.flip = String(flip);
+      // Labels that read rightwards flip to the left when they'd run past the right edge. Centred labels
+      // (`data-clamp`, the office cards) slide sideways instead (--dx), so they stay inside the box.
+      const clampX = t.el.dataset.clamp !== undefined;
+      if (!clampX) {
+        if (t.w === undefined && vis > 0) t.w = Math.max(0, ...[...t.el.children].map((c) => (c as HTMLElement).offsetWidth));
+        const flip = x + (t.w ?? 0) + 16 > width;
+        if ((t.el.dataset.flip === 'true') !== flip) { t.el.dataset.flip = String(flip); t.ext = null; }
+      }
+      let clear = 1;
+      if (vis > 0.05) {
+        if (!t.ext) t.ext = measure(t.el);
+        const e = t.ext;
+        if (e && clampX) {
+          const dx = Math.round(x + e[0] < 6 ? 6 - (x + e[0]) : x + e[2] > width - 6 ? width - 6 - (x + e[2]) : 0);
+          if (dx !== t.dx) { t.dx = dx; t.el.style.setProperty('--dx', `${dx}px`); }
+        }
+        if (e) {
+          const r = [x + e[0] - 12, y + e[1] - 3, x + e[2] + 12, y + e[3] + 3]; // keep a clear gap, not just no overlap
+          if (placed.some((p) => r[0] < p[2] && r[2] > p[0] && r[1] < p[3] && r[3] > p[1])) clear = 0;
+          else placed.push(r);
+        }
+      }
+      t.k += (clear - t.k) * Math.min(1, dt * 8);
+      const v = vis * t.k;
+      t.el.style.opacity = v.toFixed(3);
+      t.el.style.visibility = v < 0.01 ? 'hidden' : 'visible';
     }
 
     if (opts.onState) {
       const stop = flight || Math.abs(wheelPending) > 1e-3 ? null : restingAt();
-      const step = alt < 0.2 ? 5 : 50;
-      const altKm = Math.round(((camera.position.length() - s) * EARTH_KM) / step) * step;
+      const step = surf < 0.002 ? 0.01 : alt < 0.2 ? 5 : 50;
+      const altKm = Math.round((surf * EARTH_KM) / step) * step;
       const key = `${stop}|${cur.lat.toFixed(2)}|${cur.lon.toFixed(2)}|${altKm}|${focused}|${osmOnScreen}`;
       if (key !== lastState) { lastState = key; opts.onState({ stop, lat: cur.lat, lon: cur.lon, altKm, focused, osm: osmOnScreen }); }
     }
@@ -1138,7 +1622,7 @@ export function initGlobe(container: HTMLElement, opts: GlobeOptions): GlobeApi 
     destroy() {
       destroyed = true;
       loop.destroy();
-      gsap.killTweensOf([view, intro, pan, ...layers.map((l) => l.fade)]);
+      gsap.killTweensOf([view, intro, pan, orbit, ...layers.map((l) => l.fade), ...citiesL.map((c) => c.fade)]);
       flight?.kill();
       ro.disconnect();
       canvas.removeEventListener('pointerdown', onDown);

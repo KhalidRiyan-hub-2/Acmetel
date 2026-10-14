@@ -3,19 +3,37 @@
 //   public/data/globe-dots.bin    land dots on a Fibonacci sphere, Int16 [lon, lat] × 100
 //   public/data/globe-lines.bin   world coastlines + country borders (50m, simplified), Int16 × 100
 //   public/data/globe-<region>.bin  one per region in src/data/globe-regions.json, at 10m: coastlines, borders,
-//                                   highlighted-country outline, land rings, highlighted-country rings,
-//                                   Uint16 relative to the region box (see encodeBoxed)
+//                                   highlighted-country outline, land rings, highlighted-country rings, then
+//                                   (Natural Earth 10m, cached in .cache/ne/) highlighted-country provinces,
+//                                   rivers, lake rings, roads, railways; Uint16 relative to the region box
+//                                   (see encodeBoxed)
 // The Dubai OpenStreetMap layer is built separately by scripts/build-osm-dubai.mjs.
 //
 // Line files: [u32 layerCount] then per layer [u32 lineCount][u32 vertexCount × lineCount] followed by the
 // coordinate block for every layer ([lon, lat] pairs). Layout is read by src/scripts/globe/data.ts.
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { feature, mesh } from 'topojson-client';
 import { simplify, lineLength, encode, encodeBoxed, clipPolyline } from './lib/geo.mjs';
 
 const require = createRequire(import.meta.url);
 const atlas = (name) => JSON.parse(readFileSync(require.resolve(`world-atlas/${name}.json`), 'utf8'));
+
+// Natural Earth 10m layers that world-atlas doesn't carry. Downloaded once into .cache/ne/ (gitignored).
+const NE_URL = 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson';
+async function ne(name) {
+  const file = `.cache/ne/${name}.geojson`;
+  if (!existsSync(file)) {
+    mkdirSync('.cache/ne', { recursive: true });
+    const res = await fetch(`${NE_URL}/${name}.geojson`);
+    if (!res.ok) throw new Error(`${name}: ${res.status}`);
+    writeFileSync(file, Buffer.from(await res.arrayBuffer()));
+  }
+  return JSON.parse(readFileSync(file, 'utf8')).features;
+}
+// world-atlas uses ISO numeric ids; Natural Earth admin-1 uses ISO alpha-3.
+const ISO3 = { 586: 'PAK', 156: 'CHN', 784: 'ARE', 840: 'USA' };
+const lineParts = (g) => (g.type === 'MultiLineString' ? g.coordinates : g.type === 'LineString' ? [g.coordinates] : []);
 
 const { regions } = JSON.parse(readFileSync(new URL('../src/data/globe-regions.json', import.meta.url), 'utf8'));
 
@@ -111,6 +129,9 @@ const countries10 = atlas('countries-10m');
 const landRings10 = geomsOf(feature(land10, land10.objects.land));
 const coastMesh10 = mesh(land10, land10.objects.land);
 const borderMesh10 = mesh(countries10, countries10.objects.countries, (a, b) => a !== b);
+const [provinces, rivers, lakes, roads, rail] = await Promise.all(
+  ['ne_10m_admin_1_states_provinces_lines', 'ne_10m_rivers_lake_centerlines', 'ne_10m_lakes', 'ne_10m_roads', 'ne_10m_railroads'].map(ne),
+);
 const regionBufs = regions.map((reg) => {
   const B = reg.box;
   const pad = { lon0: B.lon0 - 0.5, lon1: B.lon1 + 0.5, lat0: B.lat0 - 0.5, lat1: B.lat1 + 0.5 };
@@ -123,6 +144,14 @@ const regionBufs = regions.map((reg) => {
     hi.flatMap((g) => lines(mesh(countries10, g))),
     polys(landRings10),
     polys(hi.map((g) => feature(countries10, g).geometry)),
+    // Extra Natural Earth detail (provinces, rivers, lakes, roads, rail) unless the region opts out.
+    ...(reg.extras === false ? [] : [
+    lines({ coordinates: provinces.filter((f) => reg.highlight.some((id) => ISO3[id] === f.properties.ADM0_A3)).flatMap((f) => lineParts(f.geometry)) }),
+    lines({ coordinates: rivers.filter((f) => f.properties.scalerank <= 9).flatMap((f) => lineParts(f.geometry)) }),
+    polys(lakes.filter((f) => f.properties.scalerank <= 8).map((f) => f.geometry)),
+    lines({ coordinates: roads.filter((f) => f.properties.featurecla === 'Road' && (/^(Major Highway|Road)$/.test(f.properties.type) || f.properties.scalerank <= 6)).flatMap((f) => lineParts(f.geometry)) }),
+    lines({ coordinates: rail.flatMap((f) => lineParts(f.geometry)) }),
+    ]),
   ];
   return { reg, layers, buf: encodeBoxed(layers, pad) };
 });

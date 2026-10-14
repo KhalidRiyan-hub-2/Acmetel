@@ -1,0 +1,339 @@
+---
+// LAB J05 (docs/agents/QUEUE.md): SMS Firewall as a dedicated homepage section with a watchtower visual.
+// Same text column in every direction (verbatim from content/source/messaging.md "Firewall & Security Solutions");
+// only the visual changes.
+//   A  Searchlight   side view: a lattice watchtower throws a searchlight over three traffic lanes (SMS, Voice,
+//                    Flash call, from the source bullet). Messages caught in the beam are allowed (teal, pass into
+//                    the tower) or blocked (cross, stop, drop out of the lane).
+//   B  Top-down      the tower seen from above at the bottom edge, a beam wedge sweeping the field; messages head for
+//                    the tower and are classified when the beam touches them.
+//   C  Checkpoint    DOM log: message rows slide down past a horizontal scan beam and get stamped Allowed/Blocked.
+// Traffic is simulated decoration (aria-hidden). Canvas 2D / DOM only, tokens only. Not linked, noindex.
+import Lab from './_Lab.astro';
+import Section from '../../components/Section.astro';
+import SectionHeading from '../../components/SectionHeading.astro';
+import SplitSection from '../../components/SplitSection.astro';
+import CheckList from '../../components/CheckList.astro';
+import Button from '../../components/Button.astro';
+
+const bullets = [
+  'SMS, Voice, and Flash Call firewall deployment',
+  'Grey route and international bypass prevention',
+  'AI-powered fraud detection and traffic filtering',
+  'Real-time analytics and threat intelligence',
+];
+const dirs = [
+  { id: 'a', name: 'Searchlight', note: 'Side view. A lattice tower sweeps a searchlight over SMS, Voice and Flash call lanes. Allowed traffic passes into the tower; blocked traffic is crossed out and drops from its lane.' },
+  { id: 'b', name: 'Top-down watch', note: 'Plan view. A beam wedge sweeps from the tower at the bottom edge; messages heading in are classified when the beam reaches them.' },
+  { id: 'c', name: 'Checkpoint log', note: 'DOM only. Message rows slide past a scan beam and are stamped Allowed or Blocked; blocked rows collapse out.' },
+];
+const rows = [
+  { lane: 'SMS', blocked: false }, { lane: 'Flash call', blocked: true }, { lane: 'SMS', blocked: false }, { lane: 'Voice', blocked: true },
+  { lane: 'SMS', blocked: true }, { lane: 'Voice', blocked: false }, { lane: 'SMS', blocked: false }, { lane: 'Flash call', blocked: false },
+];
+---
+<Lab title="J05 SMS Firewall">
+  <header class="container-x pt-16 pb-6">
+    <p class="eyebrow">Lab · J05</p>
+    <h1 class="mt-3 text-3xl font-semibold text-ink sm:text-4xl">SMS Firewall section, watchtower visual</h1>
+    <p class="mt-3 max-w-2xl text-ink-muted">Three directions for the dedicated homepage section. Text column is identical (source copy); judge the visual. Replay reruns it; hover the visual to replay too.</p>
+  </header>
+
+  {dirs.map((d, i) => (
+    <Section tone={i % 2 ? 'raised' : 'base'}>
+      <div class="mb-10 flex flex-wrap items-end justify-between gap-4 border-b border-line pb-6">
+        <div>
+          <p class="font-mono text-xs text-teal-300">Direction {d.id.toUpperCase()}</p>
+          <h2 class="mt-1 text-xl font-semibold text-ink">{d.name}</h2>
+          <p class="mt-2 max-w-2xl text-sm text-ink-muted">{d.note}</p>
+        </div>
+        <button type="button" class="rounded-full border border-line-strong px-4 py-2 text-sm font-semibold text-teal-300 hover:border-teal-500/60" data-replay={d.id}>Replay</button>
+      </div>
+      <SplitSection>
+        <SectionHeading eyebrow="SMS Firewall" title="Firewall &" highlight="security solutions" lede="Protect operator networks while maximizing international messaging revenues through AI-driven security and monetization platforms." />
+        <CheckList items={bullets} class="mt-8" />
+        <div class="mt-8"><Button href="/services/messaging#firewall" variant="outline">Explore SMS Firewall</Button></div>
+        <div slot="visual">
+          {d.id !== 'c' ? (
+            <div class="glass relative aspect-[4/3] overflow-hidden" data-fw-box>
+              <canvas class="absolute inset-0 size-full" data-fw={d.id} aria-hidden="true"></canvas>
+            </div>
+          ) : (
+            <div class="glass relative aspect-[4/3] overflow-hidden" data-fw-box aria-hidden="true">
+              <div class="flex items-center justify-between border-b border-line px-5 py-3 text-xs text-ink-muted">
+                <span class="flex items-center gap-2"><span class="size-1.5 rounded-full bg-teal-400"></span>Incoming traffic</span>
+                <span class="font-mono text-ink-faint">simulated</span>
+              </div>
+              <div class="cp relative h-[calc(100%-2.6rem)] overflow-hidden" data-cp>
+                <div class="cp-beam pointer-events-none absolute inset-x-0 top-[46%] z-10"></div>
+                {rows.map((r) => (
+                  <div class="cp-row absolute inset-x-4 flex items-center gap-3 rounded-xl border border-line bg-navy-900/80 px-3 py-2.5" data-row data-blocked={r.blocked ? '1' : ''}>
+                    <span class="grid size-7 shrink-0 place-items-center rounded-lg bg-white/[0.04] text-ink-muted">
+                      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    </span>
+                    <span class="cp-bars flex min-w-0 flex-1 flex-col gap-1.5"><span class="h-1.5 w-3/4 rounded-full bg-white/10"></span><span class="h-1.5 w-1/2 rounded-full bg-white/[0.06]"></span></span>
+                    <span class="hidden font-mono text-[11px] text-ink-faint sm:inline">{r.lane}</span>
+                    <span class="cp-stamp w-20 text-right text-xs font-semibold"></span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </SplitSection>
+    </Section>
+  ))}
+</Lab>
+
+<style>
+  .cp-beam {
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--color-teal-300) 20%, var(--color-teal-300) 80%, transparent);
+    box-shadow: 0 0 18px 4px color-mix(in srgb, var(--color-teal-400) 45%, transparent);
+  }
+  .cp-row { will-change: transform, opacity; }
+  .cp-row[data-state='allowed'] { border-color: color-mix(in srgb, var(--color-teal-500) 45%, transparent); }
+  .cp-row[data-state='allowed'] .cp-stamp { color: var(--color-teal-300); }
+  .cp-row[data-state='blocked'] { opacity: 0.55; border-style: dashed; }
+  .cp-row[data-state='blocked'] .cp-bars > * { background: var(--color-ink-faint); opacity: 0.35; }
+  .cp-row[data-state='blocked'] .cp-stamp { color: var(--color-ink-faint); text-decoration: line-through; }
+</style>
+
+<script>
+  import { visibleLoop, prefersReducedMotion } from '../../scripts/motion';
+  import { initReveal, tokens, fit, replays, bindReplays, whenSeen, clamp01, type Fit } from './_kit';
+
+  initReveal(); bindReplays();
+  const reduced = prefersReducedMotion();
+  const C = tokens();
+  const DEG = Math.PI / 180;
+
+  type Msg = { x: number; y: number; lane: number; blocked: boolean; state: 0 | 1 | 2; at: number; vx: number; vy: number; a: number; tx?: number; ty?: number };
+
+  /** Small message glyph: rounded bubble; lane picks the inner mark (SMS lines, Voice wave, Flash call bolt). */
+  function glyph(ctx: CanvasRenderingContext2D, m: Msg, s: number) {
+    const w = 22 * s, h = 14 * s, x = m.x - w / 2, y = m.y - h / 2;
+    const allowed = m.state === 1 && !m.blocked, blocked = m.state === 1 && m.blocked;
+    ctx.globalAlpha = m.a;
+    ctx.lineWidth = 1.4;
+    ctx.setLineDash(blocked ? [3, 2] : []);
+    ctx.strokeStyle = allowed ? C.t300 : blocked ? C.faint : C.muted;
+    ctx.fillStyle = allowed ? 'rgb(34 170 161 / 0.22)' : 'rgb(255 255 255 / 0.04)';
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 4 * s); ctx.fill(); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    if (m.lane === 0) { ctx.moveTo(x + 5 * s, y + 5 * s); ctx.lineTo(x + w - 5 * s, y + 5 * s); ctx.moveTo(x + 5 * s, y + 9 * s); ctx.lineTo(x + w - 9 * s, y + 9 * s); }
+    else if (m.lane === 1) { for (let i = 0; i <= 12; i++) { const px = x + 4 * s + (i / 12) * (w - 8 * s); const py = m.y + Math.sin(i * 1.1) * 3 * s; i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); } }
+    else { ctx.moveTo(m.x + 2 * s, y + 3 * s); ctx.lineTo(m.x - 3 * s, m.y + 1 * s); ctx.lineTo(m.x + 2 * s, m.y - 1 * s); ctx.lineTo(m.x - 2 * s, y + h - 3 * s); }
+    ctx.stroke();
+    // Verdict mark above the message: check (allowed) or cross (blocked). Shape, not colour, carries it.
+    if (m.state === 1) {
+      const cy = y - 7 * s;
+      ctx.lineWidth = 1.8; ctx.strokeStyle = allowed ? C.t300 : C.faint; ctx.beginPath();
+      if (allowed) { ctx.moveTo(m.x - 4 * s, cy); ctx.lineTo(m.x - 1 * s, cy + 3 * s); ctx.lineTo(m.x + 4 * s, cy - 3 * s); }
+      else { ctx.moveTo(m.x - 3.5 * s, cy - 3.5 * s); ctx.lineTo(m.x + 3.5 * s, cy + 3.5 * s); ctx.moveTo(m.x + 3.5 * s, cy - 3.5 * s); ctx.lineTo(m.x - 3.5 * s, cy + 3.5 * s); }
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // Seeded-ish fate so every run shows a similar blocked share (~35%).
+  let seed = 7;
+  const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+
+  // --- A: Searchlight ---------------------------------------------------------------------------------------------
+  function searchlight(canvas: HTMLCanvasElement) {
+    let f: Fit = fit(canvas);
+    let msgs: Msg[] = [], t = 0, spawn = 0;
+    const geo = () => {
+      const { w, h } = f;
+      const s = Math.max(1, Math.min(1.45, w / 420));
+      const tx = w * 0.15, ground = h * 0.93, cabTop = h * 0.16, cabH = h * 0.11, cabW = Math.max(46, w * 0.12);
+      const lamp = { x: tx + cabW * 0.5, y: cabTop + cabH * 0.55 };
+      const lanes = [0.5, 0.67, 0.84].map((k) => h * k);
+      return { s, tx, ground, cabTop, cabH, cabW, lamp, lanes, laneStart: tx + cabW * 0.7 };
+    };
+    let g = geo();
+    const beamAt = (time: number) => (39 + 14 * Math.sin(time * 0.85)) * DEG; // below horizontal: sweeps the middle of the lanes
+    const HW = 6.5 * DEG;
+
+    const drawTower = () => {
+      const { ctx } = f; const { tx, ground, cabTop, cabH, cabW, lamp } = g;
+      const legTop = cabTop + cabH, spread = cabW * 0.95;
+      ctx.strokeStyle = C.strong; ctx.lineWidth = 1.5;
+      const L = (x: number, y: number, x2: number, y2: number) => { ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x2, y2); ctx.stroke(); };
+      const lx = (k: number, side: number) => tx + side * (cabW * 0.32 + (spread - cabW * 0.32) * k);
+      L(lx(0, -1), legTop, lx(1, -1), ground); L(lx(0, 1), legTop, lx(1, 1), ground);
+      ctx.lineWidth = 1; ctx.strokeStyle = C.line;
+      for (let i = 0; i < 5; i++) {               // lattice bracing
+        const k0 = i / 5, k1 = (i + 1) / 5, y0 = legTop + (ground - legTop) * k0, y1 = legTop + (ground - legTop) * k1;
+        L(lx(k0, -1), y0, lx(k1, 1), y1); L(lx(k0, 1), y0, lx(k1, -1), y1); L(lx(k1, -1), y1, lx(k1, 1), y1);
+      }
+      // Cabin, roof, lit window band.
+      ctx.fillStyle = C.n800; ctx.strokeStyle = C.strong; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.rect(tx - cabW / 2, cabTop, cabW, cabH); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(tx - cabW * 0.62, cabTop); ctx.lineTo(tx, cabTop - cabH * 0.55); ctx.lineTo(tx + cabW * 0.62, cabTop); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = 'rgb(127 220 213 / 0.35)'; ctx.fillRect(tx - cabW * 0.38, cabTop + cabH * 0.32, cabW * 0.76, cabH * 0.3);
+      ctx.fillStyle = C.t300; ctx.beginPath(); ctx.arc(lamp.x, lamp.y, 3.5, 0, Math.PI * 2); ctx.fill();
+      // Ground line.
+      ctx.strokeStyle = C.line; L(0, ground, f.w, ground);
+    };
+
+    const draw = () => {
+      const { ctx, w, h } = f; const { lamp, lanes, laneStart, s } = g;
+      ctx.clearRect(0, 0, w, h);
+      // Lanes + labels.
+      ctx.setLineDash([4, 6]); ctx.strokeStyle = C.line; ctx.lineWidth = 1;
+      lanes.forEach((y) => { ctx.beginPath(); ctx.moveTo(laneStart, y); ctx.lineTo(w, y); ctx.stroke(); });
+      ctx.setLineDash([]);
+      ctx.font = `${Math.round(11 * s)}px "JetBrains Mono Variable", ui-monospace, monospace`; ctx.fillStyle = C.faint; ctx.textAlign = 'right';
+      ['SMS', 'Voice', 'Flash call'].forEach((l, i) => ctx.fillText(l, w - 12, lanes[i] - 14 * s));
+      ctx.textAlign = 'left';
+      // Beam: additive cone from the lamp.
+      const th = beamAt(t), L = Math.hypot(w, h);
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      const grad = ctx.createRadialGradient(lamp.x, lamp.y, 0, lamp.x, lamp.y, L * 0.85);
+      grad.addColorStop(0, 'rgb(127 220 213 / 0.42)'); grad.addColorStop(0.5, 'rgb(34 170 161 / 0.12)'); grad.addColorStop(1, 'rgb(34 170 161 / 0)');
+      ctx.fillStyle = grad; ctx.beginPath(); ctx.moveTo(lamp.x, lamp.y);
+      ctx.lineTo(lamp.x + Math.cos(th - HW) * L, lamp.y + Math.sin(th - HW) * L);
+      ctx.lineTo(lamp.x + Math.cos(th + HW) * L, lamp.y + Math.sin(th + HW) * L);
+      ctx.closePath(); ctx.fill(); ctx.restore();
+      drawTower();
+      msgs.forEach((m) => glyph(ctx, m, s));
+    };
+
+    const step = (dt: number) => {
+      const { w } = f; const { lamp, lanes, tx, cabW, s } = g;
+      t += dt; spawn -= dt;
+      if (spawn <= 0) { spawn = 0.45 + rnd() * 0.5; const lane = (rnd() * 3) | 0; msgs.push({ x: w + 20, y: lanes[lane], lane, blocked: rnd() < 0.36, state: 0, at: 0, vx: -(70 + rnd() * 50) * s, vy: 0, a: 1 }); }
+      const th = beamAt(t);
+      for (const m of msgs) {
+        if (m.state === 0) {
+          const ang = Math.atan2(m.y - lamp.y, m.x - lamp.x);
+          if (Math.abs(ang - th) < HW && m.x < w - 10) { m.state = 1; m.at = t; }
+        }
+        if (m.state === 1 && m.blocked) {
+          const since = t - m.at;
+          if (since < 0.35) m.vx *= 0.8;            // stops in the beam
+          else { m.vx = 0; m.vy += 420 * dt; m.a = Math.max(0, 1 - (since - 0.35) / 0.9); } // drops out of its lane
+        }
+        m.x += m.vx * dt; m.y += m.vy * dt;
+        if (!m.blocked && m.x < tx + cabW * 0.9) m.a = Math.max(0, m.a - dt * 3); // allowed: passes into the tower
+      }
+      msgs = msgs.filter((m) => m.a > 0 && m.x > -30);
+    };
+
+    const staticFrame = () => {
+      seed = 11; msgs = []; t = 0.6;
+      const { w } = f; const { lanes, s } = g;
+      [[0.45, 0, 1, false], [0.62, 1, 1, true], [0.78, 0, 0, false], [0.55, 2, 1, false], [0.9, 2, 0, true], [0.72, 1, 1, false], [0.86, 0, 0, false]].forEach(([k, lane, st, bl]) =>
+        msgs.push({ x: w * (k as number), y: lanes[lane as number], lane: lane as number, blocked: bl as boolean, state: st as 0 | 1, at: 0, vx: 0, vy: 0, a: st && bl ? 0.7 : 1 }));
+      draw();
+    };
+
+    new ResizeObserver(() => { f = fit(canvas); g = geo(); if (reduced) staticFrame(); else draw(); }).observe(canvas);
+    if (reduced) { staticFrame(); return; }
+    // Warm the scene so it opens mid-flow, not on an empty lane.
+    const warm = () => { msgs = []; t = 0; spawn = 0; seed = 7; for (let i = 0; i < 90; i++) step(1 / 30); draw(); };
+    warm();
+    const loop = visibleLoop(canvas, (_e, dt) => { step(dt); draw(); });
+    replays.a = warm;
+    void loop;
+  }
+
+  // --- B: Top-down watch ------------------------------------------------------------------------------------------
+  function topdown(canvas: HTMLCanvasElement) {
+    let f: Fit = fit(canvas);
+    let msgs: Msg[] = [], t = 0, spawn = 0, pulses: number[] = [];
+    const tower = () => ({ x: f.w / 2, y: f.h * 0.9 });
+    const beamAt = (time: number) => (-90 + 62 * Math.sin(time * 0.7)) * DEG;
+    const HW = 9 * DEG;
+    const draw = () => {
+      const { ctx, w, h } = f; const T = tower(); const s = Math.max(0.8, Math.min(1.2, w / 520));
+      ctx.clearRect(0, 0, w, h);
+      // Range arcs.
+      ctx.strokeStyle = C.line; ctx.lineWidth = 1;
+      for (let r = h * 0.22; r < h * 1.2; r += h * 0.22) { ctx.beginPath(); ctx.arc(T.x, T.y, r, Math.PI, Math.PI * 2); ctx.stroke(); }
+      // Beam wedge.
+      const th = beamAt(t), L = h * 1.15;
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      const grad = ctx.createRadialGradient(T.x, T.y, 0, T.x, T.y, L);
+      grad.addColorStop(0, 'rgb(127 220 213 / 0.38)'); grad.addColorStop(1, 'rgb(34 170 161 / 0)');
+      ctx.fillStyle = grad; ctx.beginPath(); ctx.moveTo(T.x, T.y); ctx.arc(T.x, T.y, L, th - HW, th + HW); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = 'rgb(127 220 213 / 0.6)'; ctx.beginPath(); ctx.moveTo(T.x, T.y); ctx.lineTo(T.x + Math.cos(th) * L, T.y + Math.sin(th) * L); ctx.stroke();
+      ctx.restore();
+      // Tower from above: rings, pulses when allowed traffic arrives.
+      pulses.forEach((p) => { const k = (t - p) / 0.9; ctx.strokeStyle = `rgb(127 220 213 / ${0.6 * (1 - k)})`; ctx.beginPath(); ctx.arc(T.x, T.y, 14 + k * 40, 0, Math.PI * 2); ctx.stroke(); });
+      ctx.fillStyle = C.n800; ctx.strokeStyle = C.t400; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(T.x, T.y, 14, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = C.t300; ctx.beginPath(); ctx.arc(T.x, T.y, 4, 0, Math.PI * 2); ctx.fill();
+      msgs.forEach((m) => glyph(ctx, m, s * 0.85));
+    };
+    const step = (dt: number) => {
+      const T = tower(); t += dt; spawn -= dt;
+      if (spawn <= 0) {
+        spawn = 0.4 + rnd() * 0.45;
+        const x = f.w * (0.05 + rnd() * 0.9), y = -12, d = Math.hypot(T.x - x, T.y - y), sp = 55 + rnd() * 40;
+        msgs.push({ x, y, lane: (rnd() * 3) | 0, blocked: rnd() < 0.36, state: 0, at: 0, vx: ((T.x - x) / d) * sp, vy: ((T.y - y) / d) * sp, a: 1 });
+      }
+      const th = beamAt(t);
+      for (const m of msgs) {
+        if (m.state === 0) { const ang = Math.atan2(m.y - T.y, m.x - T.x); if (Math.abs(ang - th) < HW) { m.state = 1; m.at = t; } }
+        if (m.state === 1 && m.blocked) { m.vx *= 0.9; m.vy *= 0.9; m.a = Math.max(0, 1 - (t - m.at - 0.5) / 0.8); }
+        m.x += m.vx * dt; m.y += m.vy * dt;
+        if (Math.hypot(m.x - T.x, m.y - T.y) < 16 && m.a > 0) { if (!m.blocked) pulses.push(t); m.a = 0; }
+      }
+      msgs = msgs.filter((m) => m.a > 0);
+      pulses = pulses.filter((p) => t - p < 0.9);
+    };
+    const warm = () => { msgs = []; t = 0; spawn = 0; seed = 3; for (let i = 0; i < 150; i++) step(1 / 30); draw(); };
+    new ResizeObserver(() => { f = fit(canvas); draw(); }).observe(canvas);
+    warm();
+    if (reduced) return;
+    visibleLoop(canvas, (_e, dt) => { step(dt); draw(); });
+    replays.b = warm;
+  }
+
+  // --- C: Checkpoint log ------------------------------------------------------------------------------------------
+  function checkpoint(root: HTMLElement) {
+    const rowsEl = [...root.querySelectorAll<HTMLElement>('[data-row]')];
+    const beamY = () => root.clientHeight * 0.46;
+    const GAP = 56;
+    let ys: number[] = [];
+    const reset = () => {
+      ys = rowsEl.map((_, i) => -GAP * (i + 1) + beamY() - 10);
+      rowsEl.forEach((r) => { r.dataset.state = ''; r.querySelector('.cp-stamp')!.textContent = ''; r.style.opacity = ''; });
+    };
+    const stamp = (r: HTMLElement) => {
+      const b = !!r.dataset.blocked;
+      r.dataset.state = b ? 'blocked' : 'allowed';
+      r.querySelector('.cp-stamp')!.textContent = b ? 'Blocked' : 'Allowed';
+    };
+    const place = () => rowsEl.forEach((r, i) => { r.style.transform = `translateY(${ys[i]}px)`; });
+    if (reduced) {
+      // Static: rows spread over the panel, those under the beam stamped.
+      rowsEl.forEach((r, i) => { ys[i] = 8 + i * GAP; if (ys[i] + 20 > beamY()) stamp(r); });
+      place(); return;
+    }
+    reset(); place();
+    const speed = 46; // px/s
+    visibleLoop(root, (_e, dt) => {
+      const by = beamY(), H = root.clientHeight;
+      rowsEl.forEach((r, i) => {
+        ys[i] += speed * dt;
+        if (!r.dataset.state && ys[i] + 22 >= by) stamp(r);
+        if (r.dataset.state === 'blocked') r.style.opacity = String(Math.max(0.12, 0.55 - (ys[i] + 22 - by) / 160));
+        if (ys[i] > H + 10) { // recycle to the top with a fresh fate
+          ys[i] = Math.min(...ys) - GAP; r.dataset.state = ''; r.style.opacity = ''; r.querySelector('.cp-stamp')!.textContent = '';
+          r.dataset.blocked = rnd() < 0.36 ? '1' : '';
+        }
+      });
+      place();
+    });
+    replays.c = () => { reset(); place(); };
+  }
+
+  document.querySelectorAll<HTMLCanvasElement>('canvas[data-fw]').forEach((c) => (c.dataset.fw === 'a' ? searchlight(c) : topdown(c)));
+  document.querySelectorAll<HTMLElement>('[data-cp]').forEach(checkpoint);
+  void clamp01; void whenSeen;
+</script>
