@@ -1,0 +1,286 @@
+---
+// LAB J04 (docs/agents/QUEUE.md): the name "Acmetel" formed by signal oscillations, with the verbatim tagline.
+//   A  Carrier trace   one oscilloscope trace sweeps left to right; inside the letters it becomes a dense sine
+//                      (clipped to the glyphs), so the name is drawn by the signal itself. Idle: the carrier drifts.
+//   B  Scanline field  rows of flat lines; inside the letters each row oscillates (bright), outside it stays calm
+//                      (dim). The name is the region where the signal is active.
+//   C  Tuning lock     the name arrives detuned (rows of the wordmark shifted by interfering sines, like a signal
+//                      locking on), then resolves to crisp type with a calm trace under it. Then the canvas sleeps.
+// Canvas 2D, tokens only, visibleLoop, reduced motion = one finished frame. Not linked, noindex.
+import Lab from './_Lab.astro';
+
+const dirs = [
+  { id: 'a', name: 'Carrier trace', note: 'A single trace draws the name: flat outside the letters, a dense oscillation inside them. Idle drift at 30 fps.' },
+  { id: 'b', name: 'Scanline field', note: 'Calm rows of signal; inside the letters every row oscillates. Strongest texture, weakest edges at 375.' },
+  { id: 'c', name: 'Tuning lock', note: 'The wordmark arrives detuned and locks into crisp type in about 2 s, then stops. Most legible end state.' },
+  { id: 'd', name: 'Silk to name (user reference)', note: 'The silk ribbon from the reference (WebGL, noise in the vertex shader). Its threads fan out into rows and keep oscillating inside the letters.' },
+  { id: 'e', name: 'Carrier name + silk under the tagline', note: 'Direction A for the name; the silk ribbon runs full-bleed behind the tagline as the band background.' },
+];
+---
+<Lab title="J04 signal name">
+  <header class="container-x pt-16 pb-6">
+    <p class="eyebrow">Lab · J04</p>
+    <h1 class="mt-3 text-3xl font-semibold text-ink sm:text-4xl">Acmetel, drawn by signal</h1>
+    <p class="mt-3 max-w-2xl text-ink-muted">Three directions for the name formed by oscillations, each with the verbatim tagline. Shown as the full-width band that would replace the homepage Statement.</p>
+  </header>
+
+  {dirs.map((d) => (
+    <section class="relative overflow-hidden border-t border-line py-16 sm:py-24" data-dir={d.id}>
+      <div aria-hidden="true" class="pointer-events-none absolute inset-0">
+        <div class="absolute left-1/2 top-1/2 h-[36rem] w-[36rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-teal-500/10 blur-3xl"></div>
+      </div>
+      <div class="container-x relative">
+        <div class="mb-10 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p class="font-mono text-xs text-teal-300">Direction {d.id.toUpperCase()}</p>
+            <h2 class="mt-1 text-2xl font-semibold text-ink">{d.name}</h2>
+            <p class="mt-2 max-w-xl text-sm text-ink-muted">{d.note}</p>
+          </div>
+          <button type="button" class="rounded-full border border-line-strong px-4 py-2 text-sm font-semibold text-teal-300 hover:border-teal-500/60" data-replay={d.id}>Replay</button>
+        </div>
+
+        <div class="flex flex-col items-center text-center">
+          <p class="sr-only">Acmetel</p>
+          {d.id === 'd'
+            ? <canvas class="sig block aspect-[3/1] w-full sm:aspect-[3.3/1]" data-silk="settle" aria-hidden="true"></canvas>
+            : <canvas class="sig block aspect-[3/1] w-full sm:aspect-[3.3/1]" data-sig={d.id === 'e' ? 'a' : d.id} aria-hidden="true"></canvas>}
+          <div class="relative mt-6 w-full sm:mt-8">
+            {d.id === 'e' && <canvas class="pointer-events-none absolute left-1/2 top-1/2 h-[180%] w-screen -translate-x-1/2 -translate-y-1/2" data-silk="ribbon" aria-hidden="true"></canvas>}
+            <p class="relative mx-auto max-w-4xl font-display text-[1.65rem] font-semibold leading-[1.15] text-ink sm:text-4xl lg:text-5xl">
+              Empowering seamless communication <span class="text-gradient">in the digital age.</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  ))}
+</Lab>
+
+<script>
+  import { visibleLoop, prefersReducedMotion, onVisible, type Loop } from '../../scripts/motion';
+
+  const reduced = prefersReducedMotion();
+  const css = getComputedStyle(document.documentElement);
+  const token = (n: string) => css.getPropertyValue(n).trim();
+  const C = {
+    t300: token('--color-teal-300'), t400: token('--color-teal-400'), t500: token('--color-teal-500'),
+    ink: token('--color-ink'), line: 'rgb(255 255 255 / 0.12)',
+  };
+  const WORD = 'Acmetel';
+  const FONT = (px: number) => `700 ${px}px Poppins, ui-sans-serif, system-ui, sans-serif`;
+  const smooth = (x: number) => { const c = Math.min(1, Math.max(0, x)); return c * c * (3 - 2 * c); };
+  const replays: Record<string, () => void> = {};
+  document.querySelectorAll<HTMLButtonElement>('[data-replay]').forEach((b) => b.addEventListener('click', () => replays[b.dataset.replay!]?.()));
+
+  interface Stage {
+    ctx: CanvasRenderingContext2D; w: number; h: number; dpr: number;
+    /** Word geometry in CSS px: left x, baseline, cap top, width, font size. */
+    x: number; base: number; top: number; ww: number; fs: number; mid: number;
+    /** The word in white at device resolution (alpha = ink), for clipping and sampling. */
+    mask: HTMLCanvasElement; buf: HTMLCanvasElement; bctx: CanvasRenderingContext2D;
+  }
+
+  function stage(canvas: HTMLCanvasElement): Stage {
+    const ctx = canvas.getContext('2d')!;
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.font = FONT(100);
+    const m = ctx.measureText(WORD);
+    const capH = m.actualBoundingBoxAscent / 100, desc = m.actualBoundingBoxDescent / 100;
+    const fs = Math.min((w * 0.94) / (m.width / 100), (h * 0.8) / (capH + desc));
+    const ww = (m.width / 100) * fs;
+    const top = (h - (capH + desc) * fs) / 2;
+    const base = top + capH * fs;
+    const x = (w - ww) / 2;
+    const mask = document.createElement('canvas');
+    mask.width = canvas.width; mask.height = canvas.height;
+    const mctx = mask.getContext('2d')!;
+    mctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    mctx.font = FONT(fs); mctx.fillStyle = '#fff'; mctx.textBaseline = 'alphabetic';
+    mctx.fillText(WORD, x, base);
+    const buf = document.createElement('canvas');
+    buf.width = canvas.width; buf.height = canvas.height;
+    const bctx = buf.getContext('2d')!;
+    bctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx, w, h, dpr, x, base, top, ww, fs, mid: (top + base) / 2, mask, buf, bctx };
+  }
+
+  /** Draws the mask over the buffer with `op`, in device pixels (identity transform). */
+  function composite(s: Stage, op: GlobalCompositeOperation) {
+    s.bctx.save(); s.bctx.setTransform(1, 0, 0, 1, 0, 0);
+    s.bctx.globalCompositeOperation = op; s.bctx.drawImage(s.mask, 0, 0);
+    s.bctx.restore();
+  }
+  function blit(s: Stage) {
+    s.ctx.save(); s.ctx.setTransform(1, 0, 0, 1, 0, 0); s.ctx.drawImage(s.buf, 0, 0); s.ctx.restore();
+  }
+  function clearBuf(s: Stage) { s.bctx.save(); s.bctx.setTransform(1, 0, 0, 1, 0, 0); s.bctx.clearRect(0, 0, s.buf.width, s.buf.height); s.bctx.restore(); }
+
+  // --- A: Carrier trace -------------------------------------------------------------------------------------------
+  // p: sweep progress 0..1 (head position), phase: carrier phase.
+  function drawCarrier(s: Stage, p: number, phase: number) {
+    const { ctx, w, h } = s;
+    ctx.clearRect(0, 0, w, h);
+    const headX = -40 + p * (w + 80);
+    const lambda = s.fs > 140 ? 9 : 6;                  // carrier wavelength (px)
+    const amp = (s.base - s.top) * 0.62;                // over-drives the letters; the glyph clip trims it
+    const ramp = Math.max(60, w * 0.08);
+    // Baseline trace: dim ahead of the head, lit behind it.
+    ctx.lineWidth = 1.25;
+    ctx.strokeStyle = C.line; ctx.beginPath(); ctx.moveTo(Math.max(0, headX), s.mid); ctx.lineTo(w, s.mid); ctx.stroke();
+    // Oscillation into the buffer, clipped to the letters.
+    clearBuf(s);
+    const b = s.bctx;
+    b.fillStyle = C.t500; b.globalAlpha = s.fs > 140 ? 0.1 : 0.18; b.fillRect(0, 0, Math.min(w, headX), h); b.globalAlpha = 1; // faint glyph fill
+    b.lineWidth = s.fs > 140 ? 1.6 : 1.1; b.strokeStyle = C.t300; b.beginPath();
+    const step = Math.min(0.75, lambda / 16);
+    for (let x = 0; x <= Math.min(w, headX); x += step) {
+      const env = smooth((headX - x) / ramp);
+      const y = s.mid + amp * env * Math.sin((x / lambda) * Math.PI * 2 + phase);
+      x === 0 ? b.moveTo(x, y) : b.lineTo(x, y);
+    }
+    b.stroke();
+    composite(s, 'destination-in');
+    // Flat trace outside the letters (lit part), cut out where the letters are.
+    b.globalCompositeOperation = 'destination-over';
+    b.strokeStyle = C.t500; b.lineWidth = 1.25; b.beginPath(); b.moveTo(0, s.mid); b.lineTo(Math.min(w, headX), s.mid); b.stroke();
+    b.globalCompositeOperation = 'source-over';
+    blit(s);
+    // Head glow while sweeping.
+    if (p > 0 && p < 1) {
+      const g = ctx.createRadialGradient(headX, s.mid, 0, headX, s.mid, 46);
+      g.addColorStop(0, 'rgb(127 220 213 / 0.55)'); g.addColorStop(1, 'rgb(127 220 213 / 0)');
+      ctx.fillStyle = g; ctx.fillRect(headX - 46, s.mid - 46, 92, 92);
+    }
+  }
+
+  // --- B: Scanline field -------------------------------------------------------------------------------------------
+  function coverage(s: Stage, gap: number, stepX: number) {
+    // Ink coverage per (row, column), box-blurred so rows ease in and out of the letters.
+    const { mask, dpr, w, h } = s;
+    const data = mask.getContext('2d')!.getImageData(0, 0, mask.width, mask.height).data;
+    const rows = Math.floor(h / gap), cols = Math.ceil(w / stepX) + 1;
+    const raw = new Float32Array(rows * cols);
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+      const px = Math.min(mask.width - 1, Math.round(c * stepX * dpr)), py = Math.min(mask.height - 1, Math.round((r + 0.5) * gap * dpr));
+      raw[r * cols + c] = data[(py * mask.width + px) * 4 + 3] / 255;
+    }
+    const out = new Float32Array(rows * cols);
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+      let sum = 0, n = 0;
+      for (let dc = -1; dc <= 1; dc++) { const cc = c + dc; if (cc < 0 || cc >= cols) continue; sum += raw[r * cols + cc]; n++; }
+      out[r * cols + c] = sum / n;
+    }
+    return { rows, cols, cov: out };
+  }
+  function drawField(s: Stage, f: ReturnType<typeof coverage>, gap: number, stepX: number, p: number, t: number) {
+    const { ctx, w, h } = s;
+    ctx.clearRect(0, 0, w, h);
+    const front = -60 + p * (w + 120);
+    const A = gap * 1.25;
+    const rowPath = (g: CanvasRenderingContext2D, r: number) => {
+      g.beginPath();
+      const y0 = (r + 0.5) * gap;
+      for (let c = 0; c < f.cols; c++) {
+        const x = c * stepX;
+        const k = f.cov[r * f.cols + c] * smooth((front - x) / 80);
+        const y = y0 - k * A * (0.55 + 0.45 * Math.sin(x * 0.21 + t * 5 + r * 0.9));
+        c === 0 ? g.moveTo(x, y) : g.lineTo(x, y);
+      }
+    };
+    ctx.lineWidth = 1; ctx.strokeStyle = C.line;
+    for (let r = 0; r < f.rows; r++) { rowPath(ctx, r); ctx.stroke(); }
+    // Bright copy, kept only near the letters (mask dilated by drawing it twice, offset by a row).
+    clearBuf(s);
+    const b = s.bctx; b.lineWidth = s.fs > 140 ? 1.5 : 1.1; b.strokeStyle = C.t300;
+    for (let r = 0; r < f.rows; r++) { rowPath(b, r); b.stroke(); }
+    b.save(); b.setTransform(1, 0, 0, 1, 0, 0); b.globalCompositeOperation = 'destination-in';
+    b.drawImage(s.mask, 0, -A * s.dpr * 0.5); b.globalCompositeOperation = 'source-over'; b.restore();
+    blit(s);
+  }
+
+  // --- C: Tuning lock ----------------------------------------------------------------------------------------------
+  function drawTuning(s: Stage, art: HTMLCanvasElement, p: number, t: number) {
+    const { ctx, w, h, dpr } = s;
+    ctx.clearRect(0, 0, w, h);
+    const amp = (1 - smooth(p)) * Math.min(90, w * 0.08);
+    const slice = 3; // CSS px rows
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+    for (let y = 0; y < h; y += slice) {
+      const dx = amp * (Math.sin(y * 0.06 + t * 11) * 0.7 + Math.sin(y * 0.19 - t * 7) * 0.3) * (Math.sin(t * 3 + y * 0.01) > -0.2 ? 1 : 0.2);
+      ctx.drawImage(art, 0, y * dpr, art.width, slice * dpr, dx * dpr, y * dpr, art.width, slice * dpr);
+    }
+    ctx.restore();
+    // Trace under the name: noisy while detuned, a calm low sine once locked.
+    const y0 = Math.min(h - 6, s.base + (s.base - s.top) * 0.22);
+    ctx.lineWidth = 1.25; ctx.strokeStyle = C.t500; ctx.beginPath();
+    for (let x = s.x; x <= s.x + s.ww; x += 2) {
+      const calm = 2.2 * Math.sin(x * 0.05 - t * 2.4);
+      const noise = amp * 0.25 * Math.sin(x * 0.31 + t * 17) * Math.sin(x * 0.043 - t * 3);
+      x === s.x ? ctx.moveTo(x, y0 + calm + noise) : ctx.lineTo(x, y0 + calm + noise);
+    }
+    ctx.stroke();
+  }
+  function tuningArt(s: Stage) {
+    const art = document.createElement('canvas');
+    art.width = s.mask.width; art.height = s.mask.height;
+    const a = art.getContext('2d')!;
+    a.setTransform(s.dpr, 0, 0, s.dpr, 0, 0);
+    const g = a.createLinearGradient(s.x, 0, s.x + s.ww, 0);
+    g.addColorStop(0, C.t300); g.addColorStop(0.45, C.t500); g.addColorStop(1, '#2fd39a'); // .text-gradient stops
+    a.font = FONT(s.fs); a.fillStyle = g; a.fillText(WORD, s.x, s.base);
+    return art;
+  }
+
+  // --- Wiring ------------------------------------------------------------------------------------------------------
+  const ready = document.fonts.load(FONT(100)).catch(() => {});
+  document.querySelectorAll<HTMLCanvasElement>('canvas[data-sig]').forEach(async (canvas) => {
+    await ready;
+    const kind = canvas.dataset.sig!;
+    let s = stage(canvas);
+    let field = kind === 'b' ? coverage(s, s.fs > 140 ? 7 : 5, 3) : null;
+    let art = kind === 'c' ? tuningArt(s) : null;
+    let p = reduced ? 1 : 0, t = 0, acc = 0;
+    const SWEEP = kind === 'c' ? 2.2 : 1.9;
+    const render = () => {
+      if (kind === 'a') drawCarrier(s, p, t * 1.4);
+      else if (kind === 'b') drawField(s, field!, s.fs > 140 ? 7 : 5, 3, p, t);
+      else drawTuning(s, art!, p, t);
+    };
+    new ResizeObserver(() => {
+      s = stage(canvas);
+      field = kind === 'b' ? coverage(s, s.fs > 140 ? 7 : 5, 3) : null;
+      art = kind === 'c' ? tuningArt(s) : null;
+      render();
+    }).observe(canvas);
+    render();
+    if (reduced) return;
+    let playing = false;
+    const loop: Loop = visibleLoop(canvas, (_e, dt) => {
+      if (!playing) return;
+      t += dt;
+      if (p < 1) { p = Math.min(1, p + dt / SWEEP); render(); return; }
+      if (kind === 'c') { render(); loop.pause(); return; }       // locked: sleep
+      acc += dt; if (acc < 1 / 30) return; acc = 0;                 // idle drift at ~30 fps
+      render();
+    });
+    loop.pause();
+    const start = () => { p = 0; t = 0; playing = true; loop.play(); };
+    const io = new IntersectionObserver((e) => { if (e.some((x) => x.isIntersecting)) { io.disconnect(); start(); } }, { threshold: 0.5 });
+    io.observe(canvas);
+    replays[canvas.closest<HTMLElement>('[data-dir]')!.dataset.dir!] = start;
+  });
+
+  // D/E: silk ribbon (three.js chunk, loaded when near).
+  document.querySelectorAll<HTMLCanvasElement>('canvas[data-silk]').forEach((canvas) => {
+    onVisible(canvas, async () => {
+      await ready;
+      const silk = (await import('./_silk')).initSilk(canvas, canvas.dataset.silk as 'settle' | 'ribbon');
+      const dir = canvas.closest<HTMLElement>('[data-dir]')!.dataset.dir!;
+      const prev = replays[dir];
+      replays[dir] = () => { prev?.(); silk.replay(); };
+    });
+  });
+</script>

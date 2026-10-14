@@ -2,7 +2,7 @@
 // Hero h1. The highlighted phrase is edited in place once, like a person rewriting it:
 //   "in the digital age"  → backspaced (key-repeat rhythm)  → "through innovation" typed
 //   "innovation"          → selected with the caret          → "sovereign digital infrastructure" typed over it
-// It runs once on load and then stays. The phrase box is sized by an invisible copy of the longest phrase,
+// Typed letters blur-fade in. It runs once on load and then stays. The phrase box is sized by an invisible copy of the longest phrase,
 // so nothing below the headline moves while it types. Reduced motion: the final phrase, no caret.
 // Screen readers always get the final sentence.
 interface Props { class?: string; [attr: string]: unknown }
@@ -64,11 +64,16 @@ const final = 'through sovereign digital infrastructure';
     };
 
     // Typing rhythm: quick within a word, a beat at spaces, a slightly longer one before longer words.
+    // Each typed letter blur-fades in (.rt-fresh, global.css); the next render() flattens them back to plain text.
     const type = async (s: string) => {
       caretState('solid');
+      render();
       for (let i = 0; i < s.length; i++) {
         kept += s[i];
-        render();
+        const f = document.createElement('span');
+        f.className = 'rt-fresh';
+        f.textContent = s[i];
+        text.append(f);
         const next = s[i + 1];
         let d = jitter(58, 22);
         if (s[i] === ' ') d += 70 + (s.indexOf(' ', i + 1) - i > 9 ? 90 : 0);

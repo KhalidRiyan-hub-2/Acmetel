@@ -1,5 +1,7 @@
 ---
-// "Live network" band: heartbeat panel + radar panel (both SIMULATED; described as example values for screen readers, no visible label), then an optional default slot. Data and the simulated feed live in src/data/live.ts.
+// "Live network" band: one panel where a radar sweeps a North-Pole-centred world map (drag to spin it) and each contact
+// beats the network pulse beside it
+// (SIMULATED; described as example values for screen readers, no visible label), then an optional default slot. Data and the simulated feed live in src/data/live.ts.
 import Section from '../Section.astro';
 import SectionHeading from '../SectionHeading.astro';
 import Icon from '../Icon.astro';
@@ -32,68 +34,27 @@ const blips = dests.map((d, i) => {
       lede="A live-style view of the platform pulse and the destinations ACMeSIM travellers connect to, as a preview of the kind of visibility our network operations team works with."
     />
 
-    <div class="mt-12 grid items-stretch gap-6 lg:grid-cols-2" data-stagger>
-      <!-- Heartbeat -->
-      <div class="glass flex flex-col p-4 sm:p-6" role="group" aria-label="Network heartbeat, simulated preview" data-panel="heartbeat">
-        <p class="sr-only">Simulated preview of platform health: network status operational, with uptime, average latency and message throughput shown as example values that update every few seconds.</p>
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.18em] text-teal-300"><Icon name="activity" size={16} />Network pulse</p>
-          <div class="flex items-center gap-2">
-            <!-- PLACEHOLDER: these figures are simulated (src/data/live.ts), and the visible "Simulated preview" label was removed on request. Replace with real data, or confirm with the client that example values may be shown unlabelled. -->
-            <PauseButton id="pause-heartbeat" />
-          </div>
-        </div>
-
-        <div class="relative mt-4 min-h-[15rem] flex-1 overflow-hidden rounded-xl border border-line bg-navy-950/70 sm:min-h-[17rem]">
-          <canvas aria-hidden="true" data-heartbeat-canvas class="absolute inset-0 size-full"></canvas>
-        </div>
-
-        <div class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-navy-950/50 px-4 py-3">
-          <p class="flex items-center gap-3 text-sm text-ink-muted">
-            <span class="relative flex size-2.5" aria-hidden="true">
-              <span class="absolute inline-flex size-full animate-ping rounded-full bg-green-700 opacity-75"></span>
-              <span class="relative inline-flex size-2.5 rounded-full bg-teal-400 shadow-[0_0_10px_var(--color-teal-400)]"></span>
-            </span>
-            Network status: <strong class="font-semibold text-ink">{hb.status}</strong>
-          </p>
-          <span class="inline-flex items-center gap-1.5 rounded-full border border-teal-500/40 bg-teal-500/10 px-3 py-1 font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-teal-300">
-            <Icon name="headset" size={14} />24/7 NOC
-          </span>
-        </div>
-
-        <dl class="mt-3 grid grid-cols-3 gap-2 sm:gap-3" aria-live="off">
-          <div class="min-w-0 rounded-xl border border-line bg-navy-950/50 px-3 py-3 sm:px-4">
-            <dt class="font-mono text-[0.625rem] uppercase tracking-[0.06em] text-ink-faint sm:text-[0.6875rem] sm:tracking-[0.12em]">Uptime</dt>
-            <dd class="mt-1 font-display text-xl font-semibold tabular-nums text-ink sm:text-2xl"><span data-uptime>{hb.uptime.base.toFixed(2)}</span><span class="text-teal-300">%</span></dd>
-          </div>
-          <div class="min-w-0 rounded-xl border border-line bg-navy-950/50 px-3 py-3 sm:px-4">
-            <dt class="font-mono text-[0.625rem] uppercase tracking-[0.06em] text-ink-faint sm:text-[0.6875rem] sm:tracking-[0.12em]">Avg latency</dt>
-            <dd class="mt-1 font-display text-xl font-semibold tabular-nums text-ink sm:text-2xl"><span data-latency>{hb.latencyMs.base}</span><span class="ml-0.5 text-sm font-medium text-teal-300">ms</span></dd>
-          </div>
-          <div class="min-w-0 rounded-xl border border-line bg-navy-950/50 px-3 py-3 sm:px-4">
-            <dt class="font-mono text-[0.625rem] uppercase tracking-[0.06em] text-ink-faint sm:text-[0.6875rem] sm:tracking-[0.12em]">Messages/sec</dt>
-            <dd class="mt-1 font-display text-xl font-semibold tabular-nums text-ink sm:text-2xl" data-msgs>{hb.msgsPerSec.base.toLocaleString('en-US')}</dd>
-          </div>
-        </dl>
+    <!-- One panel: the radar sweep over the map, and the pulse it drives. Each contact on the radar rings the pulse (scripts/live/ops.ts). -->
+    <div class="glass mt-12 p-4 sm:p-6" role="group" aria-label="Network pulse and ACMeSIM travellers by destination, simulated preview" data-panel="ops" data-reveal>
+      <p class="sr-only">Simulated preview. A radar sweeps a world map centred on the North Pole, showing destinations ACMeSIM travellers connect to; the map can be dragged to spin it, or turned with the left and right arrow keys while a destination is focused. Each destination is a button that opens its network, plan and a link to buy an eSIM. Every time the sweep reaches a destination, the network pulse trace beside it beats once. Network status is operational, with uptime, average latency, message throughput and active travellers shown as example values that update every few seconds.</p>
+      <div class="flex items-center justify-between gap-3">
+        <p class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 font-mono text-xs uppercase tracking-[0.12em] text-teal-300 sm:tracking-[0.18em]">
+          <span class="flex items-center gap-2 whitespace-nowrap"><Icon name="radar" size={16} />Traveller radar</span>
+          <span class="text-ink-faint" aria-hidden="true">/</span>
+          <span class="flex items-center gap-2 whitespace-nowrap"><Icon name="activity" size={16} />Network pulse</span>
+        </p>
+        <!-- PLACEHOLDER: these figures are simulated (src/data/live.ts), and the visible "Simulated preview" label was removed on request. Replace with real data, or confirm with the client that example values may be shown unlabelled. -->
+        <PauseButton id="pause-ops" />
       </div>
 
-      <!-- Radar -->
-      <div class="glass flex flex-col p-4 sm:p-6" role="group" aria-label="ACMeSIM travellers by destination, simulated preview" data-panel="radar">
-        <p class="sr-only">Simulated preview of ACMeSIM travellers by destination. Each destination is a button that opens its network, plan and a link to buy an eSIM.</p>
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <p class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.18em] text-teal-300"><Icon name="radar" size={16} />Traveller radar</p>
-          <div class="flex items-center gap-2">
-            <!-- PLACEHOLDER: simulated traveller data, unlabelled on screen (see above). -->
-            <PauseButton id="pause-radar" />
-          </div>
-        </div>
-
-        <div class="relative mx-auto mt-4 aspect-square w-full max-w-[34rem]" data-radar-stage>
-          <!-- Flat world map under the sweep (UN-emblem style), same projection as the blips. -->
+      <div class="mt-4 grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:items-stretch">
+        <!-- Radar -->
+        <div class="relative mx-auto aspect-square w-full max-w-[34rem]" data-radar-stage>
+          <!-- Flat world map under the sweep, centred on the North Pole (UN-emblem style), same projection as the blips. Spun by scripts/live/ops.ts. -->
           <svg aria-hidden="true" viewBox="0 0 1000 1000" class="radar-map absolute inset-0 size-full fill-teal-500/10 stroke-teal-400/30"><path d={landPath} /></svg>
           <canvas aria-hidden="true" data-radar-canvas class="absolute inset-0 size-full"></canvas>
           {blips.map((b) => (
-            <div class={`blip blip-h-${b.h} blip-v-${b.v} blip-side-${b.side}`} data-blip data-x={b.x.toFixed(4)} data-y={b.y.toFixed(4)} data-angle={b.angle.toFixed(4)} style={`left:${(b.x * 100).toFixed(2)}%;top:${(b.y * 100).toFixed(2)}%`}>
+            <div class={`blip blip-h-${b.h} blip-v-${b.v} blip-side-${b.side}`} data-blip data-net={b.network} data-x={b.x.toFixed(4)} data-y={b.y.toFixed(4)} data-angle={b.angle.toFixed(4)} style={`left:${(b.x * 100).toFixed(2)}%;top:${(b.y * 100).toFixed(2)}%`}>
               <button type="button" class="blip-btn" aria-label={`${b.city}, ${b.network}`} aria-describedby={b.id} aria-expanded="false" data-blip-btn>
                 <span class="blip-dot" data-net={b.network}></span>
               </button>
@@ -109,13 +70,51 @@ const blips = dests.map((d, i) => {
           ))}
         </div>
 
-        <div class="mt-4 flex flex-wrap items-end justify-between gap-x-6 gap-y-2 rounded-xl border border-line bg-navy-950/50 px-4 py-3">
-          <div aria-live="off">
-            <p class="font-mono text-[0.625rem] uppercase tracking-[0.06em] text-ink-faint sm:text-[0.6875rem] sm:tracking-[0.12em]">Active travellers</p>
-            <p class="mt-1 font-display text-2xl font-semibold tabular-nums text-ink" data-travellers>1,240</p>
+        <!-- Pulse + readouts -->
+        <div class="flex min-w-0 flex-col gap-3">
+          <div class="relative min-h-[12rem] flex-1 overflow-hidden rounded-xl border border-line bg-navy-950/70 sm:min-h-[14rem]">
+            <canvas aria-hidden="true" data-heartbeat-canvas class="absolute inset-0 size-full"></canvas>
+            <p class="absolute left-3 top-3 flex items-center gap-2 font-mono text-[0.6875rem] uppercase tracking-[0.12em] text-ink-faint" aria-hidden="true" data-contact-wrap hidden>
+              Last contact
+              <span class="rounded border border-teal-500/40 bg-navy-950/80 px-1.5 py-0.5 text-teal-300" data-contact></span>
+            </p>
           </div>
-          <div class="flex flex-col items-start gap-1.5 sm:items-end">
+
+          <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-navy-950/50 px-4 py-3">
+            <p class="flex items-center gap-3 text-sm text-ink-muted">
+              <span class="relative flex size-2.5" aria-hidden="true">
+                <span class="absolute inline-flex size-full animate-ping rounded-full bg-green-700 opacity-75"></span>
+                <span class="relative inline-flex size-2.5 rounded-full bg-teal-400 shadow-[0_0_10px_var(--color-teal-400)]"></span>
+              </span>
+              Network status: <strong class="font-semibold text-ink">{hb.status}</strong>
+            </p>
+            <span class="inline-flex items-center gap-1.5 rounded-full border border-teal-500/40 bg-teal-500/10 px-3 py-1 font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-teal-300">
+              <Icon name="headset" size={14} />24/7 NOC
+            </span>
+          </div>
+
+          <dl class="grid grid-cols-2 gap-2 sm:gap-3" aria-live="off">
+            <div class="stat">
+              <dt class="stat-label">Uptime</dt>
+              <dd class="stat-value"><span data-uptime>{hb.uptime.base.toFixed(2)}</span><span class="text-teal-300">%</span></dd>
+            </div>
+            <div class="stat">
+              <dt class="stat-label">Avg latency</dt>
+              <dd class="stat-value"><span data-latency>{hb.latencyMs.base}</span><span class="ml-0.5 text-sm font-medium text-teal-300">ms</span></dd>
+            </div>
+            <div class="stat">
+              <dt class="stat-label">Messages/sec</dt>
+              <dd class="stat-value" data-msgs>{hb.msgsPerSec.base.toLocaleString('en-US')}</dd>
+            </div>
+            <div class="stat">
+              <dt class="stat-label">Active travellers</dt>
+              <dd class="stat-value" data-travellers>{live.radar.initialTravelers.toLocaleString('en-US')}</dd>
+            </div>
+          </dl>
+
+          <div class="flex flex-wrap items-center justify-between gap-x-6 gap-y-1.5 px-1">
             <p class="text-sm text-ink-muted">ACMeSIM travellers by destination</p>
+            <p class="flex items-center gap-1.5 font-mono text-[0.6875rem] uppercase tracking-[0.12em] text-ink-faint"><Icon name="rotate" size={13} />Drag the map to spin it</p>
             <ul class="flex items-center gap-4 font-mono text-[0.6875rem] uppercase tracking-[0.12em] text-ink-faint" aria-label="Dot colour by network">
               <li class="flex items-center gap-1.5"><span class="blip-dot legend-dot" data-net="5G" aria-hidden="true"></span>5G</li>
               <li class="flex items-center gap-1.5"><span class="blip-dot legend-dot" data-net="4G" aria-hidden="true"></span>4G</li>
@@ -131,10 +130,23 @@ const blips = dests.map((d, i) => {
 
 <style>
   /* Land fades out toward the bezel so it never fights the compass letters and ticks. */
+  [data-radar-stage] { cursor: grab; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+  [data-radar-stage][data-spinning] { cursor: grabbing; }
+  [data-radar-stage][data-spinning] .blip-tip { visibility: hidden; }
   .radar-map {
+    transform-origin: 50% 50%;
     stroke-width: 1; stroke-linejoin: round;
     vector-effect: non-scaling-stroke;
     mask-image: radial-gradient(circle closest-side, black 84%, transparent 97%);
+  }
+
+  .stat { min-width: 0; border-radius: 0.75rem; border: 1px solid var(--color-line); background: rgb(14 19 34 / 0.5); padding: 0.75rem; }
+  .stat-label { font-family: var(--font-mono); font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-ink-faint); }
+  .stat-value { margin-top: 0.25rem; font-family: var(--font-display); font-size: 1.25rem; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--color-ink); }
+  @media (min-width: 40rem) {
+    .stat { padding: 0.75rem 1rem; }
+    .stat-label { font-size: 0.6875rem; letter-spacing: 0.12em; }
+    .stat-value { font-size: 1.5rem; }
   }
 
   .blip { position: absolute; width: 2.25rem; height: 2.25rem; transform: translate(-50%, -50%); }
@@ -224,10 +236,11 @@ const blips = dests.map((d, i) => {
       raf[key] = requestAnimationFrame(step);
     }
 
-    const paused = { heartbeat: false, radar: false };
+    let paused = false;
     const apply = (s: LiveSample, animate: boolean) => {
-      if (!paused.heartbeat) { set('uptime', s.uptime, animate); set('latency', s.latencyMs, animate); set('msgs', s.msgsPerSec, animate); }
-      if (!paused.radar) set('travellers', s.activeTravelers, animate);
+      if (paused) return;
+      set('uptime', s.uptime, animate); set('latency', s.latencyMs, animate); set('msgs', s.msgsPerSec, animate);
+      set('travellers', s.activeTravelers, animate);
     };
 
     // Blip tooltips: tap/click toggles, Escape or outside tap closes. Hover and focus are handled in CSS.
@@ -249,35 +262,32 @@ const blips = dests.map((d, i) => {
     document.addEventListener('pointerdown', (e) => { if (!(e.target as Element).closest('[data-blip]')) closeAll(); });
     root.addEventListener('keydown', (e) => { if ((e as KeyboardEvent).key === 'Escape') closeAll(); });
 
-    onVisible(section, async () => {
-      const hbCanvas = q<HTMLCanvasElement>('[data-heartbeat-canvas]');
-      const radarCanvas = q<HTMLCanvasElement>('[data-radar-canvas]');
-      const stage = q<HTMLElement>('[data-radar-stage]');
-      const [hb, radar] = await Promise.all([import('../../scripts/live/heartbeat'), import('../../scripts/live/radar')]);
+    // "Last contact" readout on the pulse monitor, updated as the sweep reaches each destination.
+    const contactWrap = q('[data-contact-wrap]');
+    const contact = q('[data-contact]');
+    const names = blips.map((b) => `${b.querySelector('.blip-label')?.textContent ?? ''} · ${b.dataset.net ?? ''}`);
+    const onContact = (i: number) => {
+      if (!contact || !contactWrap) return;
+      contactWrap.hidden = false;
+      contact.textContent = names[i];
+    };
 
-      if (reduced) {
-        if (hbCanvas) hb.drawStatic(hbCanvas);
-        if (radarCanvas && stage) radar.drawStatic(radarCanvas, stage);
-        const off = subscribe((s) => { apply(s, false); off(); }); // one snapshot, no loop, no tween
+    onVisible(section, async () => {
+      const panel = q('[data-panel="ops"]');
+      const els = { pulse: q<HTMLCanvasElement>('[data-heartbeat-canvas]'), radar: q<HTMLCanvasElement>('[data-radar-canvas]'), stage: q('[data-radar-stage]') };
+      const ops = await import('../../scripts/live/ops');
+
+      const loop = ops.initOps(panel ?? root, els, { reduced, onContact });
+      if (!loop) { // reduced motion: still frames (the map can still be spun by hand), one data snapshot
+        const off = subscribe((s) => { apply(s, false); off(); });
         root.querySelectorAll('[data-pause]').forEach((b) => b.setAttribute('hidden', ''));
         return;
       }
-
-      const loops: { heartbeat?: ReturnType<typeof hb.initHeartbeat>; radar?: ReturnType<typeof radar.initRadar> } = {};
-      if (hbCanvas) loops.heartbeat = hb.initHeartbeat(hbCanvas);
-      if (radarCanvas && stage) loops.radar = radar.initRadar(radarCanvas, stage);
       subscribe((s) => apply(s, true));
-
-      const wire = (id: string, key: 'heartbeat' | 'radar') => {
-        const loop = loops[key];
-        if (!loop) return;
-        bindPauseButton(root.querySelector<HTMLButtonElement>(id), {
-          pause() { paused[key] = true; loop.pause(); },
-          play() { paused[key] = false; loop.play(); },
-        });
-      };
-      wire('#pause-heartbeat', 'heartbeat');
-      wire('#pause-radar', 'radar');
+      bindPauseButton(root.querySelector<HTMLButtonElement>('#pause-ops'), {
+        pause() { paused = true; loop.pause(); },
+        play() { paused = false; loop.play(); },
+      });
     });
   });
 </script>

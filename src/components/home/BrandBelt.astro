@@ -2,7 +2,7 @@
 // Two infinite logo rows moving in opposite directions. Speed reacts to scroll velocity.
 // Reduced motion: a static wrapped grid. Logo data: src/data/logos.ts.
 import PauseButton from '../PauseButton.astro';
-import { operators, partners, type BeltLogo } from '../../data/logos';
+import { operators, partners, logoStyle, type BeltLogo } from '../../data/logos';
 
 // Each half of a track repeats its set so one half is wider than any viewport; the track holds two halves.
 const half = (set: BeltLogo[], times: number) => Array.from({ length: times }, () => set).flat();
@@ -11,6 +11,19 @@ const rows = [
   { id: 'partners', label: 'Partners and carriers', unique: partners.length, items: half(partners, 2), dir: 1 },
 ];
 const all = [...operators, ...partners];
+
+// Which file and treatment each logo gets (logoStyle in src/data/logos.ts). Logos without a mono file keep the
+// grayscale-until-hover treatment.
+const color = logoStyle === 'color';
+const fileOf = (l: BeltLogo) => (color ? l.src : (l.mono ?? l.src));
+const tileClass = color
+  ? 'border-transparent bg-ink/95 hover:bg-ink'
+  : 'border-line bg-white/[0.03] hover:border-teal-500/50 hover:bg-teal-500/[0.06]';
+const imgClass = (l: BeltLogo) => [
+  'w-auto max-w-full transition duration-300',
+  l.square ? 'h-10' : 'h-8',
+  color ? '' : l.mono ? 'opacity-60 group-hover:opacity-100' : 'opacity-60 grayscale group-hover:opacity-100 group-hover:grayscale-0',
+];
 ---
 
 <div class="brand-belt relative" data-belt>
@@ -20,9 +33,9 @@ const all = [...operators, ...partners];
         <ul class="belt-track flex w-max gap-4" data-dir={row.dir}>
           {[...row.items, ...row.items].map((logo, i) => (
             <li aria-hidden={i >= row.unique ? 'true' : undefined}
-              class="group grid h-18 w-44 shrink-0 place-items-center rounded-2xl border border-line bg-white/[0.03] px-6 transition-colors duration-300 hover:border-teal-500/50 hover:bg-teal-500/[0.06]">
-              {logo.src
-                ? <img src={logo.src} alt={logo.name} width="160" height="48" loading="lazy" class="h-9 w-auto opacity-60 grayscale transition duration-300 group-hover:opacity-100 group-hover:grayscale-0" />
+              class:list={['group grid h-18 w-44 shrink-0 place-items-center rounded-2xl border px-6 transition-colors duration-300', tileClass]}>
+              {fileOf(logo)
+                ? <img src={fileOf(logo)} alt={logo.name} width="160" height="48" loading="lazy" class:list={imgClass(logo)} />
                 : <span class="font-display text-xl font-semibold tracking-tight text-ink-faint transition-colors duration-300 group-hover:text-teal-300">{logo.name}</span>}
             </li>
           ))}
@@ -35,8 +48,8 @@ const all = [...operators, ...partners];
   <!-- Reduced-motion fallback: static grid of every logo once. -->
   <ul class="belt-static hidden grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
     {all.map((logo) => (
-      <li class="grid h-16 place-items-center rounded-2xl border border-line bg-white/[0.03] px-4">
-        {logo.src ? <img src={logo.src} alt={logo.name} width="160" height="48" loading="lazy" class="h-8 w-auto opacity-70" /> : <span class="font-display text-lg font-semibold text-ink-muted">{logo.name}</span>}
+      <li class:list={['grid h-16 place-items-center rounded-2xl border px-4', color ? 'border-transparent bg-ink/95' : 'border-line bg-white/[0.03]']}>
+        {fileOf(logo) ? <img src={fileOf(logo)} alt={logo.name} width="160" height="48" loading="lazy" class:list={['w-auto max-w-full', logo.square ? 'h-9' : 'h-7', !color && 'opacity-70']} /> : <span class="font-display text-lg font-semibold text-ink-muted">{logo.name}</span>}
       </li>
     ))}
   </ul>

@@ -1,0 +1,27 @@
+---
+// Tester lab shell (docs/agents/QUEUE.md). Not a route (underscore), not linked, noindex.
+// Same tokens, smoother and scroll patterns as Base.astro, without header/footer, so prototypes behave like the real
+// page. Delete the lab page once the frontend agent has built the real thing.
+import '../../styles/global.css';
+interface Props { title: string }
+const { title } = Astro.props;
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="icon" type="image/png" href="/brand/favicon.png" />
+    <title>{title} | Acmetel lab</title>
+    <script is:inline>matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.classList.add('motion');</script>
+  </head>
+  <body class="overflow-x-clip">
+    <div id="smooth-wrapper">
+      <div id="smooth-content">
+        <main id="main" tabindex="-1"><slot /></main>
+      </div>
+    </div>
+    <script>import '../../scripts/patterns';</script>
+  </body>
+</html>

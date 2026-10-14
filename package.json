@@ -9,7 +9,8 @@
     "preview": "astro preview",
     "check": "astro check",
     "build:globe-data": "node scripts/build-globe-data.mjs",
-    "build:osm-dubai": "node scripts/build-osm-dubai.mjs"
+    "build:osm-dubai": "node scripts/build-osm-dubai.mjs",
+    "build:osm-cities": "node scripts/build-osm-cities.mjs"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.3.0",

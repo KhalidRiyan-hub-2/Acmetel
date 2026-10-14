@@ -1,0 +1,110 @@
+---
+// Brand band: the name drawn by signal threads, with the tagline under it as the real heading.
+// A silk ribbon of threads (src/scripts/silk/scene.ts, three.js) flows in as the band enters, then fans out into
+// rows that oscillate inside the letters, so the threads spell the name. The hand-off is click-driven: the canvas
+// sits in a toggle button (aria-pressed); a click or Enter/Space tweens ribbon → name (~2.2 s), the next click
+// tweens back, and a click mid-tween reverses from where it is. Motion stops ~5 s after the last change.
+// three.js loads only when the band nears the viewport and shares the globe's chunk. Reduced motion, no WebGL or
+// a lost context: one static settled frame in Canvas 2D (still.ts), and the button is disabled with no hint.
+// The canvas is decorative; screen readers get "<word>. <text> <highlight>" from the heading (or just the text with
+// srWord={false}, when the heading already contains the word). The default slot renders under the heading (e.g. a lede).
+import Section from './Section.astro';
+
+interface Props {
+  text: string;
+  highlight?: string;
+  /** The word the threads spell. */
+  word?: string;
+  /** Prefix the heading with the word for screen readers (turn off when the heading already says it). */
+  srWord?: boolean;
+  tone?: 'base' | 'glow';
+  bg?: 'glow' | 'grid';
+  class?: string;
+}
+const { text, highlight, word = 'Acmetel', srWord = true, tone = 'glow', bg, class: className = '' } = Astro.props;
+---
+<Section tone={tone} bg={bg} class:list={['py-20! sm:py-28!', className]}>
+  <div class="flex flex-col items-center text-center" data-signal-name data-word={word}>
+    <button type="button" class="signal-toggle group block w-full cursor-pointer rounded-2xl outline-offset-4 focus-visible:outline-2 focus-visible:outline-teal-400 disabled:cursor-default" aria-pressed="false" aria-label={`Draw “${word}” in signal threads`} disabled data-signal-toggle>
+      <canvas class="block aspect-[3/1] w-full sm:aspect-[33/10]" aria-hidden="true"></canvas>
+      <!-- Shown by the script only when the animation is live (hidden for no-JS, reduced motion and the still). -->
+      <span class="mt-2 hidden font-mono text-xs uppercase tracking-[0.2em] text-ink-faint transition-colors group-hover:text-teal-300" aria-hidden="true" data-signal-hint>Click to reveal</span>
+    </button>
+    <h2 class="mt-6 max-w-4xl font-display text-[1.65rem] font-semibold leading-[1.15] text-ink sm:mt-8 sm:text-4xl lg:text-5xl">
+      {srWord && <span class="sr-only">{word}. </span>}{text}{highlight && <> <span class="text-gradient">{highlight}</span></>}
+    </h2>
+    <slot />
+  </div>
+</Section>
+
+<script>
+  import { gsap, onVisible, prefersReducedMotion, EASE } from '../scripts/motion';
+  import type { Silk } from '../scripts/silk/scene';
+
+  // Probed only when the band is near, on a throwaway canvas whose context is released straight away.
+  const hasWebGL = () => {
+    try {
+      const gl = (document.createElement('canvas').getContext('webgl2') || document.createElement('canvas').getContext('webgl')) as WebGLRenderingContext | null;
+      gl?.getExtension('WEBGL_lose_context')?.loseContext();
+      return !!gl;
+    } catch { return false; }
+  };
+
+  document.querySelectorAll<HTMLElement>('[data-signal-name]').forEach((root) => {
+    const word = root.dataset.word || 'Acmetel';
+    let canvas = root.querySelector('canvas')!;
+    const toggle = root.querySelector<HTMLButtonElement>('[data-signal-toggle]')!;
+    const hint = root.querySelector<HTMLElement>('[data-signal-hint]')!;
+
+    // Static settled frame, redrawn when the width changes. No three.js involved.
+    const still = async () => {
+      toggle.disabled = true; hint.classList.add('hidden'); hint.classList.remove('block');
+      const [{ drawStill }, { fontReady }] = await Promise.all([import('../scripts/silk/still'), import('../scripts/silk/shared')]);
+      await fontReady();
+      let w = 0;
+      new ResizeObserver(() => { if (canvas.clientWidth !== w) { w = canvas.clientWidth; drawStill(canvas, word); } }).observe(canvas);
+    };
+    // After a WebGL failure the canvas may hold a dead context: draw the still on a fresh copy.
+    const fallback = () => {
+      const fresh = canvas.cloneNode() as HTMLCanvasElement;
+      canvas.replaceWith(fresh);
+      canvas = fresh;
+      still();
+    };
+
+    // Reduced motion: the still is cheap (no three.js), so draw it once the page is idle rather than on approach.
+    if (prefersReducedMotion()) {
+      const idle = window.requestIdleCallback ?? ((cb: () => void) => setTimeout(cb, 200));
+      idle(() => still());
+      return;
+    }
+
+    // Ribbon ↔ name on click. One tween at a time: a new click overwrites the running one from the current value.
+    const state = { s: 0 };
+    let silk: Silk | null = null, revealed = false;
+    toggle.disabled = false;
+    hint.classList.remove('hidden');
+    hint.classList.add('block');
+    toggle.addEventListener('click', () => {
+      revealed = !revealed;
+      toggle.setAttribute('aria-pressed', String(revealed));
+      hint.textContent = revealed ? 'Click to unravel' : 'Click to reveal';
+      gsap.to(state, {
+        s: revealed ? 1 : 0, duration: 2.2, ease: EASE.inOut, overwrite: true,
+        onUpdate: () => silk?.settle(state.s),
+      });
+    });
+
+    onVisible(canvas, async () => {
+      if (!hasWebGL()) { still(); return; } // no three.js download without WebGL
+      try {
+        const [{ initSilk }, { fontReady }] = await Promise.all([import('../scripts/silk/scene'), import('../scripts/silk/shared')]);
+        await fontReady();
+        silk = initSilk(canvas, { word, settle: state.s, onLost: () => { silk = null; fallback(); } });
+      } catch {
+        silk = null;
+        fallback();
+      }
+    }, '400px');
+  });
+</script>

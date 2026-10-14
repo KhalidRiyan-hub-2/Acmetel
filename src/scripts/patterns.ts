@@ -12,7 +12,18 @@
 //   data-bg="glow|grid"  On a section: the fixed background layer of that name fades in while the section is
 //                        on screen. Sections with tone base/glow are transparent, so the layer shows through.
 //   data-flicker         On a link/button label: letters flicker in on hover (mouse/trackpad only).
-import { gsap, ScrollTrigger, SplitText, SCRUB, EASE, prefersReducedMotion, finePointer, getSmoother, scrollKick } from './motion';
+//   data-code-rain       Canvas in a `terminal` Section: teal code rain (src/scripts/coderain.ts, loaded when near).
+//   data-beams           Canvas in a `rain`/`terminal` Section: falling beams that burst into sparks on the band's
+//                        floor (src/scripts/beams.ts, loaded when near). Not loaded with reduced motion.
+//   data-scramble        Heading text decodes from random glyphs the first time it scrolls into view.
+//   data-stat-rain       StatStrip `matrix` (hero stats): code rain locks onto each figure once
+//                        (src/scripts/statrain.ts, loaded when near). Reduced motion: plain figures.
+//   data-retype          Teal highlight (`.text-gradient`) in an h1–h3: each time it scrolls into view a caret
+//                        backspaces the phrase and types it back, like the hero headline. Applied automatically to
+//                        every such highlight (not the hero, scramble or assemble headings); opt out with
+//                        data-retype="off" on the highlight or an ancestor. Deleted letters are hidden, not
+//                        removed, so the line never reflows. Reduced motion: static text.
+import { gsap, ScrollTrigger, SplitText, SCRUB, EASE, prefersReducedMotion, finePointer, getSmoother, scrollKick, onVisible } from './motion';
 
 const reduced = prefersReducedMotion();
 
@@ -87,6 +98,8 @@ function paintGradient(root: HTMLElement, chars: HTMLElement[]) {
       Object.assign(c.style, {
         backgroundImage: bg, backgroundSize: `${width}px 100%`, backgroundPosition: `${left - c.offsetLeft}px 0`,
         backgroundClip: 'text', webkitBackgroundClip: 'text', color: 'transparent',
+        // The inline-block letter box is one tight line tall; extend the painted area so descenders aren't clipped.
+        paddingBlock: '0.12em 0.2em', marginBlock: '-0.12em -0.2em',
       });
     });
   });
@@ -165,5 +178,192 @@ if (!reduced && finePointer()) {
         stagger: { amount: 0.28, from: 'random' },
       });
     });
+  });
+}
+
+// --- data-code-rain --------------------------------------------------------------------------------------------
+// Loaded only when a band comes near; reduced motion still gets one static frame (the texture, no movement).
+document.querySelectorAll<HTMLCanvasElement>('canvas[data-code-rain]').forEach((canvas) => {
+  onVisible(canvas, async () => { (await import('./coderain')).initCodeRain(canvas); }, '400px');
+});
+
+// --- data-beams ------------------------------------------------------------------------------------------------
+if (!reduced) document.querySelectorAll<HTMLCanvasElement>('canvas[data-beams]').forEach((canvas) => {
+  onVisible(canvas, async () => { (await import('./beams')).initBeams(canvas); }, '400px');
+});
+
+// --- data-stat-rain --------------------------------------------------------------------------------------------
+// Armed now, so StatStrip's CSS failsafe stands down and the slots stay blank (never the final figures) until
+// statrain.ts fills them with glyphs. If the script can't load, the figures are shown as they are.
+if (!reduced) document.querySelectorAll<HTMLElement>('[data-stat-rain]').forEach((root) => {
+  root.dataset.statRain = 'armed';
+  onVisible(root, () => {
+    import('./statrain').then((m) => m.initStatRain(root)).catch(() => { root.dataset.statRain = 'done'; });
+  }, '400px');
+});
+
+// --- data-scramble ---------------------------------------------------------------------------------------------
+// Each text node resolves left to right through random glyphs, so nested spans (the gradient highlight) keep
+// their styling. The heading's accessible name is pinned to the final text while it scrambles.
+if (!reduced) {
+  // ASCII only: every glyph has the same width in the mono face, so the line never jitters while decoding.
+  const GLYPHS = '0123456789ABCDEFXZ<>/=*+#%';
+  const scramble = (el: HTMLElement) => {
+    const nodes: { node: Text; text: string }[] = [];
+    const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    for (let n = walk.nextNode(); n; n = walk.nextNode()) if (n.textContent!.trim()) nodes.push({ node: n as Text, text: n.textContent! });
+    const total = nodes.reduce((sum, n) => sum + n.text.length, 0);
+    if (!total) return;
+    const hadLabel = el.hasAttribute('aria-label');
+    if (!hadLabel) el.setAttribute('aria-label', el.textContent!.replace(/\s+/g, ' ').trim());
+    const state = { p: 0 };
+    gsap.to(state, {
+      p: 1, duration: Math.min(1.4, 0.5 + total * 0.02), ease: 'none',
+      onUpdate: () => {
+        let offset = 0;
+        const done = Math.floor(state.p * total);
+        nodes.forEach(({ node, text }) => {
+          let out = '';
+          for (let i = 0; i < text.length; i++) {
+            const ch = text[i];
+            out += ch === ' ' || offset + i < done ? ch : GLYPHS[(Math.random() * GLYPHS.length) | 0];
+          }
+          node.textContent = out;
+          offset += text.length;
+        });
+      },
+      onComplete: () => { nodes.forEach(({ node, text }) => { node.textContent = text; }); if (!hadLabel) el.removeAttribute('aria-label'); },
+    });
+  };
+  document.querySelectorAll<HTMLElement>('[data-scramble]').forEach((el) => {
+    ScrollTrigger.create({ trigger: el, start: 'top 85%', once: true, onEnter: () => scramble(el) });
+  });
+}
+
+// --- data-retype -----------------------------------------------------------------------------------------------
+// The phrase is split into two text nodes, typed and not yet typed (the second inside a visibility:hidden span), so
+// "deleting" never reflows the line and the gradient stays continuous. The heading's inline content stays minimal on
+// purpose: with text-wrap: balance, extra inline boxes (a span per letter, a space alone in a span, an inline caret)
+// moved its line breaks or pushed the caret onto a line of its own. So the caret is not in the text at all: it is an
+// absolutely positioned bar beside the heading, moved to the edge of the last typed letter on every keystroke.
+// Typed letters blur-fade in (after Aceternity's "Blur Fade In"): each new letter is a short-lived .rt-fresh span that
+// merges back into the typed text node when its animation ends (or early, beyond 3 live spans). Screen readers get
+// the phrase from an sr-only copy at the end.
+if (!reduced) {
+  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+  const jitter = (base: number, spread: number) => base + (Math.random() * 2 - 1) * spread;
+  document.querySelectorAll<HTMLElement>(':is(h1, h2, h3) .text-gradient').forEach((el) => {
+    if (el.children.length || el.closest('[data-headline], [data-scramble], [data-assemble], [data-retype="off"]')) return;
+    const heading = el.closest<HTMLElement>('h1, h2, h3')!;
+    const text = el.textContent ?? '';
+    if (!text.trim()) return;
+    el.dataset.retype = '';
+    const typed = document.createTextNode(text);
+    const rest = document.createElement('span');
+    rest.className = 'rt-rest';
+    const restText = document.createTextNode('');
+    rest.append(restText);
+    const gap = document.createTextNode(''); // a space at the cut lives here, not at the start of the hidden span
+    const vis = document.createElement('span');
+    vis.setAttribute('aria-hidden', 'true');
+    vis.append(typed);
+    const sr = document.createElement('span');
+    sr.className = 'sr-only';
+    sr.textContent = text;
+    el.replaceChildren(vis, sr);
+    const caret = document.createElement('span');
+    caret.className = 'rt-caret';
+    caret.setAttribute('aria-hidden', 'true');
+
+    let running = false;
+    const fresh: HTMLSpanElement[] = [];
+    // Fresh letters merge back into `typed` in order as their blur-in ends (they all run the same duration).
+    const settle = () => { const f = fresh.shift(); if (f) { typed.data += f.textContent; f.remove(); } };
+    const flush = () => { while (fresh.length) settle(); };
+    // Empty trailing nodes are detached, so the end state is just the plain text.
+    const cut = (n: number) => {
+      const sp = text[n] === ' ';
+      gap.data = sp ? ' ' : ''; restText.data = text.slice(sp ? n + 1 : n);
+      if (gap.data) vis.append(gap); else gap.remove();
+      if (restText.data) vis.append(rest); else rest.remove();
+    };
+
+    // Caret: placed in the heading's containing block at the right edge of the last typed letter (or the left edge
+    // of the first hidden one when nothing is typed), sized from that letter's box.
+    const place = () => {
+      const r = document.createRange();
+      let edge: 'right' | 'left' = 'right';
+      const nodes: Text[] = [];
+      const walk = document.createTreeWalker(vis, NodeFilter.SHOW_TEXT);
+      for (let t = walk.nextNode() as Text | null; t; t = walk.nextNode() as Text | null) if (!rest.contains(t) && t !== gap && t.data.trim()) nodes.push(t);
+      const last = nodes[nodes.length - 1];
+      if (last) {
+        const end = last.data.replace(/\s+$/, '').length;
+        r.setStart(last, end - 1); r.setEnd(last, end);
+      } else if (restText.data) {
+        r.setStart(restText, 0); r.setEnd(restText, 1); edge = 'left';
+      } else return;
+      const box = r.getBoundingClientRect();
+      const host = caret.offsetParent as HTMLElement | null;
+      if (!host || !box.height) return;
+      const hb = host.getBoundingClientRect();
+      const fs = parseFloat(getComputedStyle(heading).fontSize) || 16;
+      caret.style.left = `${box[edge] - hb.left - host.clientLeft + fs * 0.04}px`;
+      caret.style.top = `${box.top - hb.top - host.clientTop + box.height * 0.14}px`;
+      caret.style.height = `${box.height * 0.72}px`;
+      caret.style.width = `${Math.max(2, fs * 0.055)}px`;
+    };
+    const show = (n: number) => { flush(); typed.data = text.slice(0, n); cut(n); place(); };
+    const typeTo = (n: number) => {
+      // A space never gets its own span (alone at a break point it re-balanced the heading): it joins the letter before.
+      if (text[n - 1] === ' ') {
+        if (fresh.length) fresh[fresh.length - 1].textContent += ' '; else typed.data += ' ';
+        cut(n); place();
+        return;
+      }
+      const f = document.createElement('span');
+      f.className = 'rt-fresh';
+      f.textContent = text[n - 1];
+      f.addEventListener('animationend', () => { if (fresh[0] === f) settle(); }, { once: true });
+      vis.insertBefore(f, gap.parentNode ? gap : rest.parentNode ? rest : null);
+      fresh.push(f);
+      // At most 3 live spans: with more inline boxes Chrome gives up on text-wrap: balance for that frame and the
+      // heading re-wraps. The oldest is ~93% through its ease-out by then, so settling it early doesn't show.
+      if (fresh.length > 3) settle();
+      // A live span right before the word-break space also re-balanced the heading for that frame: at the end of a
+      // word, the pending letters settle into the text node at once.
+      if (text[n] === ' ') flush();
+      cut(n); place();
+    };
+    const run = async () => {
+      if (running) return;
+      running = true;
+      // The caret's box is the heading's own parent, so it moves with any reveal transform on the heading block.
+      const parent = heading.parentElement!;
+      if (getComputedStyle(parent).position === 'static') parent.style.position = 'relative';
+      heading.after(caret);
+      show(text.length);
+      // Follow the letter every frame while running: a reveal transform on the heading itself (or a resize) moves the
+      // text between keystrokes and during the blink pauses.
+      const follow = () => { if (!running) return; place(); requestAnimationFrame(follow); };
+      requestAnimationFrame(follow);
+      caret.dataset.state = 'blink';
+      await sleep(650);
+      caret.dataset.state = 'solid';
+      for (let n = text.length - 1; n >= 0; n--) { show(n); await sleep(n === text.length - 1 ? 380 : 32); } // key repeat
+      await sleep(240);
+      for (let n = 1; n <= text.length; n++) {
+        typeTo(n);
+        await sleep(text[n - 1] === ' ' ? jitter(120, 30) : jitter(58, 22));
+      }
+      caret.dataset.state = 'blink';
+      await sleep(900);
+      caret.dataset.state = 'out';
+      await sleep(500);
+      caret.remove();
+      flush();
+      running = false;
+    };
+    ScrollTrigger.create({ trigger: el, start: 'top 80%', end: 'bottom 15%', onEnter: run, onEnterBack: run });
   });
 }

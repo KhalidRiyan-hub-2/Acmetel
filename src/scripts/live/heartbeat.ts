@@ -1,37 +1,20 @@
-// Heartbeat canvas: flat 2D monitor. Static grid, ECG trace written left to right like a bedside monitor
+// Pulse canvas: flat 2D monitor. Static grid, trace written left to right like a bedside monitor
 // (an erase gap runs just ahead of the head, older trace fades out). Canvas 2D only.
-import { visibleLoop, type Loop } from '../motion';
-import { live } from '../../data/live';
+// The trace has no rhythm of its own: it plots `signal(tau)`, which scripts/live/ops.ts builds from radar
+// contacts, so every contact on the map shows up here as one clean beat on a flat line.
+import type { Loop } from '../motion';
 
 const TEAL = '34,170,161';        // #22aaa1
 const TEAL_LIGHT = '127,220,213';  // #7fdcd5
-const PX_PER_S = 88;               // trace speed; the window scales with width so beat spacing matches across sizes
+const PX_PER_S = 88;               // trace speed; the window scales with width so spacing matches across sizes
 const WINDOW_MIN_S = 3.5, WINDOW_MAX_S = 6;
 const SAMPLES = 520;
 const GAP = 0.05;                  // erase gap ahead of the head (fraction of width)
-const TALL_EVERY = 7;              // every 7th beat gets a taller R spike
-const BASELINE = 0.6;              // baseline y (fraction of height); spikes go up
-const AMP = 0.36;                  // R spike height (fraction of height)
+const BASELINE = 0.62;             // baseline y (fraction of height); beats rise above it
+const AMP = 0.4;                   // height of a unit beat (fraction of height)
 
-const gauss = (x: number, mu: number, sigma: number) => Math.exp(-((x - mu) ** 2) / (2 * sigma * sigma));
-
-/** P-QRS-T shape. `phase` is 0-1 within a beat; `tall` scales the R spike. */
-function beatShape(phase: number, tall: number) {
-  return (
-    0.13 * gauss(phase, 0.12, 0.028) -   // P
-    0.13 * gauss(phase, 0.265, 0.01) +   // Q
-    1.0 * tall * gauss(phase, 0.3, 0.0105) - // R
-    0.26 * gauss(phase, 0.335, 0.011) +  // S
-    0.27 * gauss(phase, 0.6, 0.05)       // T
-  );
-}
-
-function ecg(tau: number, period: number) {
-  const beats = tau / period;
-  const k = Math.floor(beats);
-  const tall = (((k % TALL_EVERY) + TALL_EVERY) % TALL_EVERY) === TALL_EVERY - 1 ? 1.38 : 1;
-  return beatShape(beats - k, tall);
-}
+/** Signal at time `tau` (seconds on the shared clock): 0 = flat line, 1 = a full beat's R peak. */
+export type Signal = (tau: number) => number;
 
 interface Size { w: number; h: number; dpr: number }
 
@@ -55,7 +38,7 @@ function grid({ w, h, dpr }: Size): HTMLCanvasElement {
   c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
   const g = c.getContext('2d')!;
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
-  const cell = Math.max(10, Math.round(h / 24));
+  const cell = Math.max(10, Math.round(h / 20));
   const by = Math.round(h * BASELINE);
   const line = (x0: number, y0: number, x1: number, y1: number) => { g.moveTo(x0, y0); g.lineTo(x1, y1); };
   // Cells are anchored on the baseline and the horizontal centre so the grid sits symmetrically.
@@ -86,9 +69,8 @@ function grid({ w, h, dpr }: Size): HTMLCanvasElement {
 
 const windowS = (w: number) => Math.min(WINDOW_MAX_S, Math.max(WINDOW_MIN_S, w / PX_PER_S));
 
-function render(ctx: CanvasRenderingContext2D, size: Size, t: number) {
+function render(ctx: CanvasRenderingContext2D, size: Size, t: number, signal: Signal) {
   const { w, h, dpr } = size;
-  const period = 60 / live.heartbeat.bpm;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
   ctx.drawImage(grid(size), 0, 0);
@@ -98,7 +80,8 @@ function render(ctx: CanvasRenderingContext2D, size: Size, t: number) {
   const head = (t / win) % 1;            // head position, 0-1 across the width
   const by = h * BASELINE, amp = h * AMP;
   const xOf = (u: number) => u * w;
-  const hx = xOf(head), hy = by - ecg(t, period) * amp;
+  const now = signal(t);
+  const hx = xOf(head), hy = by - now * amp;
 
   // Write bar: a faint band trailing the head, feathered on both sides.
   const bar = ctx.createLinearGradient(hx - 60, 0, hx + 8, 0);
@@ -116,7 +99,7 @@ function render(ctx: CanvasRenderingContext2D, size: Size, t: number) {
     if (pen && u > head && u - 1 / SAMPLES <= head) ctx.lineTo(hx, hy); // end the fresh trace exactly at the head
     const age = (((head - u) % 1) + 1) % 1;
     if (age > 1 - GAP) { pen = false; continue; }
-    const y = by - ecg(t - age * win, period) * amp;
+    const y = by - signal(t - age * win) * amp;
     if (pen) ctx.lineTo(xOf(u), y); else { ctx.moveTo(xOf(u), y); pen = true; }
   }
   // Alpha falls off linearly with age, so a single horizontal gradient with a hard step at the head covers it.
@@ -133,8 +116,8 @@ function render(ctx: CanvasRenderingContext2D, size: Size, t: number) {
   ctx.shadowBlur = 0;
   ctx.lineWidth = 1; ctx.stroke();
 
-  // Head: halo swells with the signal so each R spike reads as a pulse.
-  const beat = Math.max(0, Math.min(1, ecg(t, period)));
+  // Head: halo swells with the signal so each contact reads as a pulse.
+  const beat = Math.max(0, Math.min(1, now));
   const r = 16 + 18 * beat;
   const halo = ctx.createRadialGradient(hx, hy, 0, hx, hy, r);
   halo.addColorStop(0, `rgba(${TEAL_LIGHT},0.95)`);
@@ -144,29 +127,16 @@ function render(ctx: CanvasRenderingContext2D, size: Size, t: number) {
   ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(hx, hy, 2.4, 0, Math.PI * 2); ctx.fill();
 }
 
-/** One nice frame (head near the right, a tall beat on screen), no animation. Used for prefers-reduced-motion. */
-export function drawStatic(canvas: HTMLCanvasElement) {
+/** Pulse renderer driven by an external clock: call `frame(t)` from the shared loop. */
+export function createPulse(canvas: HTMLCanvasElement, signal: Signal): { frame(t: number): void } & Pick<Loop, 'destroy'> {
   const ctx = canvas.getContext('2d');
-  if (!ctx) return;
-  const draw = () => { const size = fit(canvas); render(ctx, size, windowS(size.w) * 1.86); };
-  draw();
-  new ResizeObserver(draw).observe(canvas);
-}
-
-export function initHeartbeat(canvas: HTMLCanvasElement, opts: { onFrame?: (t: number) => void } = {}): Loop {
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return { pause() {}, play() {}, paused: false, destroy() {} } as Loop;
+  if (!ctx) return { frame() {}, destroy() {} };
   let size = fit(canvas);
-  const t0 = windowS(size.w) * 0.7; // start with most of the screen already traced
-  let now = t0;
-  const loop = visibleLoop(canvas, (t) => { now = t0 + t; render(ctx, size, now); opts.onFrame?.(now); });
-  const ro = new ResizeObserver(() => { size = fit(canvas); render(ctx, size, now); });
+  let now = 0;
+  const ro = new ResizeObserver(() => { size = fit(canvas); render(ctx, size, now, signal); });
   ro.observe(canvas);
-  render(ctx, size, now);
   return {
-    pause: () => loop.pause(),
-    play: () => loop.play(),
-    get paused() { return loop.paused; },
-    destroy() { ro.disconnect(); loop.destroy(); },
+    frame(t) { now = t; render(ctx, size, t, signal); },
+    destroy() { ro.disconnect(); },
   };
 }

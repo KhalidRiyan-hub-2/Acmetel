@@ -16,10 +16,8 @@ export const live = {
     uptime: { base: 99.99, jitter: 0.008 },
     latencyMs: { base: 42, jitter: 6 },
     msgsPerSec: { base: 3200, jitter: 420 },
-    bpm: 52,
   },
   radar: {
-    origin: { city: 'Karachi', lat: 24.8607, lon: 67.0011 },
     initialTravelers: 1240,
     destinations: [
       { city: 'London', country: 'United Kingdom', lat: 51.5074, lon: -0.1278, network: '5G', plan: '10 GB, 30 days' },
@@ -44,30 +42,27 @@ export const live = {
 
 const rad = (d: number) => (d * Math.PI) / 180;
 
-/** Great-circle initial bearing (degrees clockwise from north, 0-360) and distance (km) from origin to dest. */
-export function bearingDistance(origin: LatLon, dest: LatLon): { bearing: number; distanceKm: number } {
-  const φ1 = rad(origin.lat), φ2 = rad(dest.lat), Δλ = rad(dest.lon - origin.lon), Δφ = φ2 - φ1;
-  const y = Math.sin(Δλ) * Math.cos(φ2);
-  const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
-  const bearing = ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
-  const a = Math.sin(Δφ / 2) ** 2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
-  const distanceKm = 2 * 6371 * Math.asin(Math.min(1, Math.sqrt(a)));
-  return { bearing, distanceKm };
-}
-
 export interface BlipPos { x: number; y: number; angle: number }
 
+/** Southern limit of the radar map (degrees). Like the UN emblem, the disc stops short of Antarctica. */
+export const RADAR_SOUTH = -60;
+/** Normalised radius of the RADAR_SOUTH circle (0.5 = the square's edge). */
+export const RADAR_MAX_R = 0.42;
+
+/** Screen angle (radians clockwise from up) of a meridian at rotation 0: Greenwich points down, east runs anticlockwise, as seen from above the pole. */
+export const meridianAngle = (lon: number) => Math.PI - rad(lon);
+
+/** Normalised radius of a latitude circle. */
+export const latitudeRadius = (lat: number) => (RADAR_MAX_R * (90 - lat)) / (90 - RADAR_SOUTH);
+
 /**
- * Radar projection: angle = bearing from the origin, radius = log-scaled distance (linear inside 900 km so the
- * centre doesn't blow up). Returns screen offsets from the centre, normalised to the square (north = up).
- * Shared by the blips and the land map under them (src/data/radarMap.ts) so every dot sits on its city.
- * The whole globe fits: the antipode lands at r ≈ 0.47, just inside the disc.
+ * Radar projection: polar azimuthal equidistant centred on the North Pole (the UN-emblem map). Distance from
+ * the centre is linear in latitude, angle is longitude. Returns screen offsets from the centre, normalised to
+ * the square, at rotation 0. Shared by the blips and the land map under them (src/data/radarMap.ts) so every
+ * dot sits on its city.
  */
-export function radarProject(p: LatLon, origin: LatLon = live.radar.origin): { x: number; y: number } {
-  const minR = 0.12, maxR = 0.42, near = 900, far = 13000;
-  const { bearing, distanceKm } = bearingDistance(origin, p);
-  const r = distanceKm < near ? (minR * distanceKm) / near : minR + ((maxR - minR) * Math.log(distanceKm / near)) / Math.log(far / near);
-  const a = rad(bearing);
+export function radarProject(p: LatLon): { x: number; y: number } {
+  const r = latitudeRadius(p.lat), a = meridianAngle(p.lon);
   return { x: r * Math.sin(a), y: -r * Math.cos(a) };
 }
 

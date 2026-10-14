@@ -1,0 +1,186 @@
+---
+// LAB J09 (docs/agents/QUEUE.md): homepage "Powered by" band with a motherboard-inspired board. Same heading in every
+// direction (verbatim from content/source/sovereign-intelligence-stack.md, intro); only the board changes. The five
+// chips are real links (labels, hrefs, descriptions and icons from sisPages in src/data/site.ts); the core links to
+// SIS_BASE. Everything drawn is inline SVG and CSS; the only script toggles run/paused classes.
+//   A  Mainboard   plan view of a board: a CPU-style package in the middle, five chips on routed three-lane buses
+//                  (45° bends, vias, U1–U5 silkscreen). Idle: steady low traffic both ways on every bus.
+//   B  Die         the stack as one piece of silicon: a floorplan of five blocks round the core block, bond-pad ring,
+//                  standard-cell texture. Idle: a clock pulse leaves the core and fans out through each block's H-tree.
+//   C  Backplane   one wide bus leaving the core with five cards slotted along it. Plays a boot once (bus draws out,
+//                  cards power on in order), then polls the cards one at a time.
+// Hover/focus on a chip lights its traces (CSS :has). Reduced motion / no JS: lit static board, no packets.
+// Not linked, noindex. Delete this page, _j09.ts and _j09Board.astro once J09 ships.
+import Lab from './_Lab.astro';
+import Section from '../../components/Section.astro';
+import SectionHeading from '../../components/SectionHeading.astro';
+import Board from './_j09Board.astro';
+import { mainboard, die, backplane } from './_j09';
+
+const dirs = [
+  { id: 'a', kind: 'a' as const, name: 'Mainboard', d: mainboard(false), m: mainboard(true),
+    note: 'Plan view of a board. The stack is the CPU package in the middle; each service is a chip on its own routed bus. Idle traffic runs both ways on every bus; the chip you point at gets the bright, fast stream.' },
+  { id: 'b', kind: 'b' as const, name: 'Die floorplan', d: die(false), m: die(true),
+    note: 'The stack as one piece of silicon: five blocks around the core, a bond-pad ring, standard-cell texture. A clock pulse leaves the core every few seconds and fans out through each block\'s H-tree.' },
+  { id: 'c', kind: 'c' as const, name: 'Backplane', d: backplane(false), m: backplane(true),
+    note: 'One shared bus with five cards slotted along it. Boots once when it scrolls in (bus draws out, cards power on in order), then the core polls each card in turn.' },
+];
+
+// Hover/focus lighting, CSS only: a hovered or focused chip sets --hot on its own traces and --dim on the board.
+// Direction C also swaps the hot card's polling packet for a continuous stream.
+const hot = [0, 1, 2, 3, 4].map((k) => {
+  const has = `:has(.chip[data-k="${k}"]:is(:hover,:focus-visible))`;
+  return `.board${has} :is(.tr,.tk,.pk,.route)[data-k="${k}"]{--hot:1}\n.motion .board-c.is-run${has} .pk[data-k="${k}"]{animation:pk-run .9s linear infinite}`;
+}).join('\n');
+---
+<Lab title="J09 Powered by">
+  <Fragment set:html={`<style>${hot}</style>`} />
+  <header class="container-x pt-16 pb-6">
+    <p class="eyebrow">Lab · J09</p>
+    <h1 class="mt-3 text-3xl font-semibold text-ink sm:text-4xl">“Powered by” band, motherboard board</h1>
+    <p class="mt-3 max-w-2xl text-ink-muted">Three directions for the band after Live network (raised tone). Heading is identical (source copy); judge the board. Hover or tab through the chips; the pause button stops the idle loop.</p>
+  </header>
+
+  {dirs.map((dir) => (
+    <>
+      <div class="container-x border-t border-line py-6">
+        <p class="font-mono text-xs text-teal-300">Direction {dir.id.toUpperCase()}</p>
+        <h2 class="mt-1 text-xl font-semibold text-ink">{dir.name}</h2>
+        <p class="mt-2 max-w-2xl text-sm text-ink-muted">{dir.note}</p>
+      </div>
+      <Section tone="raised">
+        <!-- Eyebrow "Powered by" is the user's band name (QUEUE J09); title + lede: sovereign-intelligence-stack.md intro, split. -->
+        <SectionHeading eyebrow="Powered by" title="Build your sovereign" highlight="digital foundation" lede="From connectivity and cloud to AI-powered automation and network intelligence, we deliver the capabilities needed to secure, scale, and accelerate your digital transformation." />
+        <div class="mt-16 sm:mt-20">
+          <Board id={dir.id} kind={dir.kind} d={dir.d} m={dir.m} />
+        </div>
+      </Section>
+    </>
+  ))}
+</Lab>
+
+<style is:global>
+  /* ---------- Layout: one box, two SVGs, links placed by percentage (phone layout below 768px) ---------- */
+  .board-box { aspect-ratio: var(--mar); }
+  .board .desk { display: none; }
+  .board :is(.core, .chip) { position: absolute; left: var(--mx); top: var(--my); width: var(--mw); height: var(--mh); }
+  @media (min-width: 768px) {
+    .board-box { aspect-ratio: var(--ar); }
+    .board .desk { display: block; }
+    .board .mob { display: none; }
+    .board :is(.core, .chip) { left: var(--x); top: var(--y); width: var(--w); height: var(--h); }
+  }
+
+  /* ---------- Shared SVG parts ---------- */
+  .board .plate { fill: color-mix(in srgb, var(--color-navy-950) 55%, transparent); stroke: var(--color-line); }
+  .board .hole { fill: var(--color-navy-900); stroke: var(--color-line-strong); }
+  .board .deco { fill: none; stroke: var(--color-ink-faint); stroke-opacity: 0.45; stroke-width: 1.2; }
+  .board .via { fill: var(--color-navy-800); stroke: var(--color-teal-500); stroke-opacity: calc(0.45 + var(--hot, 0) * 0.5); stroke-width: 1.4; }
+  .board .silk { fill: var(--color-ink-faint); font: 500 11px var(--font-mono); letter-spacing: 0.08em; }
+  .board .mob .silk { font-size: 9px; }
+  /* Traces: lit copper by default (= the reduced-motion / no-JS frame). --hot from the hovered chip, --dim from the board. */
+  .board:has(.chip:is(:hover, :focus-visible)) { --dim: 1; }
+  .board .tr {
+    stroke: var(--color-teal-500); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+    stroke-opacity: calc(0.42 - var(--dim, 0) * 0.22 + var(--hot, 0) * 0.58);
+    transition: stroke-opacity 250ms;
+  }
+  .board .mob .tr { stroke-width: 1.6; }
+  .board .route { stroke: var(--color-teal-400); stroke-width: 2.4; stroke-linejoin: round; stroke-opacity: calc(var(--hot, 0) * 0.9); transition: stroke-opacity 250ms; }
+  .board .finger { fill: color-mix(in srgb, var(--color-teal-500) 30%, transparent); }
+  .board .tk { stroke: var(--color-teal-400); stroke-width: 1.2; stroke-opacity: calc(0.35 + var(--hot, 0) * 0.5); }
+  .board .pk { stroke: var(--color-teal-300); stroke-width: 3; stroke-linecap: round; opacity: 0; }
+  .board .mob .pk { stroke-width: 2.4; }
+
+  /* ---------- Links ---------- */
+  .board .core { display: grid; place-items: center; text-align: center; border-radius: 0.6rem; z-index: 1; }
+  .board .core-die { display: flex; flex-direction: column; align-items: center; padding: 0.75rem; }
+  .board .chip {
+    display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.85rem; z-index: 1;
+    transition: border-color 250ms, background-color 250ms, box-shadow 250ms;
+  }
+  .board .chip-icon { display: grid; place-items: center; flex: none; width: 2.1rem; height: 2.1rem; border-radius: 0.45rem; color: var(--color-teal-300); background: color-mix(in srgb, var(--color-teal-500) 12%, transparent); }
+  @media (min-width: 768px) and (max-width: 1023.98px) { .board .chip-desc { display: none; } .board .chip { gap: 0.55rem; padding: 0.5rem 0.65rem; } }
+  .board .led { position: absolute; top: 0.5rem; right: 0.5rem; width: 6px; height: 6px; border-radius: 99px; background: var(--color-teal-300); box-shadow: 0 0 6px var(--color-teal-400); }
+
+  /* A · packages */
+  .board-a .core { background: var(--color-navy-950); border: 1px solid var(--color-line-strong); box-shadow: inset 0 0 0 10px var(--color-navy-900), inset 0 0 0 11px color-mix(in srgb, var(--color-teal-500) 35%, transparent); }
+  .board-a .chip { background: var(--color-navy-950); border: 1px solid var(--color-line-strong); border-radius: 0.4rem; }
+  .board-a .chip::before { content: ""; position: absolute; left: 0.4rem; top: 0.4rem; width: 4px; height: 4px; border-radius: 99px; background: var(--color-ink-faint); opacity: 0.6; }
+  .board-a .led { display: none; }
+  /* B · die blocks */
+  .board-b .plate { fill: color-mix(in srgb, var(--color-navy-950) 70%, transparent); stroke: var(--color-line-strong); }
+  .board-b .pad { fill: color-mix(in srgb, var(--color-teal-500) 18%, transparent); stroke: color-mix(in srgb, var(--color-teal-500) 40%, transparent); stroke-width: 0.8; }
+  .board-b .cells { opacity: 0.55; }
+  .board-b .cellrow { stroke: var(--color-line); stroke-width: 1; }
+  .board-b .cellcut { stroke: var(--color-line); stroke-width: 1; }
+  .board-b .spare { fill: color-mix(in srgb, var(--color-navy-800) 60%, transparent); stroke: var(--color-line); stroke-dasharray: 3 4; }
+  .board-b .core { background: color-mix(in srgb, var(--color-navy-800) 92%, transparent); border: 1px solid color-mix(in srgb, var(--color-teal-500) 45%, transparent); border-radius: 0.25rem; }
+  .board-b .chip { align-items: flex-start; border: 1px solid color-mix(in srgb, var(--color-teal-500) 22%, transparent); border-radius: 0.25rem; padding: 0.85rem 1rem; }
+  .board-b .chip > .min-w-0 { background: color-mix(in srgb, var(--color-navy-800) 88%, transparent); border-radius: 0.3rem; padding: 0.15rem 0.4rem 0.25rem; margin: -0.15rem -0.4rem; max-width: 72%; }
+  .board-b .chip-icon { background: color-mix(in srgb, var(--color-navy-800) 90%, transparent); border: 1px solid color-mix(in srgb, var(--color-teal-500) 25%, transparent); }
+  /* C · cards */
+  .board-c .core { background: var(--color-navy-950); border: 1px solid var(--color-line-strong); border-radius: 0.6rem; box-shadow: inset 0 0 0 9px var(--color-navy-900), inset 0 0 0 10px color-mix(in srgb, var(--color-teal-500) 35%, transparent); }
+  .board-c .chip { background: color-mix(in srgb, var(--color-navy-950) 85%, transparent); border: 1px solid var(--color-line-strong); border-radius: 0.6rem; }
+
+  /* Lit chip (hover / keyboard focus) */
+  .board .chip:is(:hover, :focus-visible) { border-color: color-mix(in srgb, var(--color-teal-400) 75%, transparent); background-color: color-mix(in srgb, var(--color-teal-500) 10%, var(--color-navy-950)); box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-teal-400) 30%, transparent), 0 0 28px -6px color-mix(in srgb, var(--color-teal-400) 55%, transparent); }
+  .board .core:is(:hover, :focus-visible) { border-color: color-mix(in srgb, var(--color-teal-400) 75%, transparent); }
+
+  /* ================= Motion (only under .motion; the script adds .is-run on view, .is-off off screen) ================= */
+  .motion .board:is(.is-off, .is-paused) :is(.pk, .tk, .tr, .led, .chip) { animation-play-state: paused !important; }
+
+  /* A · steady two-way traffic; the hot bus streams faster and brighter. */
+  .motion .board-a.is-run .pk {
+    opacity: calc(0.5 + var(--hot, 0) * 0.5);
+    stroke-dasharray: 5 195;
+    animation: pk-run calc(var(--dur) / (1 + var(--hot, 0) * 1.6)) linear var(--dl) infinite;
+  }
+  .motion .board-a.is-run .pk.rev { animation-direction: reverse; }
+  @keyframes pk-run { from { stroke-dashoffset: 5; } to { stroke-dashoffset: -100; } }
+
+  /* B · clock: every 3.2 s a pulse runs the channel into each block, then its H-tree flashes level by level. */
+  .motion .board-b.is-run .pk { opacity: 1; stroke-dasharray: 18 182; animation: clk-run 3.2s linear infinite; }
+  .motion .board-b.is-run .tk { animation: clk-flash 3.2s ease-out calc(0.32s + var(--depth) * 0.1s) infinite; }
+  @keyframes clk-run { 0% { stroke-dashoffset: 18; } 12%, 100% { stroke-dashoffset: -100; } }
+  @keyframes clk-flash {
+    0% { stroke-opacity: calc(0.35 + var(--hot, 0) * 0.5); }
+    5% { stroke-opacity: 0.95; stroke: var(--color-teal-300); }
+    30%, 100% { stroke-opacity: calc(0.35 + var(--hot, 0) * 0.5); }
+  }
+
+  /* C · boot once: bus draws out from the core, cards power on as it reaches them; then round-robin polling. */
+  .motion .board-c .tr { stroke-dasharray: 100; stroke-dashoffset: 100; animation: bus-draw 0.45s cubic-bezier(0.3, 0, 0.2, 1) var(--bd, 0s) both paused; }
+  .motion .board-c .tr[data-k="-1"] { animation-duration: 0.9s; animation-timing-function: linear; }
+  .motion .board-c .led { opacity: 0.15; box-shadow: none; animation: led-on 0.35s ease-out calc(var(--bd) + 0.4s) both paused, led-blink 6s linear var(--pl) infinite paused; }
+  /* Card powers on when the bus reaches it: border flashes teal, then settles (fill backwards so hover still works after). */
+  .motion .board-c .chip { animation: card-on 0.8s ease-out calc(var(--bd) + 0.4s) backwards paused; }
+  .motion .board-c.is-run :is(.tr, .led, .chip) { animation-play-state: running; }
+  @media (max-width: 767.98px) {
+    .motion .board-c .led { animation-delay: calc(var(--mbd) + 0.4s), var(--pl); }
+    .motion .board-c .chip { animation-delay: calc(var(--mbd) + 0.4s); }
+  }
+  @keyframes card-on {
+    0% { border-color: var(--color-line); opacity: 0.55; }
+    25% { border-color: var(--color-teal-400); opacity: 1; box-shadow: 0 0 24px -6px var(--color-teal-400); }
+    100% { border-color: var(--color-line-strong); opacity: 1; }
+  }
+  .motion .board-c.is-run .pk { opacity: 1; stroke-dasharray: 6 194; animation: poll 6s linear var(--dl) infinite both; }
+  @keyframes bus-draw { to { stroke-dashoffset: 0; } }
+  @keyframes led-on { to { opacity: 1; box-shadow: 0 0 6px var(--color-teal-400); } }
+  @keyframes led-blink { 0%, 100% { opacity: 1; } 1% { opacity: 0.2; } 3% { opacity: 1; } 4% { opacity: 0.2; } 6% { opacity: 1; } }
+  @keyframes poll { 0% { stroke-dashoffset: 6; } 13%, 100% { stroke-dashoffset: -100; } }
+</style>
+
+<script>
+  import { bindPauseButton, prefersReducedMotion } from '../../scripts/motion';
+  // Lab version of the real-build hook: .is-run once ≥35% visible (starts the loop / boot), .is-off while off screen.
+  document.querySelectorAll<HTMLElement>('[data-board]').forEach((board) => {
+    if (prefersReducedMotion()) { board.querySelector<HTMLElement>('[data-pause]')?.setAttribute('hidden', ''); return; }
+    new IntersectionObserver(([e]) => {
+      if (e.intersectionRatio >= 0.35) board.classList.add('is-run');
+      board.classList.toggle('is-off', !e.isIntersecting);
+    }, { threshold: [0, 0.35] }).observe(board);
+    bindPauseButton(board.querySelector('[data-pause]'), { pause: () => board.classList.add('is-paused'), play: () => board.classList.remove('is-paused') });
+  });
+</script>

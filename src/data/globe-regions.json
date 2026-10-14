@@ -1,9 +1,43 @@
 {
-  "_comment": "High-detail globe layers. Read by scripts/build-globe-data.mjs (to build them) and src/data/globe.ts (to draw them). Boxes are lon/lat degrees; boxes must not overlap.",
+  "_comment": "High-detail globe layers. Read by scripts/build-globe-data.mjs, build-osm-dubai.mjs and build-osm-cities.mjs (to build them) and src/data/globe.ts (to draw them). Boxes are lon/lat degrees; region boxes must not overlap.",
   "regions": [
     { "id": "gulf", "file": "globe-gulf.bin", "box": { "lon0": 46, "lon1": 62, "lat0": 18, "lat1": 31 }, "highlight": ["784"], "tol": 0.004, "minLen": 0 },
     { "id": "route", "file": "globe-route.bin", "box": { "lon0": 62.5, "lon1": 91, "lat0": 23, "lat1": 46.5 }, "highlight": ["586", "156"], "tol": 0.006, "minLen": 0.05 },
-    { "id": "usa", "file": "globe-usa.bin", "box": { "lon0": -126, "lon1": -65, "lat0": 23, "lat1": 50.5 }, "highlight": ["840"], "tol": 0.025, "minLen": 0.3 }
+    { "id": "china", "file": "globe-china.bin", "box": { "lon0": 91, "lon1": 112, "lat0": 20, "lat1": 50 }, "highlight": ["156"], "tol": 0.01, "minLen": 0.1 },
+    { "id": "usa", "file": "globe-usa.bin", "box": { "lon0": -126, "lon1": -65, "lat0": 23, "lat1": 50.5 }, "highlight": ["840"], "tol": 0.025, "minLen": 0.3, "extras": false }
   ],
-  "osm": { "id": "dubai", "file": "globe-dubai-osm.bin", "box": { "lon0": 54.95, "lon1": 55.65, "lat0": 24.85, "lat1": 25.4 } }
+  "osm": { "id": "dubai", "file": "globe-dubai-osm.bin", "box": { "lon0": 54.95, "lon1": 55.65, "lat0": 24.85, "lat1": 25.4 } },
+  "cities": [
+    {
+      "id": "dubai", "file": "globe-dubai-city.bin", "buildingsFile": "globe-dubai-buildings.bin",
+      "anchor": { "lat": 25.19719, "lon": 55.27437 },
+      "box": { "lon0": 54.95, "lon1": 55.65, "lat0": 24.85, "lat1": 25.4 },
+      "minorBox": { "lon0": 55.13, "lon1": 55.40, "lat0": 25.05, "lat1": 25.29 },
+      "buildingsBox": { "lon0": 55.25, "lon1": 55.305, "lat0": 25.175, "lat1": 25.232 }
+    },
+    {
+      "id": "lahore", "file": "globe-lahore-city.bin",
+      "anchor": { "lat": 31.55, "lon": 74.34 },
+      "box": { "lon0": 74.0, "lon1": 74.7, "lat0": 31.25, "lat1": 31.85 },
+      "minorBox": { "lon0": 74.22, "lon1": 74.45, "lat0": 31.44, "lat1": 31.64 }
+    },
+    {
+      "id": "islamabad", "file": "globe-islamabad-city.bin", "buildingsFile": "globe-islamabad-buildings.bin",
+      "anchor": { "lat": 33.66786, "lon": 73.07452 },
+      "box": { "lon0": 72.8, "lon1": 73.25, "lat0": 33.48, "lat1": 33.82 },
+      "minorBox": { "lon0": 73.0, "lon1": 73.14, "lat0": 33.63, "lat1": 33.72 },
+      "buildingsBox": { "lon0": 73.064, "lon1": 73.085, "lat0": 33.66, "lat1": 33.676 },
+      "landmarkWays": []
+    },
+    {
+      "id": "chicago", "file": "globe-chicago-city.bin", "buildingsFile": "globe-chicago-buildings.bin",
+      "anchor": { "lat": 41.849514, "lon": -87.974663 },
+      "box": { "lon0": -88.15, "lon1": -87.52, "lat0": 41.72, "lat1": 42.05 },
+      "minorBox": { "lon0": -88.02, "lon1": -87.92, "lat0": 41.82, "lat1": 41.88 },
+      "buildingsBox": { "lon0": -87.988, "lon1": -87.96, "lat0": 41.842, "lat1": 41.86 },
+      "landmarkWays": [1229730923],
+      "skipWater": [1205149],
+      "lake": { "relation": 1205149, "waterAt": [-87.56, 41.95] }
+    }
+  ]
 }

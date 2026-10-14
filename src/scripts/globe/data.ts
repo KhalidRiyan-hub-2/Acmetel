@@ -104,3 +104,17 @@ export function ringsToCoast(rings: Lines, box: { lon0: number; lon1: number; la
   }
   return out;
 }
+
+/**
+ * City buildings (scripts/build-osm-cities.mjs): [u32 boxed length][boxed: footprints, landmark parts] then
+ * Uint16 height × 10 and Uint16 min height × 10 per ring, footprints first. Heights in metres.
+ */
+export function decodeBuildings(buf: ArrayBuffer): { footprints: Lines; landmark: Lines; height: Float32Array; min: Float32Array } {
+  const len = new Uint32Array(buf, 0, 1)[0];
+  const [footprints, landmark] = decodeBoxed(buf.slice(4, 4 + len));
+  const n = footprints.length + landmark.length;
+  const h = new Uint16Array(buf, 4 + len, n * 2);
+  const height = new Float32Array(n), min = new Float32Array(n);
+  for (let i = 0; i < n; i++) { height[i] = h[i] / 10; min[i] = h[n + i] / 10; }
+  return { footprints, landmark, height, min };
+}

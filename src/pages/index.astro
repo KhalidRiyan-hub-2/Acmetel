@@ -4,7 +4,6 @@ import Section from '../components/Section.astro';
 import SectionHeading from '../components/SectionHeading.astro';
 import Button from '../components/Button.astro';
 import Icon from '../components/Icon.astro';
-import FeatureCard from '../components/FeatureCard.astro';
 import StatStrip from '../components/StatStrip.astro';
 import ContactForm from '../components/ContactForm.astro';
 import GlobeHero from '../components/home/GlobeHero.astro';
@@ -15,7 +14,10 @@ import ServicesRail from '../components/home/ServicesRail.astro';
 import LiveNetwork from '../components/home/LiveNetwork.astro';
 import WhyAcmetel from '../components/home/WhyAcmetel.astro';
 import AcmesimStory from '../components/home/AcmesimStory.astro';
-import Statement from '../components/Statement.astro';
+import ProbeTesting from '../components/home/ProbeTesting.astro';
+import SmsFirewall from '../components/home/SmsFirewall.astro';
+import FraudScan from '../components/home/FraudScan.astro';
+import SignalName from '../components/SignalName.astro';
 import { SIS_BASE } from '../data/site';
 
 // Copy sources: content/source/home-current-site.md and content/source/about.md.
@@ -38,11 +40,13 @@ const whoCards = [
 ] as const;
 
 const services = [
-  { icon: 'phone', title: 'Voice', href: '/services/voice', text: 'Wholesale voice termination with strong footholds in Pakistan and the GCC, now expanding into Africa. Backed by Tier-1 carriers.' },
-  { icon: 'messages', title: 'Messaging', href: '/services/messaging', text: 'A2P, P2A and P2P SMS with direct MNO connectivity across EMEA, plus firewall and silent network authentication.' },
-  { icon: 'layers', title: 'Sovereign Intelligence Stack', href: SIS_BASE, text: 'Connectivity, data center, cloud, AI automation and network intelligence. Build your sovereign digital foundation.' },
-  { icon: 'hash', title: 'DID & Toll-Free', href: '/services/voice#did-toll-free', text: 'Local, toll-free and international toll-free numbers in 25+ countries, connected straight to your PBX.' },
-  { icon: 'search', title: 'MNP Lookup', text: 'Exclusive partner for Pakistan’s MNP database and verification services for international traffic.' },
+  // PLACEHOLDER: card photos supplied by the user (public/images/services/, resized copies of public/images/*), not
+  // client-approved or licence-checked. Some show third-party brands (EngageLab, Indian operators on the MNP graphic).
+  { icon: 'phone', title: 'Voice', href: '/services/voice', image: '/images/services/voice.jpg', imagePos: '50% 45%', text: 'Wholesale voice termination with strong footholds in Pakistan and the GCC, now expanding into Africa. Backed by Tier-1 carriers.' },
+  { icon: 'messages', title: 'Messaging', href: '/services/messaging', image: '/images/services/messaging.png', imagePos: '50% 38%', text: 'A2P, P2A and P2P SMS with direct MNO connectivity across EMEA, plus firewall and silent network authentication.' },
+  { icon: 'layers', title: 'Sovereign Intelligence Stack', href: SIS_BASE, image: '/images/services/data-center.jpg', imagePos: '50% 50%', text: 'Connectivity, data center, cloud, AI automation and network intelligence. Build your sovereign digital foundation.' },
+  { icon: 'hash', title: 'DID & Toll-Free', href: '/services/voice#did-toll-free', image: '/images/services/toll-free.jpg', imagePos: '62% 46%', text: 'Local, toll-free and international toll-free numbers in 25+ countries, connected straight to your PBX.' },
+  { icon: 'search', title: 'MNP Lookup', image: '/images/services/mnp.jpg', imagePos: '50% 50%', text: 'Exclusive partner for Pakistan’s MNP database and verification services for international traffic.' },
 ] as const;
 
 const events = [
@@ -79,7 +83,7 @@ const posts = [
       </div>
       <GlobeHero />
     </div>
-    <div class="container-x relative mt-12 sm:mt-14"><StatStrip stats={stats} /></div>
+    <div class="container-x relative mt-12 sm:mt-14"><StatStrip stats={stats} matrix /></div>
   </section>
 
   <!-- 2. Brand belt -->
@@ -100,8 +104,8 @@ const posts = [
     </DealCards>
   </Section>
 
-  <!-- Statement: live-site hero line (home-current-site.md "Hero"), letters assemble on scroll. -->
-  <Statement text="Empowering seamless communication" highlight="in the digital age" bg="glow" />
+  <!-- Brand band: "Acmetel" drawn by signal threads, over the live-site hero line (home-current-site.md "Hero"). -->
+  <SignalName text="Empowering seamless communication" highlight="in the digital age." bg="glow" />
 
   <!-- 4. Why choose Acmetel -->
   <WhyAcmetel />
@@ -111,20 +115,23 @@ const posts = [
     <SectionHeading eyebrow="Services" title="The primary services" highlight="we offer" lede="Carrier-grade voice and messaging, and the sovereign infrastructure underneath them." />
   </ServicesRail>
 
-  <!-- 6. Products: ACMeSIM story, then the operator products -->
-  <AcmesimStory>
-    <div class="container-x pb-16 sm:pb-20">
-      <div class="flex flex-wrap items-end justify-between gap-4 border-t border-line pt-12">
-        <h3 class="text-2xl font-semibold text-ink">Products for operators</h3>
-        <p class="max-w-md text-sm text-ink-muted">Protection for messaging and voice revenue, from filtering to fraud detection and network testing.</p>
-      </div>
-      <div class="mt-8 grid gap-5 md:grid-cols-3" data-stagger>
-        <FeatureCard icon="shield" title="SMS Firewall" href="/services/messaging#firewall" text="Filtering techniques and a blocking policy that safeguard revenue and the subscriber experience." class="p-5! sm:p-6!" />
-        <FeatureCard icon="activity" title="Fraud Management" href="/services/voice#fraud-management" text="Real-time detection and revenue assurance against fraud, a major concern for operators." class="p-5! sm:p-6!" />
-        <FeatureCard icon="radar" title="Probe Testing" href="/services/messaging#penetration-testing" text="Find grey routes, bypass and SIM boxes before fraudsters exploit them." class="p-5! sm:p-6!" />
-      </div>
-    </div>
-  </AcmesimStory>
+  <!-- 6. Products: ACMeSIM story -->
+  <AcmesimStory />
+
+  <!-- 6a. Products for operators: the brand band's click-to-draw signal threads spelling "Operators", over the
+       title, then one section per product. Lede reuses the line from the former operator-products header. -->
+  <SignalName word="Operators" srWord={false} text="Products for" highlight="operators">
+    <p class="mt-5 max-w-xl text-ink-muted sm:text-lg">Protection for messaging and voice revenue, from filtering to fraud detection and network testing.</p>
+  </SignalName>
+
+  <!-- 6b. SMS Firewall (messaging.md "Firewall & Security Solutions") -->
+  <SmsFirewall />
+
+  <!-- 6c. Fraud Management (voice.md "Fraud Management & Revenue Assurance") -->
+  <FraudScan />
+
+  <!-- 6d. Probe Testing (messaging.md "Network Penetration Testing (NPT)") -->
+  <ProbeTesting />
 
   <!-- 7. Live network -->
   <LiveNetwork />
