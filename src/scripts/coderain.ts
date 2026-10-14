@@ -3,7 +3,7 @@
 // Runs only while on screen (visibleLoop) and at ~30 fps; reduced motion gets one static frame.
 import { visibleLoop, prefersReducedMotion, type Loop } from './motion';
 
-// GLYPHS, pick, rainFont and rainColors are shared with the hero stats "rain lock" (statrain.ts).
+// GLYPHS, pick, rainFont and rainColors are exported for reuse by other canvases.
 export const GLYPHS = 'ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ0123456789ABCDEFXZ:=*+<>';
 export const pick = () => GLYPHS[(Math.random() * GLYPHS.length) | 0];
 /** Canvas font for rain glyphs at `size` px. */

@@ -64,7 +64,7 @@ const posts = [
 
 <Base title="Home" description="Acmetel delivers wholesale voice, A2P messaging, SMS firewall, eSIM and sovereign digital infrastructure for telecom operators and enterprises worldwide.">
   <!-- 1. Hero -->
-  <section class="relative overflow-hidden pt-28 pb-12 sm:pt-32">
+  <section class="relative overflow-hidden pt-28 pb-20 sm:pt-32">
     <div aria-hidden="true" class="pointer-events-none absolute inset-0">
       <div class="bg-grid absolute inset-0"></div>
       <div class="absolute -left-32 top-0 h-[36rem] w-[36rem] animate-aurora rounded-full bg-teal-500/12 blur-3xl"></div>
@@ -83,7 +83,11 @@ const posts = [
       </div>
       <GlobeHero />
     </div>
-    <div class="container-x relative mt-12 sm:mt-14"><StatStrip stats={stats} matrix /></div>
+    <!-- Hidden until revealed: a circle following the cursor shows the strip through a mask (data-mask-reveal).
+         Touch, reduced motion and no-JS: the strip is simply shown. -->
+    <div class="container-x relative mt-12 sm:mt-14" data-mask-reveal>
+      <div class="mask-layer" data-mask-layer><StatStrip stats={stats} plain /></div>
+    </div>
   </section>
 
   <!-- 2. Brand belt -->
@@ -120,7 +124,7 @@ const posts = [
 
   <!-- 6a. Products for operators: the brand band's click-to-draw signal threads spelling "Operators", over the
        title, then one section per product. Lede reuses the line from the former operator-products header. -->
-  <SignalName word="Operators" srWord={false} text="Products for" highlight="operators">
+  <SignalName word="Operators" srWord={false} text="Products for" highlight="operators" rain>
     <p class="mt-5 max-w-xl text-ink-muted sm:text-lg">Protection for messaging and voice revenue, from filtering to fraud detection and network testing.</p>
   </SignalName>
 

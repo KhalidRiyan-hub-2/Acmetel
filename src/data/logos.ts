@@ -32,8 +32,19 @@ export const operators: BeltLogo[] = [
   { name: 'stc', src: '/logos/operators/stc.svg', mono: '/logos/operators/stc-mono.svg' },
 ];
 
-/** Row 2 (moves right): partners, carriers, technology. PLACEHOLDER: replace the eight files and names. */
-export const partners: BeltLogo[] = Array.from({ length: 8 }, (_, i) => {
-  const n = String(i + 1).padStart(2, '0');
-  return { name: `Partner ${n}`, src: `/logos/partners/partner-${n}.svg` };
-});
+/** Row 2 (moves right): partners and carriers. Names from home-current-site.md (logos on the acmetel.com home page).
+ *  PLACEHOLDER: pending review and final selection with the client, like row 1. Not included yet (confirm with the
+ *  client): Duo, TikTok, Etisalat Misr. PTCL has no file (its sites were unreachable when sourcing), so it renders as
+ *  a text wordmark until the brand file is supplied. Sources: public/logos/CREDITS.md. */
+const p = (name: string, file: string, square = false): BeltLogo =>
+  ({ name, src: `/logos/partners/${file}.svg`, mono: `/logos/partners/${file}-mono.svg`, square });
+export const partners: BeltLogo[] = [
+  p('Omantel', 'omantel'),
+  p('Zain', 'zain'),
+  p('airtel', 'airtel', true),
+  p('BICS', 'bics', true),
+  p('Orange', 'orange', true),
+  { name: 'PTCL' },
+  p('Twilio', 'twilio'),
+  p('Zong', 'zong', true),
+];

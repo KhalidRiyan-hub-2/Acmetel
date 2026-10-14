@@ -80,18 +80,8 @@
     -webkit-background-clip: text; background-clip: text; color: transparent;
   }
 
-  /* Retype pattern (data-retype in patterns.ts): the not-yet-typed text stays laid out but hidden. The caret is an
-     absolutely positioned bar outside the heading's text (placed by the script), so it can never re-wrap the line. */
-  .rt-rest { visibility: hidden; }
-  .rt-caret {
-    position: absolute; z-index: 1; pointer-events: none;
-    background: var(--color-teal-300); border-radius: 1px;
-  }
-  .rt-caret[data-state='blink'] { animation: rt-blink 1.06s steps(1, end) infinite; }
-  .rt-caret[data-state='out'] { opacity: 0; transition: opacity 500ms var(--ease-out-expo); }
-  @keyframes rt-blink { 0%, 55% { opacity: 1; } 56%, 100% { opacity: 0; } }
-  /* Blur Fade In for typed letters (retype pattern and the hero headline): a soft teal blur that sharpens, then the
-     letter drops back into the highlight's gradient. No fill-mode forwards, so the filter is gone once it ends. */
+  /* Blur Fade In for typed letters in the hero headline (DynamicHeadline): a soft teal blur that sharpens, then the
+     letter drops back into the gradient. No fill-mode forwards, so the filter is gone once it ends. */
   .rt-fresh { animation: rt-blur-in 460ms var(--ease-out-expo) backwards; }
   @keyframes rt-blur-in {
     from { opacity: 0; filter: blur(8px); color: var(--color-teal-300); -webkit-text-fill-color: var(--color-teal-300); }
@@ -136,6 +126,36 @@
 
   /* Smooth-scroll wrapper sits above the fixed background layers (ScrollSmoother makes it position: fixed). */
   #smooth-wrapper { position: relative; z-index: 1; }
+
+  /* Cursor glow (Base.astro, data-cursor-glow in patterns.ts): a soft teal light that eases after the pointer. Fixed
+     above the smoothed content (z 2, under the header) with a screen blend, so it only ever lightens; moved by
+     transform. Hidden until the pointer moves, and when it leaves the window. */
+  .cursor-glow {
+    position: fixed; left: 0; top: 0; z-index: 2; width: 760px; height: 760px; margin: -380px 0 0 -380px;
+    pointer-events: none; opacity: 0; mix-blend-mode: screen; will-change: transform;
+    background: radial-gradient(circle closest-side, color-mix(in srgb, var(--color-teal-500) 17%, transparent),
+      color-mix(in srgb, var(--color-teal-500) 6%, transparent) 55%, transparent);
+    transition: opacity 600ms var(--ease-out-expo);
+  }
+  .cursor-glow[data-on] { opacity: 1; }
+
+  /* Mask reveal (data-mask-reveal in patterns.ts): once armed, the layer only shows inside a solid teal circle at the
+     cursor, with the content in the darkest ink on it. The layer bleeds past its box (padding back in, so the content
+     doesn't move) to keep the circle round on a short strip; it never takes pointer events, so it can't block the
+     buttons it overlaps. */
+  /* flow-root: the layer's negative margin must not collapse through and drag this box up over what's above it. */
+  [data-mask-reveal='live'] { --mr: 0px; display: flow-root; }
+  [data-mask-reveal='live'] .mask-layer {
+    --bleed-y: 140px; --bleed-x: 2rem;
+    position: relative; pointer-events: none;
+    margin: calc(var(--bleed-y) * -1) calc(var(--bleed-x) * -1);
+    padding: var(--bleed-y) var(--bleed-x);
+    background: var(--color-teal-500);
+    mask-image: radial-gradient(circle at calc(var(--mx, 50%) + var(--bleed-x)) calc(var(--my, 50%) + var(--bleed-y)),
+      #000 calc(var(--mr) - 1.5px), transparent var(--mr));
+  }
+  /* !important: this sits in the components layer, and the strip's text-ink / text-ink-muted utilities come later. */
+  [data-mask-reveal='live'] .mask-layer :is(dt, dd) { color: var(--color-navy-950) !important; }
 
   /* Fixed background layers, faded in by sections with [data-bg] (src/scripts/patterns.ts). */
   .bg-layers { position: fixed; inset: 0; z-index: 0; pointer-events: none; }

@@ -3,7 +3,7 @@
 // threads are one LineSegments draw call.
 //   mode 'settle'  the ribbon's threads fan out into evenly spaced rows; inside the letters of the word (a soft
 //                  mask texture sampled in the vertex shader) the rows oscillate, so the threads spell the name.
-//                  `settle(0..1)` drives the hand-off (SignalName tweens it on click).
+//                  `settle(0..1)` drives the hand-off (SignalName tweens it in when the band is in view, out when it leaves).
 //   mode 'ribbon'  the ribbon alone, pinched at the centre (for a future background use).
 // Motion budget: the loop runs while there is "energy". Energy refills to HOLD seconds when the settle value
 // changes or the canvas comes back on screen, and the motion eases to a stop as it runs out, then the loop sleeps

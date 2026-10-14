@@ -19,6 +19,24 @@ export const prefersReducedMotion = () => matchMedia('(prefers-reduced-motion: r
 /** Mouse or trackpad as the primary pointer: the only case that gets wheel smoothing, hover effects and scroll kick. */
 export const finePointer = () => matchMedia('(hover: hover) and (pointer: fine)').matches;
 
+/**
+ * Count-up for a [data-count] element (value in data-count, optional data-suffix): eases from 0 to the value over
+ * `ms`. Calling it again restarts the count (the previous run is cancelled).
+ */
+const counting = new WeakMap<HTMLElement, number>();
+export function countUp(el: HTMLElement, ms = 1400) {
+  const end = Number(el.dataset.count);
+  const suffix = el.dataset.suffix ?? '';
+  cancelAnimationFrame(counting.get(el) ?? 0);
+  const t0 = performance.now();
+  const tick = (t: number) => {
+    const p = Math.min(1, (t - t0) / ms);
+    el.textContent = Math.round(end * (1 - Math.pow(1 - p, 4))) + suffix;
+    if (p < 1) counting.set(el, requestAnimationFrame(tick));
+  };
+  counting.set(el, requestAnimationFrame(tick));
+}
+
 /** Lag (seconds) of every scroll-scrubbed animation. One value so the whole site trails scroll by the same amount. */
 export const SCRUB = 1.5;
 /** Site easing. `out` matches --ease-out-expo in global.css (CSS reveals); `inOut` for scrubbed travel; `pop` overshoots. */

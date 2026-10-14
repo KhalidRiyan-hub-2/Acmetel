@@ -26,6 +26,9 @@ const fullTitle = title === 'Home' ? 'Acmetel | Onward, Forward' : `${title} | A
       <div class="bg-layer bg-layer-glow" data-bg-layer="glow"></div>
       <div class="bg-layer bg-layer-grid" data-bg-layer="grid"></div>
     </div>
+    <!-- Teal glow that follows the cursor across the whole site (mouse/trackpad only; data-cursor-glow in patterns.ts).
+         Above the content with a screen blend, so it also lights the opaque bands; never catches clicks. -->
+    <div aria-hidden="true" class="cursor-glow" data-cursor-glow></div>
     <!-- Fixed, so it stays outside the smoothed content. -->
     <Header />
     <!-- ScrollSmoother moves #smooth-content inside the fixed #smooth-wrapper (mouse/trackpad only; see motion.ts). -->
@@ -40,6 +43,7 @@ const fullTitle = title === 'Home' ? 'Acmetel | Onward, Forward' : `${title} | A
 
     <script>
       import '../scripts/patterns';
+      import { countUp } from '../scripts/motion';
 
       // Scroll reveal for [data-reveal]; children of [data-stagger] get incremental delays.
       document.querySelectorAll<HTMLElement>('[data-stagger]').forEach((group) => {
@@ -63,24 +67,15 @@ const fullTitle = title === 'Home' ? 'Acmetel | Onward, Forward' : `${title} | A
         card.style.setProperty('--my', `${ev.clientY - r.top}px`);
       }, { passive: true });
 
-      // Count-up for [data-count] (value in attribute, formatted with optional suffix in data-suffix).
+      // Count-up for [data-count] when it scrolls into view (countUp in motion.ts). Counters claimed by another
+      // trigger (data-count-manual, e.g. the hero stats' mask reveal in patterns.ts) are left to it.
       const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
       const co = new IntersectionObserver((entries) => entries.forEach((e) => {
         if (!e.isIntersecting) return;
         co.unobserve(e.target);
-        const el = e.target as HTMLElement;
-        const end = Number(el.dataset.count);
-        const suffix = el.dataset.suffix ?? '';
-        if (reduce) { el.textContent = end + suffix; return; }
-        const t0 = performance.now();
-        const tick = (t: number) => {
-          const p = Math.min(1, (t - t0) / 1400);
-          el.textContent = Math.round(end * (1 - Math.pow(1 - p, 4))) + suffix;
-          if (p < 1) requestAnimationFrame(tick);
-        };
-        requestAnimationFrame(tick);
+        if (!reduce) countUp(e.target as HTMLElement);
       }), { threshold: 0.6 });
-      document.querySelectorAll('[data-count]').forEach((el) => co.observe(el));
+      document.querySelectorAll('[data-count]:not([data-count-manual])').forEach((el) => co.observe(el));
     </script>
   </body>
 </html>

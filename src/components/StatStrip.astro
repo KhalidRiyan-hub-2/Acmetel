@@ -1,34 +1,24 @@
 ---
 // Stats strip. `value` is numeric; `prefix`/`suffix` wrap it (e.g. suffix "B+").
-// Default: count-up (Base.astro animates [data-count]).
-// `matrix` (homepage hero only): the "rain lock" intro, src/scripts/statrain.ts, loaded by patterns.ts from
-// [data-stat-rain]. Each character is a slot: an invisible copy of the final character sizes it and the live glyph is
-// overlaid, so the strip never reflows. Screen readers always get the plain figure; with reduced motion or no JS the
-// figures are simply there.
+// Default: boxed strip with a count-up (Base.astro animates [data-count]).
+// `plain` (homepage hero): no box, same count-up. Inside a mask reveal (patterns.ts) the count runs each time the
+// reveal opens instead of on scroll.
 interface Stat { value: number; prefix?: string; suffix?: string; label: string }
-interface Props { stats: Stat[]; matrix?: boolean; class?: string }
-const { stats, matrix = false, class: className = '' } = Astro.props;
+interface Props { stats: Stat[]; plain?: boolean; class?: string }
+const { stats, plain = false, class: className = '' } = Astro.props;
 const lgCols = { 2: 'lg:grid-cols-2', 3: 'lg:grid-cols-3', 4: 'lg:grid-cols-4', 5: 'lg:grid-cols-5', 6: 'lg:grid-cols-6' }[Math.min(Math.max(stats.length, 2), 6)];
-const figure = (s: Stat) => `${s.prefix ?? ''}${s.value}${s.suffix ?? ''}`;
 ---
-{matrix ? (
-  <div class:list={['relative', className]} data-stat-rain>
-    <!-- No box: the figures sit on the hero, and the rain fades out towards every edge instead of ending at a border. -->
-    <canvas class="stat-rain-canvas pointer-events-none absolute inset-0 size-full" aria-hidden="true"></canvas>
-    <dl class:list={['relative grid grid-cols-2 gap-x-8', lgCols]}>
-      {stats.map((s) => (
-        <div class="py-6 sm:py-7" data-cell>
-          <dt class="text-sm text-ink-muted">{s.label}</dt>
-          <dd class="mt-2 font-display text-3xl font-semibold tabular-nums text-ink sm:text-4xl">
-            <span class="sr-only">{figure(s)}</span>
-            <span aria-hidden="true" class="select-none">{[...figure(s)].map((c) => (
-              <span class="slot" data-final={c}><span class="slot-size">{c}</span><span class="slot-live" data-live>{c}</span></span>
-            ))}</span>
-          </dd>
-        </div>
-      ))}
-    </dl>
-  </div>
+{plain ? (
+  <dl class:list={['grid grid-cols-2 gap-x-8', lgCols, className]}>
+    {stats.map((s) => (
+      <div class="py-6 sm:py-7">
+        <dt class="text-sm text-ink-muted">{s.label}</dt>
+        <dd class="mt-2 font-display text-3xl font-semibold tabular-nums text-ink sm:text-4xl">
+          {s.prefix}<span data-count={s.value} data-suffix={s.suffix ?? ''}>{s.value}{s.suffix}</span>
+        </dd>
+      </div>
+    ))}
+  </dl>
 ) : (
   <dl class:list={['grid grid-cols-2 overflow-hidden rounded-2xl border border-line bg-navy-900', lgCols, className]} data-stagger>
     {stats.map((s) => (
@@ -41,36 +31,3 @@ const figure = (s: Stat) => `${s.prefix ?? ''}${s.value}${s.suffix ?? ''}`;
     ))}
   </dl>
 )}
-
-<style>
-  .slot { position: relative; display: inline-block; }
-  .slot-size { visibility: hidden; }
-  /* Out of flow, so a wider rain glyph never changes the slot's width. */
-  .slot-live { position: absolute; top: 0; left: 50%; transform: translateX(-50%); white-space: nowrap; }
-
-  /* Pre-state, applied before first paint (the `motion` class is set inline in <head>), so the final figures never
-     flash ahead of the scramble. patterns.ts arms the strip; statrain.ts then fills every slot with a glyph.
-     Failsafe: if patterns.ts never runs, the figures appear after 2 s. */
-  :global(.motion) [data-stat-rain=''] .slot-live,
-  :global(.motion) [data-stat-rain='armed'] .slot-live { opacity: 0; }
-  :global(.motion) [data-stat-rain=''] .slot-live { animation: statrain-failsafe 0s 2s forwards; }
-  @keyframes statrain-failsafe { to { opacity: 1; } }
-
-  /* Waiting for its drop: dim, scrambling. The drop's bright head lands on it and it locks with a short flash. */
-  .slot[data-state='scramble'] .slot-live {
-    color: color-mix(in srgb, var(--color-teal-500) 70%, transparent);
-    font-family: var(--font-mono); font-weight: 400;
-  }
-  /* Locks slowly: a soft teal blur that sharpens into the ink figure. */
-  .slot[data-state='lock'] .slot-live { animation: statrain-lock 1200ms var(--ease-out-expo) both; }
-  @keyframes statrain-lock {
-    from { color: var(--color-teal-300); text-shadow: 0 0 22px var(--color-teal-400); opacity: 0.35; filter: blur(5px); }
-    55% { opacity: 1; filter: blur(0); }
-    to { color: var(--color-ink); text-shadow: 0 0 0 transparent; }
-  }
-  .stat-rain-canvas {
-    mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent),
-      linear-gradient(to bottom, transparent, #000 22%, #000 78%, transparent);
-    mask-composite: intersect;
-  }
-</style>

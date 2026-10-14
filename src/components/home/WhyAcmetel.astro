@@ -24,7 +24,7 @@ const services = ['Voice', 'Messaging', 'ACMeSIM', 'Sovereign Intelligence Stack
 const row = (i: number) => ['lg:row-start-1', 'lg:row-start-2', 'lg:row-start-3'][Math.floor(i / 2)];
 ---
 
-<section id="why-acmetel" class="relative overflow-hidden border-y border-line bg-navy-800 py-20 sm:py-24" data-why>
+<section id="why-acmetel" class="relative overflow-hidden border-y border-line bg-navy-900 py-20 sm:py-24" data-why>
   <div aria-hidden="true" class="bg-grid pointer-events-none absolute inset-0 opacity-60"></div>
   <div class="container-x relative">
     <div class="grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
@@ -69,7 +69,7 @@ const row = (i: number) => ['lg:row-start-1', 'lg:row-start-2', 'lg:row-start-3'
         <!-- Reasons -->
         {reasons.map((r, i) => (
           <article class:list={['why-node relative z-10 rounded-2xl border border-line bg-navy-900 p-5 sm:p-6', r.side === 'L' ? 'lg:col-start-1' : 'lg:col-start-3', row(i)]} data-node={r.id} data-side={r.side}>
-            <span aria-hidden="true" class:list={['why-jack absolute top-1/2 size-2.5 -translate-y-1/2 rounded-full border-2 border-navy-800', r.side === 'L' ? 'max-lg:-left-[5px] lg:-right-[5px]' : '-left-[5px]']}></span>
+            <span aria-hidden="true" class:list={['why-jack absolute top-1/2 size-2.5 -translate-y-1/2 rounded-full border-2 border-navy-900', r.side === 'L' ? 'max-lg:-left-[5px] lg:-right-[5px]' : '-left-[5px]']}></span>
             <div class="flex items-center gap-3">
               <span class="why-icon grid size-9 shrink-0 place-items-center rounded-lg border text-teal-300"><Icon name={r.icon} size={18} /></span>
               <p class="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-ink-faint"><span class="mr-2 text-teal-400">{r.id}</span>{r.label}</p>
