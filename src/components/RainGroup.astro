@@ -1,0 +1,14 @@
+---
+// One continuous code rain (and beams) behind several consecutive bands, so the rain doesn't restart at each band's
+// edge. Wrap transparent bands (tone base/glow) and leave `rain` off the Sections inside. Same canvases and styling
+// as Section `rain` (data-code-rain / data-beams, .section-rain in global.css).
+interface Props { class?: string }
+const { class: className = '' } = Astro.props;
+---
+<div class:list={['relative overflow-hidden', className]}>
+  <div aria-hidden="true" class="pointer-events-none absolute inset-0">
+    <canvas class="section-rain absolute inset-0 size-full" data-code-rain></canvas>
+    <canvas class="absolute inset-0 size-full" data-beams></canvas>
+  </div>
+  <slot />
+</div>

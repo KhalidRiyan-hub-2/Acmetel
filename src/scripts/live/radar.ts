@@ -1,8 +1,11 @@
-// Radar canvas over a North-Pole-centred world map that can be spun like a wheel. Canvas 2D only.
-// Draws the latitude rings, the meridians and longitude bezel (both turn with the map), the sweep, and blip
-// glows and pings. The blips themselves are HTML <button>s overlaid by LiveNetwork.astro (keyboard + screen-reader
-// accessible); this module repositions them as the map turns. Each `[data-blip]` wrapper carries data-x / data-y
-// (0-1 across the square at rotation 0) and data-net. Each frame sets --o (dot opacity) and --l (label opacity).
+// Radar canvas over a North-Pole-centred world map that can be spun and tilted in 3D. Canvas 2D only.
+// Draws the latitude rings, the meridians and longitude bezel (both turn with the map), the sweep, and the
+// glows and pings on the Acmetel offices (the only radar targets). The markers themselves are HTML <button>s
+// overlaid by LiveNetwork.astro (keyboard + screen-reader accessible); this module repositions them as the map turns
+// and tilts. Each `[data-blip]` wrapper carries data-x / data-y (0-1 across the square at rotation 0), data-net and,
+// for offices, data-office. Each frame sets --o (marker opacity).
+// 3D: the disc layer ([data-radar-disc]: land map + this canvas) gets `perspective(P) rotateX(tilt)` in CSS; the
+// HTML markers stay outside it, unscaled, and are placed with the same projection (project() below).
 // Driven by the clock in scripts/live/ops.ts, which turns each contact into a beat on the pulse.
 import { latitudeRadius, meridianAngle } from '../../data/live';
 
@@ -12,11 +15,15 @@ export const SWEEP_PERIOD = 8; // seconds per revolution; the sweep points up at
 const WEDGE = Math.PI * 0.38;  // trailing glow behind the sweep line
 const FADE_S = 2.5;       // blip fade time after a contact
 const PING_S = 1.1;       // ping ring lifetime
-const LABEL_S = 2.2;      // how long a city label stays up after a contact
-const MIN_OPACITY = 0.35; // idle blips stay readable
+const DEST_OPACITY = 0.6;    // eSIM destinations: steady, never pinged
+const OFFICE_OPACITY = 0.85; // offices at rest; full on contact
+/** CSS perspective distance as a multiple of the radar's width. */
+export const PERSPECTIVE = 1.8;
+/** Tilt limit (radians): beyond this the far side of the disc gets too thin to read. */
+export const MAX_TILT = (60 * Math.PI) / 180;
 const TAU = Math.PI * 2;
 
-export interface Blip { el: HTMLElement; x: number; y: number; net: string; cls: string }
+export interface Blip { el: HTMLElement; x: number; y: number; net: string; office: boolean; cls: string }
 interface Size { w: number; h: number; dpr: number }
 
 const wrap = (a: number) => ((a % TAU) + TAU) % TAU;
@@ -36,7 +43,7 @@ function fit(canvas: HTMLCanvasElement): Size {
 /** Blips with positions relative to the centre (x/y offsets in the -0.5..0.5 square, rotation 0). */
 export function readBlips(stage: HTMLElement): Blip[] {
   return [...stage.querySelectorAll<HTMLElement>('[data-blip]')].map((el) => ({
-    el, x: parseFloat(el.dataset.x || '0.5') - 0.5, y: parseFloat(el.dataset.y || '0.5') - 0.5, net: el.dataset.net || '', cls: '',
+    el, x: parseFloat(el.dataset.x || '0.5') - 0.5, y: parseFloat(el.dataset.y || '0.5') - 0.5, net: el.dataset.net || '', office: el.hasAttribute('data-office'), cls: '',
   }));
 }
 
@@ -67,6 +74,7 @@ const LONGITUDES: [number, string][] = [[0, '0°'], [90, '90°E'], [180, '180°'
 function render(ctx: CanvasRenderingContext2D, { w, h, dpr }: Size, sweep: number | null, rot: number, blips: Blip[], since: number[], font: string) {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, w, h);
+  if (Math.min(w, h) < 8) return; // not laid out yet: a negative radius would throw in createRadialGradient
   const cx = w / 2, cy = h / 2, R = Math.min(w, h) / 2 - 2, side = Math.min(w, h);
   const at = (a: number, r: number): [number, number] => [cx + Math.sin(a) * r, cy - Math.cos(a) * r]; // a: clockwise from up
 
@@ -149,12 +157,15 @@ function render(ctx: CanvasRenderingContext2D, { w, h, dpr }: Size, sweep: numbe
   ctx.strokeStyle = `rgba(${TEAL_LIGHT},0.4)`; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.arc(cx, cy, 7, 0, TAU); ctx.stroke();
 
-  // Blip glows and pings (the clickable dots are HTML).
+  // Office halos, glows and pings (the clickable markers are HTML). Destinations get nothing here.
   blips.forEach((b, i) => {
+    if (!b.office) return;
     const s = since[i];
     const o = s < FADE_S ? 1 - s / FADE_S : 0;
     const p = turn(b, rot);
     const x = cx + p.x * side, y = cy + p.y * side;
+    ctx.strokeStyle = `rgba(${TEAL},0.35)`; ctx.lineWidth = 1; ctx.setLineDash([2, 3]);
+    ctx.beginPath(); ctx.arc(x, y, 13, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
     if (o > 0.02) {
       const r = 8 + 14 * o;
       const g = ctx.createRadialGradient(x, y, 0, x, y, r);
@@ -171,11 +182,22 @@ function render(ctx: CanvasRenderingContext2D, { w, h, dpr }: Size, sweep: numbe
   });
 }
 
-/** Moves the HTML blips and the land map to rotation `rot`; flips tooltip/label sides to keep them on the disc. */
-function place(blips: Blip[], map: SVGElement | null, rot: number) {
+/**
+ * Screen position (0-1 across the square) of a point on the disc (offsets from the centre, -0.5..0.5) after the
+ * disc is tilted by `tilt`: the same maths as CSS `perspective(P) rotateX(tilt)` around the centre.
+ */
+export function project(p: { x: number; y: number }, tilt: number) {
+  const zy = p.y * Math.sin(tilt);           // depth (toward the viewer is +); the top tilts away
+  const k = PERSPECTIVE / (PERSPECTIVE - zy);
+  return { x: 0.5 + p.x * k, y: 0.5 + p.y * Math.cos(tilt) * k };
+}
+
+/** Turns the land map, tilts the disc and moves the HTML markers to match; flips tooltip/label sides to keep them on the disc. */
+function place(blips: Blip[], map: SVGElement | null, disc: HTMLElement | null, rot: number, tilt: number) {
   if (map) map.style.transform = `rotate(${rot}rad)`;
+  if (disc) disc.style.transform = tilt ? `perspective(${(PERSPECTIVE * disc.clientWidth).toFixed(1)}px) rotateX(${tilt.toFixed(4)}rad)` : '';
   blips.forEach((b) => {
-    const p = turn(b, rot), x = 0.5 + p.x, y = 0.5 + p.y;
+    const { x, y } = project(turn(b, rot), tilt);
     b.el.style.left = `${(x * 100).toFixed(2)}%`;
     b.el.style.top = `${(y * 100).toFixed(2)}%`;
     const cls = `blip-h-${x < 0.3 ? 'left' : x > 0.7 ? 'right' : 'center'} blip-v-${y < 0.5 ? 'below' : 'above'} blip-side-${x < 0.5 ? 'l' : 'r'}`;
@@ -189,16 +211,17 @@ function place(blips: Blip[], map: SVGElement | null, rot: number) {
 const monoFont = (el: Element) => getComputedStyle(el).getPropertyValue('--font-mono').trim() || 'monospace';
 
 export interface Radar {
-  /** Live frame at time `t` and rotation `rot`. `lastHit[i]` is the time of blip i's latest contact. */
-  frame(t: number, rot: number, lastHit: number[]): void;
-  /** Reduced-motion frame: sweep parked, every blip fully visible, no labels. */
-  still(rot: number): void;
+  /** Live frame at time `t`, rotation `rot` and tilt. `lastHit[i]` is the time of blip i's latest contact. */
+  frame(t: number, rot: number, tilt: number, lastHit: number[]): void;
+  /** Reduced-motion frame: sweep parked, markers fully visible. */
+  still(rot: number, tilt: number): void;
   destroy(): void;
 }
 
 export function createRadar(canvas: HTMLCanvasElement, stage: HTMLElement, blips: Blip[]): Radar {
   const ctx = canvas.getContext('2d');
   const map = stage.querySelector<SVGElement>('.radar-map');
+  const disc = stage.querySelector<HTMLElement>('[data-radar-disc]');
   if (!ctx) return { frame() {}, still() {}, destroy() {} };
   let size = fit(canvas);
   const font = monoFont(canvas);
@@ -206,21 +229,19 @@ export function createRadar(canvas: HTMLCanvasElement, stage: HTMLElement, blips
   const ro = new ResizeObserver(() => { size = fit(canvas); redraw(); });
   ro.observe(canvas);
   return {
-    frame(t, rot, lastHit) {
-      place(blips, map, rot);
+    frame(t, rot, tilt, lastHit) {
+      place(blips, map, disc, rot, tilt);
       const since = lastHit.map((h) => t - h);
       blips.forEach((b, i) => {
         const s = since[i];
-        const o = s < FADE_S ? 1 - s / FADE_S : 0;
-        const l = s < LABEL_S ? Math.min(1, s / 0.15, (LABEL_S - s) / 0.6) : 0;
-        b.el.style.setProperty('--o', (MIN_OPACITY + (1 - MIN_OPACITY) * o).toFixed(3));
-        b.el.style.setProperty('--l', l.toFixed(3));
+        const o = b.office && s < FADE_S ? 1 - s / FADE_S : 0;
+        b.el.style.setProperty('--o', (b.office ? OFFICE_OPACITY + (1 - OFFICE_OPACITY) * o : DEST_OPACITY).toFixed(3));
       });
       redraw = () => render(ctx, size, sweepAt(t), rot, blips, since, font);
       redraw();
     },
-    still(rot) {
-      place(blips, map, rot);
+    still(rot, tilt) {
+      place(blips, map, disc, rot, tilt);
       blips.forEach((b) => b.el.style.setProperty('--o', '1'));
       const since = blips.map(() => FADE_S * 0.45);
       redraw = () => render(ctx, size, Math.PI * 0.62, rot, blips, since, font);

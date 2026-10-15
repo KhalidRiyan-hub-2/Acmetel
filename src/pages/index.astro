@@ -18,6 +18,8 @@ import ProbeTesting from '../components/home/ProbeTesting.astro';
 import SmsFirewall from '../components/home/SmsFirewall.astro';
 import FraudScan from '../components/home/FraudScan.astro';
 import SignalName from '../components/SignalName.astro';
+import BlogSection from '../components/home/BlogSection.astro';
+import RainGroup from '../components/RainGroup.astro';
 import { SIS_BASE } from '../data/site';
 
 // Copy sources: content/source/home-current-site.md and content/source/about.md.
@@ -54,12 +56,6 @@ const events = [
   { name: 'GCCM Middle East', date: 'Nov 1–4, 2026', place: 'Muscat, Oman' },
   { name: 'Africa Tech Festival', date: 'Nov 17–19, 2026', place: 'Cape Town, South Africa' },
 ];
-
-const posts = [
-  { tag: 'eSIM', title: 'How to Avoid Roaming Charges Abroad: The Smart Traveler’s Guide to Staying Connected in 2026' },
-  { tag: 'eSIM', title: 'eSIM: The Next Step in Mobile Evolution, Its Benefits, and the Future Ahead' },
-  { tag: 'Security', title: 'Comprehensive Guide to AI Scams with Common Tactics and Preventive Strategies' },
-];
 ---
 
 <Base title="Home" description="Acmetel delivers wholesale voice, A2P messaging, SMS firewall, eSIM and sovereign digital infrastructure for telecom operators and enterprises worldwide.">
@@ -83,7 +79,7 @@ const posts = [
       </div>
       <GlobeHero />
     </div>
-    <div class="container-x relative mt-12 sm:mt-14"><StatStrip stats={stats} matrix /></div>
+    <div class="container-x relative mt-12 sm:mt-14"><StatStrip stats={stats} mask /></div>
   </section>
 
   <!-- 2. Brand belt -->
@@ -120,12 +116,15 @@ const posts = [
 
   <!-- 6a. Products for operators: the brand band's click-to-draw signal threads spelling "Operators", over the
        title, then one section per product. Lede reuses the line from the former operator-products header. -->
-  <SignalName word="Operators" srWord={false} text="Products for" highlight="operators">
-    <p class="mt-5 max-w-xl text-ink-muted sm:text-lg">Protection for messaging and voice revenue, from filtering to fraud detection and network testing.</p>
-  </SignalName>
+  <!-- One code rain behind both the Operators band and SMS Firewall, so it doesn't restart at the band edge. -->
+  <RainGroup>
+    <SignalName word="Operators" srWord={false} text="Products for" highlight="operators">
+      <p class="mt-5 max-w-xl text-ink-muted sm:text-lg">Protection for messaging and voice revenue, from filtering to fraud detection and network testing.</p>
+    </SignalName>
 
-  <!-- 6b. SMS Firewall (messaging.md "Firewall & Security Solutions") -->
-  <SmsFirewall />
+    <!-- 6b. SMS Firewall (messaging.md "Firewall & Security Solutions") -->
+    <SmsFirewall rain={false} />
+  </RainGroup>
 
   <!-- 6c. Fraud Management (voice.md "Fraud Management & Revenue Assurance") -->
   <FraudScan />
@@ -136,41 +135,28 @@ const posts = [
   <!-- 7. Live network -->
   <LiveNetwork />
 
-  <!-- 8. Latest: events + blog -->
-  <Section id="latest">
-    <SectionHeading eyebrow="Latest" title="Meet us and" highlight="read our thinking" />
-    <div class="mt-10 grid gap-10 lg:grid-cols-2 lg:gap-12">
-      <div id="events">
-        <h3 class="flex items-center gap-2 font-display text-lg font-semibold text-ink"><Icon name="calendar" size={20} class="text-teal-400" />Upcoming events</h3>
-        <ul class="mt-5 divide-y divide-line overflow-hidden rounded-2xl border border-line" data-stagger>
-          {events.map((e) => (
-            <li>
-              <a href="/contact" class="group flex items-center gap-5 bg-white/[0.02] px-5 py-4 transition-colors hover:bg-teal-500/[0.06]">
-                <span class="w-24 shrink-0 font-mono text-xs text-teal-300">{e.date}</span>
-                <span class="min-w-0 flex-1">
-                  <span class="block font-display font-semibold text-ink">{e.name}</span>
-                  <span class="mt-0.5 flex items-center gap-1.5 text-sm text-ink-muted"><Icon name="map-pin" size={14} />{e.place}</span>
-                </span>
-                <span class="hidden text-sm font-semibold text-teal-300 sm:inline">Book a meeting</span>
-                <Icon name="arrow-right" size={16} class="shrink-0 text-teal-300 transition-transform group-hover:translate-x-1" />
-              </a>
-            </li>
-          ))}
-        </ul>
-      </div>
-      <div id="blog">
-        <h3 class="flex items-center gap-2 font-display text-lg font-semibold text-ink"><Icon name="sparkles" size={20} class="text-teal-400" />From the blog</h3>
-        <ul class="mt-5 grid gap-3" data-stagger>
-          {posts.map((p) => (
-            <li>
-              <a href="#blog" class="glass spotlight group block px-5 py-4">
-                <span class="eyebrow">{p.tag}</span>
-                <span class="mt-1.5 block font-display font-semibold leading-snug text-ink transition-colors group-hover:text-teal-300">{p.title}</span>
-              </a>
-            </li>
-          ))}
-        </ul>
-      </div>
+  <!-- 8. Latest insights: featured article + latest posts (src/data/blog.ts; WordPress-ready) -->
+  <BlogSection />
+
+  <!-- 8b. Upcoming events -->
+  <Section id="events" tone="glow">
+    <SectionHeading eyebrow="Events" title="Meet us at" highlight="upcoming events" />
+    <div class="mt-10 max-w-4xl">
+      <ul class="divide-y divide-line overflow-hidden rounded-2xl border border-line" data-stagger>
+        {events.map((e) => (
+          <li>
+            <a href="/contact" class="group flex items-center gap-5 bg-white/[0.02] px-5 py-4 transition-colors hover:bg-teal-500/[0.06]">
+              <span class="w-24 shrink-0 font-mono text-xs text-teal-300">{e.date}</span>
+              <span class="min-w-0 flex-1">
+                <span class="block font-display font-semibold text-ink">{e.name}</span>
+                <span class="mt-0.5 flex items-center gap-1.5 text-sm text-ink-muted"><Icon name="map-pin" size={14} />{e.place}</span>
+              </span>
+              <span class="hidden text-sm font-semibold text-teal-300 sm:inline">Book a meeting</span>
+              <Icon name="arrow-right" size={16} class="shrink-0 text-teal-300 transition-transform group-hover:translate-x-1" />
+            </a>
+          </li>
+        ))}
+      </ul>
     </div>
   </Section>
 

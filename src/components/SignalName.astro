@@ -1,9 +1,10 @@
 ---
 // Brand band: the name drawn by signal threads, with the tagline under it as the real heading.
 // A silk ribbon of threads (src/scripts/silk/scene.ts, three.js) flows in as the band enters, then fans out into
-// rows that oscillate inside the letters, so the threads spell the name. The hand-off is click-driven: the canvas
-// sits in a toggle button (aria-pressed); a click or Enter/Space tweens ribbon → name (~2.2 s), the next click
-// tweens back, and a click mid-tween reverses from where it is. Motion stops ~5 s after the last change.
+// rows that oscillate inside the letters, so the threads spell the name. While the band is on screen it cycles by
+// itself (ribbon → name → ribbon …). The canvas also sits in a toggle button (aria-pressed): a click or Enter/Space
+// tweens to the other state at once (~2.2 s), mid-tween it reverses from where it is, and the cycle restarts from
+// there. The canvas spans the full viewport width.
 // three.js loads only when the band nears the viewport and shares the globe's chunk. Reduced motion, no WebGL or
 // a lost context: one static settled frame in Canvas 2D (still.ts), and the button is disabled with no hint.
 // The canvas is decorative; screen readers get "<word>. <text> <highlight>" from the heading (or just the text with
@@ -25,10 +26,10 @@ const { text, highlight, word = 'Acmetel', srWord = true, tone = 'glow', bg, cla
 ---
 <Section tone={tone} bg={bg} class:list={['py-20! sm:py-28!', className]}>
   <div class="flex flex-col items-center text-center" data-signal-name data-word={word}>
-    <button type="button" class="signal-toggle group block w-full cursor-pointer rounded-2xl outline-offset-4 focus-visible:outline-2 focus-visible:outline-teal-400 disabled:cursor-default" aria-pressed="false" aria-label={`Draw “${word}” in signal threads`} disabled data-signal-toggle>
-      <canvas class="block aspect-[3/1] w-full sm:aspect-[33/10]" aria-hidden="true"></canvas>
-      <!-- Shown by the script only when the animation is live (hidden for no-JS, reduced motion and the still). -->
-      <span class="mt-2 hidden font-mono text-xs uppercase tracking-[0.2em] text-ink-faint transition-colors group-hover:text-teal-300" aria-hidden="true" data-signal-hint>Click to reveal</span>
+    <!-- Full-bleed: viewport-wide, centred by the flex column so it overflows the container evenly on both sides
+         (the glow Section clips the scrollbar-width excess). -->
+    <button type="button" class="signal-toggle block w-screen max-w-none shrink-0 cursor-pointer outline-offset-4 focus-visible:outline-2 focus-visible:outline-teal-400 disabled:cursor-default" aria-pressed="false" aria-label={`Draw “${word}” in signal threads`} disabled data-signal-toggle>
+      <canvas class="block aspect-[2/1] w-full sm:aspect-[3/1]" aria-hidden="true"></canvas>
     </button>
     <h2 class="mt-6 max-w-4xl font-display text-[1.65rem] font-semibold leading-[1.15] text-ink sm:mt-8 sm:text-4xl lg:text-5xl">
       {srWord && <span class="sr-only">{word}. </span>}{text}{highlight && <> <span class="text-gradient">{highlight}</span></>}
@@ -54,11 +55,10 @@ const { text, highlight, word = 'Acmetel', srWord = true, tone = 'glow', bg, cla
     const word = root.dataset.word || 'Acmetel';
     let canvas = root.querySelector('canvas')!;
     const toggle = root.querySelector<HTMLButtonElement>('[data-signal-toggle]')!;
-    const hint = root.querySelector<HTMLElement>('[data-signal-hint]')!;
 
     // Static settled frame, redrawn when the width changes. No three.js involved.
     const still = async () => {
-      toggle.disabled = true; hint.classList.add('hidden'); hint.classList.remove('block');
+      toggle.disabled = true;
       const [{ drawStill }, { fontReady }] = await Promise.all([import('../scripts/silk/still'), import('../scripts/silk/shared')]);
       await fontReady();
       let w = 0;
@@ -79,21 +79,34 @@ const { text, highlight, word = 'Acmetel', srWord = true, tone = 'glow', bg, cla
       return;
     }
 
-    // Ribbon ↔ name on click. One tween at a time: a new click overwrites the running one from the current value.
+    // Ribbon ↔ name. One tween at a time: a new change overwrites the running one from the current value.
+    // While the band is on screen it cycles by itself (ribbon, then the name, then back); a click toggles at once
+    // and restarts the cycle from there.
+    const TWEEN = 2.2;                           // s, ribbon ↔ name
+    const HOLD = { ribbon: 2500, name: 4500 };   // ms each state stays put after its tween
     const state = { s: 0 };
-    let silk: Silk | null = null, revealed = false;
+    let silk: Silk | null = null, revealed = false, inView = false, timer = 0;
     toggle.disabled = false;
-    hint.classList.remove('hidden');
-    hint.classList.add('block');
-    toggle.addEventListener('click', () => {
-      revealed = !revealed;
+    const set = (v: boolean) => {
+      revealed = v;
       toggle.setAttribute('aria-pressed', String(revealed));
-      hint.textContent = revealed ? 'Click to unravel' : 'Click to reveal';
       gsap.to(state, {
-        s: revealed ? 1 : 0, duration: 2.2, ease: EASE.inOut, overwrite: true,
+        s: revealed ? 1 : 0, duration: TWEEN, ease: EASE.inOut, overwrite: true,
         onUpdate: () => silk?.settle(state.s),
       });
-    });
+    };
+    // `wait` overrides the delay (entering view: the first change comes soon, not after a full hold).
+    const schedule = (wait?: number) => {
+      clearTimeout(timer);
+      if (!inView) return;
+      timer = window.setTimeout(() => { set(!revealed); schedule(); }, wait ?? TWEEN * 1000 + (revealed ? HOLD.name : HOLD.ribbon));
+    };
+    toggle.addEventListener('click', () => { set(!revealed); schedule(); });
+    new IntersectionObserver(([e]) => {
+      const entering = e.isIntersecting && !inView;
+      inView = e.isIntersecting;
+      schedule(entering ? 1200 : undefined);
+    }, { threshold: 0.35 }).observe(toggle);
 
     onVisible(canvas, async () => {
       if (!hasWebGL()) { still(); return; } // no three.js download without WebGL

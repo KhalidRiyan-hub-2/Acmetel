@@ -32,8 +32,20 @@ export const operators: BeltLogo[] = [
   { name: 'stc', src: '/logos/operators/stc.svg', mono: '/logos/operators/stc-mono.svg' },
 ];
 
-/** Row 2 (moves right): partners, carriers, technology. PLACEHOLDER: replace the eight files and names. */
-export const partners: BeltLogo[] = Array.from({ length: 8 }, (_, i) => {
-  const n = String(i + 1).padStart(2, '0');
-  return { name: `Partner ${n}`, src: `/logos/partners/partner-${n}.svg` };
-});
+/** Row 2 (moves right): partners, carriers, technology. Names as on acmetel.com. */
+export const partners: BeltLogo[] = [
+  { name: 'omantel', src: '/logos/partners/omantel.svg', mono: '/logos/partners/omantel-mono.svg' },
+  { name: 'Zain', src: '/logos/partners/zain.svg', mono: '/logos/partners/zain-mono.svg' },
+  { name: 'airtel', src: '/logos/partners/airtel.svg', mono: '/logos/partners/airtel-mono.svg' },
+  { name: 'BICS', src: '/logos/partners/bics.svg', mono: '/logos/partners/bics-mono.svg' },
+  // Orange Jordan uses the standard Orange square mark.
+  { name: 'Orange', src: '/logos/partners/orange.svg', mono: '/logos/partners/orange-mono.svg', square: true },
+  // PLACEHOLDER: PTCL is a partner on acmetel.com but has no file yet (ptcl.com.pk was unreachable when the logos
+  // were collected). Add { name: 'PTCL', src, mono } here once the official file is in public/logos/partners/.
+  { name: 'Twilio', src: '/logos/partners/twilio.svg', mono: '/logos/partners/twilio-mono.svg' },
+  { name: 'Zong', src: '/logos/partners/zong.svg', mono: '/logos/partners/zong-mono.svg' },
+  // PLACEHOLDER: the source copy flags Duo vs du as unconfirmed; this is Cisco Duo (duo.com). Confirm with the client.
+  { name: 'Duo', src: '/logos/partners/duo.svg', mono: '/logos/partners/duo-mono.svg' },
+  { name: 'TikTok', src: '/logos/partners/tiktok.svg', mono: '/logos/partners/tiktok-mono.svg' },
+  { name: 'Etisalat Misr', src: '/logos/partners/etisalat-misr.svg', mono: '/logos/partners/etisalat-misr-mono.svg' },
+];

@@ -8,6 +8,17 @@ export interface Box { lon0: number; lon1: number; lat0: number; lat1: number }
 /** Focus point: the view the globe settles on, and where the pulsing marker + HTML label sit. */
 export const focus = { lat: 30.4, lon: 69.3, label: 'Pakistan, core network' };
 
+/**
+ * Network arcs: animated links that start at Acmetel FZC headquarters (Ras Al Khaimah, same point as the `rak-office`
+ * stop) and branch out to Lahore and to Acmetel USA LLC (Oakbrook Terrace, Illinois, same point as `us-office`).
+ * Illustrative links between these locations, not specific network routes.
+ */
+export const arcOrigin: GeoPoint = { name: 'Acmetel FZC, Ras Al Khaimah', lat: 25.6747019, lon: 55.7782595 };
+export const arcLinks: GeoPoint[] = [
+  { name: 'Lahore, Pakistan', lat: 31.55, lon: 74.34 },
+  { name: 'Acmetel USA LLC, Oakbrook Terrace, Illinois', lat: 41.849514, lon: -87.974663 },
+];
+
 export const markets: GeoPoint[] = [
   { name: 'UAE (Dubai)', lat: 25.2, lon: 55.27 },
   { name: 'Saudi Arabia (Riyadh)', lat: 24.71, lon: 46.68 },
@@ -78,6 +89,19 @@ export const stops: Stop[] = [
   { id: 'burj', label: 'Burj Khalifa', parent: 'downtown', lat: 25.19719, lon: 55.27437, alt: 0.000185, tilt: 1.22, elev: 680, head: 0.5,
     region: 'gulf', osm: true, city: 'dubai', pick: 0.02,
     caption: 'Burj Khalifa, Dubai: 828 m (25.20°N, 55.27°E)' },
+  // Geography only: Ras Al Khaimah, framed to take in both the city and Al Hamra, where the headquarters is.
+  { id: 'rak', label: 'Ras Al Khaimah', parent: 'uae', lat: 25.72, lon: 55.86, alt: 0.012, tilt: 1.0, region: 'gulf', city: 'rak', pick: 0.9,
+    caption: 'Ras Al Khaimah, United Arab Emirates (25.72°N, 55.86°E)' },
+  // Acmetel FZC headquarters (content/source/offices.md: RAKN-320, RAKEEN, Al Hamra Industrial Zone-FZ, Ras Al
+  // Khaimah (Business Center – 4, RAK FTZ, P.O. Box 16337)). Geocoded from OpenStreetMap (Nominatim + Overpass,
+  // 2026-10-15): the zone is mapped (Al Hamra Free Zone, boundary relation 18471816), but no "RAKEEN", "RAKN-320" or
+  // "Business Center 4" exists in OSM, so this is an address-level point: the RAKEZ Service Center Al Hamra (node
+  // 5501227922, 25.6747019°N 55.7782595°E), the free-zone authority's own office in the zone. Nothing says Business
+  // Center 4 is that building, so no footprint is highlighted.
+  // PLACEHOLDER: replace with the Business Center 4 building once its location is confirmed.
+  { id: 'rak-office', label: 'Acmetel HQ', parent: 'rak', office: true, lat: 25.6747019, lon: 55.7782595, alt: 0.00013, tilt: 1.1,
+    elev: 55, head: 0.5, region: 'gulf', city: 'rak', pick: 0.3,
+    caption: 'Acmetel FZC: RAKN-320, RAKEEN, Al Hamra Industrial Zone-FZ, Ras Al Khaimah (Business Center – 4, RAK FTZ, P.O. Box 16337).' },
 
   { id: 'pakistan', label: 'Pakistan', parent: 'global', lat: 30.2, lon: 69.6, alt: 0.62, tilt: 0.2, region: 'route', pick: 8,
     caption: 'Pakistan: Acmetel’s core network, and the start of the Pakistan–China terrestrial fiber.' },
@@ -125,7 +149,7 @@ export const pathTo = (id: string): Stop[] => { const out: Stop[] = []; for (let
 
 /**
  * HTML tags that follow points on the globe. `z` is the range of zoom level where each shows
- * (0 = orbit, 1 = country, 2 = city, ~2.4 = Dubai/Lahore street maps, ~4.7 = Burj Khalifa rooftop; derived from
+ * (0 = orbit, 1 = country, 2 = city, ~2.4 = Dubai/Lahore street maps, ~4.9 = an office at street level; derived from
  * camera altitude). `near` limits a tag to when the camera is within that many degrees of the point. `h` lifts
  * the anchor that many metres above the ground (a rooftop label). `sub` is a second, smaller line; `kicker` a
  * small line above the text (office tags).
@@ -158,6 +182,9 @@ export const tags: Tag[] = [
   district('business-bay', 'Business Bay', 25.186, 55.262, [3.0, 4.4], 0.12),
   district('difc', 'DIFC', 25.211, 55.281, [3.0, 4.4], 0.12),
   { id: 'burj', kind: 'landmark', text: 'Burj Khalifa', sub: '828 m', lat: 25.197219, lon: 55.274155, h: 828, z: [3.3, 9], near: 0.1 },
+  city('rak', 'Ras Al Khaimah', 25.79, 55.94, [0.75, 1.45]), major('rak', 'Ras Al Khaimah', 25.79, 55.94, [1.45, 2.95]),
+  // Ras Al Khaimah street map (geography only; OSM boundary relation 18471816).
+  district('al-hamra-fz', 'Al Hamra Free Zone', 25.676, 55.8, [2.25, 3.0], 0.4),
   city('karachi', 'Karachi', 24.86, 67.01, [0.6, 1.4]), major('karachi', 'Karachi', 24.86, 67.01),
   city('islamabad', 'Islamabad', 33.68, 73.05, [0.6, 1.4]), major('islamabad', 'Islamabad', 33.68, 73.05),
   city('lahore', 'Lahore', 31.55, 74.34, [0.6, 1.4]), major('lahore', 'Lahore', 31.55, 74.34, [1.4, 2.6]),
@@ -176,6 +203,7 @@ export const tags: Tag[] = [
   // Acmetel offices (content/source/offices.md). Shown from city level down to the street; `h` sits the tag at the
   // top of the office's light column (scene.ts OFFICE_BEAM_M).
   { id: 'office-islamabad', kind: 'office', kicker: 'Acmetel office', text: 'Islamabad', sub: 'VIP Square, I-8 Markaz', lat: 33.66786, lon: 73.07452, h: 90, z: [1.95, 9], near: 0.6 },
+  { id: 'office-rak', kind: 'office', kicker: 'Acmetel FZC', text: 'Ras Al Khaimah', sub: 'RAKEEN, Al Hamra Industrial Zone-FZ', lat: 25.6747019, lon: 55.7782595, h: 90, z: [1.95, 9], near: 0.6 },
   { id: 'office-us', kind: 'office', kicker: 'Acmetel USA LLC', text: 'Oakbrook Terrace, IL', sub: '17W695C Butterfield Road', lat: 41.849514, lon: -87.974663, h: 90, z: [1.95, 9], near: 0.6 },
   { id: 'khunjerab', kind: 'waypoint', text: 'Khunjerab Pass', lat: 36.85, lon: 75.42, z: [0.6, 2.4] },
   { id: 'kashgar', kind: 'waypoint', text: 'Kashgar', lat: 39.47, lon: 75.99, z: [0.6, 1.4] }, major('kashgar', 'Kashgar', 39.47, 75.99),
@@ -196,14 +224,14 @@ export const tags: Tag[] = [
 
 /**
  * City-level stops: drawn as markers with range rings once the camera is low over them. Street-level stops (the
- * ones that look at a point above the ground: Downtown, Burj Khalifa, the Acmetel offices) have their own markers.
+ * ones that look at a point above the ground: the Acmetel offices) have their own markers.
  */
 export const cityStops = stops.filter((s) => s.alt < 0.2 && s.elev === undefined);
 
 /** Smaller cities, drawn as faint points once the camera is low enough to need them. */
 export const regionCities: GeoPoint[] = [
   { name: 'Abu Dhabi', lat: 24.45, lon: 54.38 }, { name: 'Sharjah', lat: 25.35, lon: 55.42 }, { name: 'Ajman', lat: 25.41, lon: 55.51 },
-  { name: 'Ras Al Khaimah', lat: 25.8, lon: 55.98 }, { name: 'Fujairah', lat: 25.13, lon: 56.33 }, { name: 'Al Ain', lat: 24.21, lon: 55.74 },
+  { name: 'Ras Al Khaimah', lat: 25.79, lon: 55.94 }, { name: 'Fujairah', lat: 25.13, lon: 56.33 }, { name: 'Al Ain', lat: 24.21, lon: 55.74 },
   { name: 'Umm Al Quwain', lat: 25.56, lon: 55.55 },
   { name: 'Rawalpindi', lat: 33.6, lon: 73.04 }, { name: 'Faisalabad', lat: 31.42, lon: 73.08 }, { name: 'Multan', lat: 30.2, lon: 71.47 },
   { name: 'Hyderabad', lat: 25.4, lon: 68.37 }, { name: 'Peshawar', lat: 34.01, lon: 71.58 }, { name: 'Quetta', lat: 30.18, lon: 66.98 },

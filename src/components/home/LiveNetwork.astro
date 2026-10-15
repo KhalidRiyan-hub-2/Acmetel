@@ -1,60 +1,71 @@
 ---
-// "Live network" band: one panel where a radar sweeps a North-Pole-centred world map (drag to spin it) and each contact
-// beats the network pulse beside it
+// "Live network" band (24/7 network monitoring and eSIM coverage): one panel where a radar sweeps a North-Pole-centred
+// world map, the "eSIM coverage map" (drag to spin it), and each contact beats the "network uptime monitor" beside it
 // (SIMULATED; described as example values for screen readers, no visible label), then an optional default slot. Data and the simulated feed live in src/data/live.ts.
 import Section from '../Section.astro';
 import SectionHeading from '../SectionHeading.astro';
 import Icon from '../Icon.astro';
 import PauseButton from '../PauseButton.astro';
 import { acmesimStoreUrl } from '../../data/site';
-import { live, radarLayout } from '../../data/live';
+import { live, offices, radarLayout } from '../../data/live';
 import { radarLandPath } from '../../data/radarMap';
 
 const hb = live.heartbeat;
 const dests = live.radar.destinations;
-const layout = radarLayout();
+const layout = radarLayout(); // destinations, then offices
 const landPath = radarLandPath();
-const blips = dests.map((d, i) => {
+const placed = (i: number) => {
   const { x, y, angle } = layout[i];
   return {
-    ...d, x, y, angle, id: `blip-${i}`,
+    x, y, angle,
     h: x < 0.3 ? 'left' : x > 0.7 ? 'right' : 'center',
     v: y < 0.5 ? 'below' : 'above',
-    side: x < 0.5 ? 'l' : 'r', // city label sits on the outward side of the dot
+    side: x < 0.5 ? 'l' : 'r', // label sits on the outward side of the dot
   };
-});
+};
+const blips = dests.map((d, i) => ({ ...d, ...placed(i), id: `blip-${i}` }));
+const officeBlips = offices.map((o, i) => ({ ...o, ...placed(dests.length + i), id: `office-${o.id}` }));
 ---
 
 <Section tone="glow" bg="grid" id="live-network">
   <div data-live-network>
     <SectionHeading
-      eyebrow="Network operations"
-      title="Always on,"
-      highlight="always watching"
-      lede="A live-style view of the platform pulse and the destinations ACMeSIM travellers connect to, as a preview of the kind of visibility our network operations team works with."
+      eyebrow="Network operations center"
+      title="24/7 network monitoring"
+      highlight="and eSIM coverage"
+      lede="A live-style view of network uptime and the destinations ACMeSIM travellers connect to, as a preview of the kind of visibility our network operations team works with."
     />
 
     <!-- One panel: the radar sweep over the map, and the pulse it drives. Each contact on the radar rings the pulse (scripts/live/ops.ts). -->
-    <div class="glass mt-12 p-4 sm:p-6" role="group" aria-label="Network pulse and ACMeSIM travellers by destination, simulated preview" data-panel="ops" data-reveal>
-      <p class="sr-only">Simulated preview. A radar sweeps a world map centred on the North Pole, showing destinations ACMeSIM travellers connect to; the map can be dragged to spin it, or turned with the left and right arrow keys while a destination is focused. Each destination is a button that opens its network, plan and a link to buy an eSIM. Every time the sweep reaches a destination, the network pulse trace beside it beats once. Network status is operational, with uptime, average latency, message throughput and active travellers shown as example values that update every few seconds.</p>
+    <div class="glass mt-12 p-4 sm:p-6" role="group" aria-label="eSIM coverage map and network uptime monitor, simulated preview" data-panel="ops" data-reveal>
+      <p class="sr-only">Simulated preview. A radar sweeps a world map centred on the North Pole, marking Acmetel's offices in Ras Al Khaimah, Islamabad and Oakbrook Terrace, and the destinations ACMeSIM travellers connect to. The map can be dragged to spin and tilt it in 3D, turned with the arrow keys while a marker is focused, or tilted with the 3D view button. Each office and destination is a button that opens its details. Every time the sweep reaches an Acmetel office, the network uptime monitor beside it beats once. Network status is operational, with uptime, average latency, message throughput and active travellers shown as example values that update every few seconds.</p>
       <div class="flex items-center justify-between gap-3">
-        <p class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 font-mono text-xs uppercase tracking-[0.12em] text-teal-300 sm:tracking-[0.18em]">
-          <span class="flex items-center gap-2 whitespace-nowrap"><Icon name="radar" size={16} />Traveller radar</span>
+        <!-- The two panel headings are h3s under the section h2 (descriptive, searchable terms). -->
+        <div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 font-mono text-xs uppercase tracking-[0.12em] text-teal-300 sm:tracking-[0.18em]">
+          <h3 class="flex items-center gap-2 whitespace-nowrap font-mono font-normal tracking-[inherit]"><Icon name="radar" size={16} />eSIM coverage map</h3>
           <span class="text-ink-faint" aria-hidden="true">/</span>
-          <span class="flex items-center gap-2 whitespace-nowrap"><Icon name="activity" size={16} />Network pulse</span>
-        </p>
+          <h3 class="flex items-center gap-2 whitespace-nowrap font-mono font-normal tracking-[inherit]"><Icon name="activity" size={16} />Network uptime monitor</h3>
+        </div>
         <!-- PLACEHOLDER: these figures are simulated (src/data/live.ts), and the visible "Simulated preview" label was removed on request. Replace with real data, or confirm with the client that example values may be shown unlabelled. -->
-        <PauseButton id="pause-ops" />
+        <div class="flex shrink-0 items-center gap-2">
+          <button type="button" class="tilt-toggle" aria-pressed="false" data-tilt-toggle hidden>3D view</button>
+          <PauseButton id="pause-ops" />
+        </div>
       </div>
 
       <div class="mt-4 grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:items-stretch">
         <!-- Radar -->
         <div class="relative mx-auto aspect-square w-full max-w-[34rem]" data-radar-stage>
-          <!-- Flat world map under the sweep, centred on the North Pole (UN-emblem style), same projection as the blips. Spun by scripts/live/ops.ts. -->
-          <svg aria-hidden="true" viewBox="0 0 1000 1000" class="radar-map absolute inset-0 size-full fill-teal-500/10 stroke-teal-400/30"><path d={landPath} /></svg>
-          <canvas aria-hidden="true" data-radar-canvas class="absolute inset-0 size-full"></canvas>
+          <!-- The disc: world map (North-Pole-centred, UN-emblem style, same projection as the blips) and the radar
+               canvas. scripts/live/ops.ts spins the map and tilts the whole disc in 3D (CSS perspective); the HTML
+               markers stay outside it and are placed with the same perspective maths, so they stay crisp. -->
+          <div class="radar-disc absolute inset-0" data-radar-disc>
+            <div aria-hidden="true" class="radar-floor absolute inset-0 rounded-full"></div>
+            <svg aria-hidden="true" viewBox="0 0 1000 1000" class="radar-map absolute inset-0 size-full fill-teal-500/15 stroke-teal-400/40"><path d={landPath} /></svg>
+            <canvas aria-hidden="true" data-radar-canvas class="absolute inset-0 size-full"></canvas>
+          </div>
           {blips.map((b) => (
-            <div class={`blip blip-h-${b.h} blip-v-${b.v} blip-side-${b.side}`} data-blip data-net={b.network} data-x={b.x.toFixed(4)} data-y={b.y.toFixed(4)} data-angle={b.angle.toFixed(4)} style={`left:${(b.x * 100).toFixed(2)}%;top:${(b.y * 100).toFixed(2)}%`}>
+            <div class={`blip blip-h-${b.h} blip-v-${b.v} blip-side-${b.side}`} data-blip data-net={b.network} data-label={b.city} data-x={b.x.toFixed(4)} data-y={b.y.toFixed(4)} data-angle={b.angle.toFixed(4)} style={`left:${(b.x * 100).toFixed(2)}%;top:${(b.y * 100).toFixed(2)}%`}>
               <button type="button" class="blip-btn" aria-label={`${b.city}, ${b.network}`} aria-describedby={b.id} aria-expanded="false" data-blip-btn>
                 <span class="blip-dot" data-net={b.network}></span>
               </button>
@@ -65,6 +76,19 @@ const blips = dests.map((d, i) => {
                 <a href={acmesimStoreUrl} target="_blank" rel="noopener" class="mt-2 inline-flex items-center gap-1 text-xs font-medium text-teal-300 underline-offset-4 hover:underline">
                   Get an eSIM for {b.city}<Icon name="arrow-up-right" size={13} />
                 </a>
+              </div>
+            </div>
+          ))}
+          {officeBlips.map((o) => (
+            <div class={`blip blip-office blip-h-${o.h} blip-v-${o.v} blip-side-${o.side}`} data-blip data-office data-label={o.label} data-x={o.x.toFixed(4)} data-y={o.y.toFixed(4)} data-angle={o.angle.toFixed(4)} style={`left:${(o.x * 100).toFixed(2)}%;top:${(o.y * 100).toFixed(2)}%`}>
+              <button type="button" class="blip-btn" aria-label={`Acmetel office: ${o.label}`} aria-describedby={o.id} aria-expanded="false" data-blip-btn>
+                <span class="office-dot"></span>
+              </button>
+              <span class="blip-label" aria-hidden="true">{o.label}</span>
+              <div class="blip-tip" id={o.id} role="group" aria-label={`${o.label} details`}>
+                <p class="font-mono text-[0.625rem] uppercase tracking-[0.14em] text-teal-300">{o.place}</p>
+                <p class="mt-1 font-display text-sm font-semibold text-ink">{o.label}</p>
+                <p class="mt-1 text-xs leading-relaxed text-ink-muted">{o.address}</p>
               </div>
             </div>
           ))}
@@ -88,9 +112,6 @@ const blips = dests.map((d, i) => {
               </span>
               Network status: <strong class="font-semibold text-ink">{hb.status}</strong>
             </p>
-            <span class="inline-flex items-center gap-1.5 rounded-full border border-teal-500/40 bg-teal-500/10 px-3 py-1 font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-teal-300">
-              <Icon name="headset" size={14} />24/7 NOC
-            </span>
           </div>
 
           <dl class="grid grid-cols-2 gap-2 sm:gap-3" aria-live="off">
@@ -113,9 +134,10 @@ const blips = dests.map((d, i) => {
           </dl>
 
           <div class="flex flex-wrap items-center justify-between gap-x-6 gap-y-1.5 px-1">
-            <p class="text-sm text-ink-muted">ACMeSIM travellers by destination</p>
-            <p class="flex items-center gap-1.5 font-mono text-[0.6875rem] uppercase tracking-[0.12em] text-ink-faint"><Icon name="rotate" size={13} />Drag the map to spin it</p>
-            <ul class="flex items-center gap-4 font-mono text-[0.6875rem] uppercase tracking-[0.12em] text-ink-faint" aria-label="Dot colour by network">
+            <p class="text-sm text-ink-muted">Acmetel offices and ACMeSIM eSIM destinations</p>
+            <p class="flex items-center gap-1.5 font-mono text-[0.6875rem] uppercase tracking-[0.12em] text-ink-faint"><Icon name="rotate" size={13} />Drag to spin and tilt the map</p>
+            <ul class="flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[0.6875rem] uppercase tracking-[0.12em] text-ink-faint" aria-label="Map key">
+              <li class="flex items-center gap-1.5"><span class="office-dot legend-office" aria-hidden="true"></span>Acmetel office</li>
               <li class="flex items-center gap-1.5"><span class="blip-dot legend-dot" data-net="5G" aria-hidden="true"></span>5G</li>
               <li class="flex items-center gap-1.5"><span class="blip-dot legend-dot" data-net="4G" aria-hidden="true"></span>4G</li>
             </ul>
@@ -139,6 +161,35 @@ const blips = dests.map((d, i) => {
     vector-effect: non-scaling-stroke;
     mask-image: radial-gradient(circle closest-side, black 84%, transparent 97%);
   }
+
+  /* 3D disc: tilted by ops.ts with `perspective() rotateX()`; the floor gives it a lit surface and a rim that reads
+     as an object once tilted. */
+  .radar-disc { transform-origin: 50% 50%; will-change: transform; }
+  .radar-floor {
+    inset: 2px;
+    background: radial-gradient(circle at 50% 50%, rgb(34 170 161 / 0.07), rgb(14 19 34 / 0.55) 70%, rgb(14 19 34 / 0.8));
+    box-shadow: 0 0 0 1px rgb(76 198 189 / 0.25), 0 30px 60px -20px rgb(0 0 0 / 0.6), inset 0 0 40px rgb(34 170 161 / 0.08);
+  }
+  .tilt-toggle {
+    height: 2.25rem; padding: 0 0.875rem; border-radius: 9999px; cursor: pointer;
+    border: 1px solid var(--color-line-strong); background: rgb(21 27 46 / 0.7); color: var(--color-ink-muted);
+    font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.12em; text-transform: uppercase;
+    transition: border-color 150ms, color 150ms, background-color 150ms;
+  }
+  .tilt-toggle:hover { border-color: rgb(34 170 161 / 0.6); color: var(--color-teal-300); }
+  .tilt-toggle[aria-pressed='true'] { border-color: rgb(34 170 161 / 0.6); background: rgb(34 170 161 / 0.12); color: var(--color-teal-300); }
+
+  /* Acmetel offices: teal diamonds with a standing label; destinations stay quiet dots. */
+  .office-dot {
+    display: block; width: 0.7rem; height: 0.7rem; transform: rotate(45deg); border-radius: 2px;
+    background: var(--color-teal-300);
+    box-shadow: 0 0 0 2px rgb(14 19 34 / 0.85), 0 0 14px var(--color-teal-300);
+    transition: transform 150ms;
+  }
+  .legend-office { display: inline-block; width: 0.5rem; height: 0.5rem; box-shadow: 0 0 0 1.5px rgb(14 19 34 / 0.85); }
+  .blip-office { z-index: 20; }
+  .blip-office .blip-label { opacity: 1; color: var(--color-ink); font-weight: 600; }
+  .blip-office:hover .office-dot, .blip-office:focus-within .office-dot, .blip-office[data-open] .office-dot { transform: rotate(45deg) scale(1.35); }
 
   .stat { min-width: 0; border-radius: 0.75rem; border: 1px solid var(--color-line); background: rgb(14 19 34 / 0.5); padding: 0.75rem; }
   .stat-label { font-family: var(--font-mono); font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-ink-faint); }
@@ -178,7 +229,7 @@ const blips = dests.map((d, i) => {
   .blip:hover .blip-label, .blip:focus-within .blip-label, .blip[data-open] .blip-label { opacity: 0; }
   /* Small radars crowd the north-west cluster; there the tap tooltip carries the name instead. */
   [data-radar-stage] { container-type: inline-size; }
-  @container (max-width: 25.99rem) { .blip-label { display: none; } }
+  @container (max-width: 25.99rem) { .blip:not(.blip-office) .blip-label { display: none; } .blip-office .blip-label { font-size: 0.5625rem; } }
 
   .blip-tip {
     position: absolute; width: 14.5rem; padding: 0.75rem 0.875rem; border-radius: 0.75rem;
@@ -262,10 +313,10 @@ const blips = dests.map((d, i) => {
     document.addEventListener('pointerdown', (e) => { if (!(e.target as Element).closest('[data-blip]')) closeAll(); });
     root.addEventListener('keydown', (e) => { if ((e as KeyboardEvent).key === 'Escape') closeAll(); });
 
-    // "Last contact" readout on the pulse monitor, updated as the sweep reaches each destination.
+    // "Last contact" readout on the pulse monitor, updated as the sweep reaches each Acmetel office.
     const contactWrap = q('[data-contact-wrap]');
     const contact = q('[data-contact]');
-    const names = blips.map((b) => `${b.querySelector('.blip-label')?.textContent ?? ''} · ${b.dataset.net ?? ''}`);
+    const names = blips.map((b) => b.dataset.label ?? '');
     const onContact = (i: number) => {
       if (!contact || !contactWrap) return;
       contactWrap.hidden = false;

@@ -40,6 +40,18 @@ export const live = {
   },
 };
 
+/**
+ * Acmetel offices on the radar (content/source/offices.md). These are the only radar targets: the sweep pings them,
+ * and each contact beats the uptime monitor. Points match the office stops on the hero globe (src/data/globe.ts).
+ * PLACEHOLDER: the Ras Al Khaimah and Islamabad points are address-level (see the notes on those stops).
+ */
+export interface Office { id: string; label: string; place: string; address: string; lat: number; lon: number }
+export const offices: Office[] = [
+  { id: 'rak', label: 'Ras Al Khaimah', place: 'Acmetel FZC headquarters, UAE', address: 'RAKN-320, RAKEEN, Al Hamra Industrial Zone-FZ, Ras Al Khaimah', lat: 25.6747019, lon: 55.7782595 },
+  { id: 'islamabad', label: 'Islamabad', place: 'Acmetel office, Pakistan', address: 'Office 01, First Floor, VIP Square, I-8 Markaz, Islamabad', lat: 33.66786, lon: 73.07452 },
+  { id: 'us', label: 'Oakbrook Terrace', place: 'Acmetel USA LLC, United States', address: '17W695C Butterfield Road, Oakbrook Terrace, Chicago, IL 60181', lat: 41.849514, lon: -87.974663 },
+];
+
 const rad = (d: number) => (d * Math.PI) / 180;
 
 export interface BlipPos { x: number; y: number; angle: number }
@@ -73,7 +85,9 @@ export function radarProject(p: LatLon): { x: number; y: number } {
  * to light the blip.
  */
 export function radarLayout(): BlipPos[] {
-  const pts = live.radar.destinations.map((d) => radarProject(d));
+  // Destinations first, then the offices (same order as the blips in LiveNetwork.astro). Offices are relaxed
+  // together with the destinations, so e.g. Ras Al Khaimah and Dubai don't sit on top of each other.
+  const pts = [...live.radar.destinations, ...offices].map((d) => radarProject(d));
   const minDist = 0.085;
   for (let it = 0; it < 80; it++) {
     for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) {

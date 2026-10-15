@@ -8,8 +8,8 @@ import SplitSection from '../SplitSection.astro';
 import CheckList from '../CheckList.astro';
 import Button from '../Button.astro';
 
-interface Props { id?: string; tone?: 'base' | 'raised' | 'glow' }
-const { id = 'sms-firewall', tone = 'base' } = Astro.props;
+interface Props { id?: string; tone?: 'base' | 'raised' | 'glow'; rain?: boolean }
+const { id = 'sms-firewall', tone = 'base', rain = true } = Astro.props;
 
 const bullets = [
   'SMS, Voice, and Flash Call firewall deployment',
@@ -18,7 +18,7 @@ const bullets = [
   'Real-time analytics and threat intelligence',
 ];
 ---
-<Section id={id} tone={tone} rain>
+<Section id={id} tone={tone} rain={rain}>
   <SplitSection>
     <SectionHeading eyebrow="SMS Firewall" title="Firewall &" highlight="security solutions" lede="Protect operator networks while maximizing international messaging revenues through AI-driven security and monetization platforms." />
     <div class="mt-8"><Button href="/services/messaging#firewall" variant="outline">Explore SMS Firewall</Button></div>
