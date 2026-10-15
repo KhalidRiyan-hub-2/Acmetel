@@ -1090,7 +1090,29 @@ export function initGlobe(container: HTMLElement, opts: GlobeOptions): GlobeApi 
       head: P.head + wrap(C.head - P.head) * smooth(0.3, 1, t),
     };
   };
-  const solve = (): Pose => (pos.p === pos.c ? poseOf(stopById.global) : solveEdge(stopById[pos.p], stopById[pos.c], pos.t));
+  // Direct hop between branches (e.g. Burj Khalifa → Islamabad office): instead of climbing to the common parent
+  // (often the whole globe) and back down, the camera flies straight from its current pose to the stop, rising
+  // only as high as the distance needs. `pos` is already the destination; solve() reads the hop while it runs.
+  let hop: { from: Pose; to: string; t: number; climb: number; peak: number } | null = null;
+  let lastPose: Pose | null = null;
+  const solveHop = (h: NonNullable<typeof hop>): Pose => {
+    const P = h.from, C = poseOf(stopById[h.to]), t = h.t;
+    const arc = Math.sin(Math.PI * t);
+    const oa = smooth(0.08, 0.92, t);                              // ground track: mostly while high
+    const base = logMix(P.alt, C.alt, smooth(0, 1, t));
+    const alt = base * Math.exp(h.climb * arc);                    // log-space bump: peak ≈ h.peak mid-flight
+    const look = smooth(0.25, 1, t);
+    const flatten = 1 - 0.65 * arc * Math.min(1, h.climb / 1.2);   // look straight down while high, tilt back in on arrival
+    return {
+      yaw: P.yaw + wrap(C.yaw - P.yaw) * oa,
+      pitch: mix(P.pitch, C.pitch, oa),
+      alt,
+      tilt: mix(P.tilt, C.tilt, look) * flatten,
+      elev: mix(P.elev, C.elev, look) * (1 - arc * Math.min(1, h.climb)),
+      head: P.head + wrap(C.head - P.head) * look,
+    };
+  };
+  const solve = (): Pose => (hop ? solveHop(hop) : pos.p === pos.c ? poseOf(stopById.global) : solveEdge(stopById[pos.p], stopById[pos.c], pos.t));
 
   // Edges from where the camera is now to `id`: finish (or back out of) the current edge, up to the common
   // parent, then down.
@@ -1123,12 +1145,52 @@ export function initGlobe(container: HTMLElement, opts: GlobeOptions): GlobeApi 
   const setTarget = (id: string) => { if (id !== target) { target = id; opts.onTarget?.(id); } };
 
   let pendingStop: string | null = null;
+  // Hop when the destination is on another branch than where the camera is (or is heading); straight up or down a
+  // branch, and anything to or from the global view, keeps the tree flight.
+  const shouldHop = (id: string) => {
+    if (!lastPose) return false;
+    if (hop) return true; // mid-hop, any new destination (even Global) continues from the current pose
+    if (id === 'global') return false;
+    const here = restingAt() ?? target;
+    if (here === 'global' || atGlobal()) return false;
+    return !isAncestorOrSelf(here, id) && !isAncestorOrSelf(id, here);
+  };
+  const hopTo = (id: string) => {
+    const from = lastPose!;
+    const to = poseOf(stopById[id]);
+    // Great-circle distance between the two view centres (radians) sets how high the hop climbs.
+    const centre = (p: Pose) => latLonToVec3(p.pitch / DEG, ((-Math.PI / 2 - p.yaw) / DEG + 540) % 360 - 180, 1);
+    const ang = centre(from).angleTo(centre(to));
+    const peak = Math.max(from.alt, to.alt, ang * 0.95);
+    const climb = Math.max(0, Math.log(peak / Math.max(from.alt, to.alt)));
+    hop = { from: { ...from }, to: id, t: 0, climb, peak };
+    pos = id === 'global' ? { p: 'global', c: 'global', t: 0 } : { p: stopById[id].parent!, c: id, t: 1 };
+    orbit.h = 0; orbit.t = 0;
+    const h = hop;
+    flight = gsap.to(h, {
+      t: 1, duration: clamp(1.1 + ang * 0.9 + climb * 0.35, 1.1, 3.6), ease: 'power2.inOut',
+      onComplete: () => { if (hop === h) hop = null; flight = null; setHint(); },
+    });
+  };
+
   const flyTo = (id: string) => {
     if (!stopById[id]) return;
     if (!introDone) { pendingStop = id; return; }
     touch();
+    const direct = shouldHop(id);
     flight?.kill(); flight = null;
     wheelPending = 0;
+    if (direct) {
+      pathTo(id).forEach(ensureFor);
+      setTarget(id);
+      velYaw = velPitch = 0;
+      panTween?.kill();
+      gsap.to(pan, { yaw: 0, pitch: 0, duration: 0.9, ease: 'power3.out' });
+      hopTo(id);
+      setHint();
+      return;
+    }
+    hop = null;
     const legs = legsTo(id);
     pathTo(id).forEach(ensureFor);
     setTarget(id);
@@ -1241,7 +1303,7 @@ export function initGlobe(container: HTMLElement, opts: GlobeOptions): GlobeApi 
     velYaw = velPitch = 0;
     panTween?.kill();
     if (pointers.size === 1) { dragging = true; moved = 0; downAt = performance.now(); canvas.style.cursor = 'grabbing'; }
-    if (pointers.size === 2 && focused) {
+    if (pointers.size === 2 && focused && !hop) { // a hop always lands; pinch takes over after it
       const [a, b] = [...pointers.values()];
       pinchLast = Math.hypot(a.x - b.x, a.y - b.y);
       flight?.kill(); flight = null;
@@ -1260,6 +1322,7 @@ export function initGlobe(container: HTMLElement, opts: GlobeOptions): GlobeApi 
     p.x = e.clientX; p.y = e.clientY;
     touch();
     if (pointers.size >= 2 && focused) {
+      if (hop) return;
       const [a, b] = [...pointers.values()];
       const d = Math.hypot(a.x - b.x, a.y - b.y);
       if (pinchLast > 0) { wheelPending += Math.log(d / pinchLast) * 1.6; lastWheel = performance.now(); }
@@ -1319,6 +1382,7 @@ export function initGlobe(container: HTMLElement, opts: GlobeOptions): GlobeApi 
     if (!focused) return;
     e.preventDefault();
     touch();
+    if (hop) return; // a hop always lands; the wheel works again from there
     if (flight) { flight.kill(); flight = null; }
     const delta = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
     wheelPending = clamp(wheelPending - delta * 0.0022, -1, 1);
@@ -1430,6 +1494,7 @@ export function initGlobe(container: HTMLElement, opts: GlobeOptions): GlobeApi 
     freeYaw = view.yaw + drift + parallax.x * 0.07 * par;
     freePitch = view.pitch + (parallax.y * 0.04 + scrollKick() * 0.12) * par;
     const pose = solve();
+    lastPose = pose;
     const alt = introDone ? pose.alt : intro.alt;
     const yaw = pose.yaw + pan.yaw;
     const pitch = clamp(pose.pitch + pan.pitch, -1.4, 1.4);

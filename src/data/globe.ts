@@ -115,7 +115,7 @@ export const stops: Stop[] = [
   // "VIP Plaza", way 556437799, but nothing says it is the same building), so this is an address-level point: the
   // centre of the I-8 Markaz commercial block (way 568907931), 33.66786°N 73.07452°E. No footprint is highlighted.
   // PLACEHOLDER: replace with the VIP Square building once its location is confirmed.
-  { id: 'islamabad-office', label: 'Acmetel office', parent: 'islamabad', office: true, lat: 33.66786, lon: 73.07452, alt: 0.00013, tilt: 1.1,
+  { id: 'islamabad-office', label: 'Islamabad office', parent: 'islamabad', office: true, lat: 33.66786, lon: 73.07452, alt: 0.00013, tilt: 1.1,
     elev: 55, head: 0.55, region: 'route', city: 'islamabad', pick: 0.3,
     caption: 'Acmetel office, Pakistan: Office 01, First Floor, VIP Square, I-8 Markaz, Islamabad.' },
   { id: 'karachi', label: 'Karachi', parent: 'pakistan', lat: 24.86, lon: 67.01, alt: 0.07, tilt: 1.05, region: 'route', pick: 1.2,
@@ -139,7 +139,7 @@ export const stops: Stop[] = [
   // inside office building way 1229730923, whose centroid is used here (41.849514°N, 87.974663°W). The US Census
   // geocoder places 17W695 on the Butterfield Road frontage 55 m north of it (41.85000°N, 87.97493°W).
   // PLACEHOLDER: the footprint is the best match from neighbouring addresses; confirm the exact building.
-  { id: 'us-office', label: 'Acmetel office', parent: 'chicago', office: true, lat: 41.849514, lon: -87.974663, alt: 0.00012, tilt: 1.1,
+  { id: 'us-office', label: 'Illinois office', parent: 'chicago', office: true, lat: 41.849514, lon: -87.974663, alt: 0.00012, tilt: 1.1,
     elev: 55, head: 0.4, region: 'usa', city: 'chicago', pick: 0.3,
     caption: 'Acmetel USA LLC: 17W695C Butterfield Road, Oakbrook Terrace, Chicago, IL 60181, USA.' },
 ];

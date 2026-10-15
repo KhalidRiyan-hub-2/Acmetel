@@ -80,22 +80,28 @@ const figure = (s: Stat) => `${s.prefix ?? ''}${s.value}${s.suffix ?? ''}`;
     :global(.motion) .svg-mask { cursor: crosshair; }
     /* Text made transparent (not opacity 0) so the dot inside each figure stays visible, centred on the number. */
     :global(.motion) .svg-mask .mask-base :is(dt, dd) { color: transparent; }
-    /* A blinking teal dot marks where each hidden figure sits; the teal reveal layer covers it on hover. */
+    /* A blinking teal dot marks where each hidden figure sits; the teal reveal layer covers it on hover. Loud on
+       purpose: a bright pulsing core plus two staggered ripples, so the strip draws the eye before anyone scrolls on. */
     :global(.motion) .svg-mask .mask-dot {
       display: block; position: absolute; left: 50%; top: 50%;
-      width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 9999px;
-      background: var(--color-teal-400);
-      box-shadow: 0 0 12px var(--color-teal-400);
-      animation: mask-dot-blink 1.6s ease-in-out var(--d, 0s) infinite;
+      width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 9999px;
+      background: var(--color-teal-300);
+      box-shadow: 0 0 0 3px rgb(76 198 189 / 0.25), 0 0 18px 4px var(--color-teal-400);
+      animation: mask-dot-blink 1.4s ease-in-out var(--d, 0s) infinite;
     }
+    :global(.motion) .svg-mask .mask-dot::before,
     :global(.motion) .svg-mask .mask-dot::after {
       content: ''; position: absolute; inset: 0; border-radius: inherit;
-      border: 1px solid var(--color-teal-400);
-      animation: mask-dot-ring 1.6s var(--ease-out-expo) var(--d, 0s) infinite;
+      border: 2px solid var(--color-teal-400);
+      animation: mask-dot-ring 1.4s var(--ease-out-expo) var(--d, 0s) infinite;
     }
+    :global(.motion) .svg-mask .mask-dot::before { animation-delay: calc(var(--d, 0s) + 0.45s); border-width: 1px; }
   }
-  @keyframes mask-dot-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
-  @keyframes mask-dot-ring { from { transform: scale(1); opacity: 0.8; } to { transform: scale(3.2); opacity: 0; } }
+  @keyframes mask-dot-blink {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.55; transform: scale(0.82); }
+  }
+  @keyframes mask-dot-ring { from { transform: scale(1); opacity: 0.9; } to { transform: scale(4.6); opacity: 0; } }
   @media (hover: hover) and (pointer: fine) {
     :global(.motion) .svg-mask .mask-reveal {
       display: block;
