@@ -12,6 +12,8 @@ const { class: className = '' } = Astro.props;
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const coord = (lat: number, lon: number) => `${Math.abs(lat).toFixed(2)}°${lat >= 0 ? 'N' : 'S'} ${Math.abs(lon).toFixed(2)}°${lon >= 0 ? 'E' : 'W'}`;
 const startChips = childrenOf('global');
+// "Jump to" row: every country stop and every Acmetel office, minus what the current view already offers.
+const jumpStart = stops.filter((s) => s.office);
 // Which label wins when two overlap on screen (lower first; the scene fades the other out).
 const rank: Record<Tag['kind'], number> = { office: 0, landmark: 1, pill: 2, 'city-major': 3, country: 4, waypoint: 5, district: 6, city: 7 };
 ---
@@ -93,6 +95,13 @@ const rank: Record<Tag['kind'], number> = { office: 0, landmark: 1, pill: 2, 'ci
         <button type="button" data-go={s.id} tabindex={i === 0 ? 0 : -1} class="globe-chip" data-office={s.office ? 'true' : undefined}>{s.label}</button>
       ))}
     </div>
+    <!-- Jump anywhere (other countries and the Acmetel offices) without stepping back; the scene flies there directly. -->
+    <div role="toolbar" aria-label="Jump to" class="flex min-h-8 max-w-full items-center justify-center-safe gap-1.5 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" data-globe-jump>
+      <span class="globe-jump-label" aria-hidden="true">Jump to</span>
+      {jumpStart.map((s, i) => (
+        <button type="button" data-go={s.id} tabindex={i === 0 ? 0 : -1} class="globe-chip globe-chip-jump" data-office={s.office ? 'true' : undefined}>{s.label}</button>
+      ))}
+    </div>
     <p data-globe-caption aria-live="polite" class="min-h-[4rem] max-w-md text-sm leading-snug text-ink-muted sm:min-h-[2.75rem]">{stops[0].caption}</p>
   </div>
 </div>
@@ -133,6 +142,10 @@ const rank: Record<Tag['kind'], number> = { office: 0, landmark: 1, pill: 2, 'ci
   :global(.globe-chip[data-office]) { display: inline-flex; align-items: center; gap: 0.5rem; color: var(--color-teal-300); border-color: rgb(76 198 189 / 0.45); }
   :global(.globe-chip[data-office])::before { content: ""; width: 0.4rem; height: 0.4rem; transform: rotate(45deg); background: currentColor; }
   [data-globe-crumbs] :global(span[data-office]) { color: var(--color-teal-300); }
+  /* "Jump to" chips: quieter than the zoom-deeper row, so the two levels of choice read apart. */
+  :global(.globe-chip-jump) { padding: 0.3rem 0.7rem; font-size: 0.64rem; background: transparent; border-color: var(--color-line); color: var(--color-ink-faint); }
+  :global(.globe-chip-jump[data-office]) { color: rgb(127 220 213 / 0.8); border-color: rgb(76 198 189 / 0.3); }
+  .globe-jump-label { flex: none; padding-right: 0.25rem; font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--color-ink-faint); }
   :global(.globe-crumb) { border-radius: 9999px; padding: 0.25rem 0.5rem; color: var(--color-ink-faint); transition: color 200ms; cursor: pointer; }
   :global(.globe-crumb:hover), :global(.globe-crumb:focus-visible) { color: var(--color-teal-300); }
   [data-globe-crumbs] :global(li + li)::before { content: "›"; margin-right: 0.25rem; color: var(--color-ink-faint); }
@@ -158,6 +171,8 @@ const rank: Record<Tag['kind'], number> = { office: 0, landmark: 1, pill: 2, 'ci
     const pauseBtn = root.querySelector<HTMLButtonElement>('[data-pause]');
     const crumbs = root.querySelector<HTMLElement>('[data-globe-crumbs]')!;
     const next = root.querySelector<HTMLElement>('[data-globe-next]')!;
+    const jump = root.querySelector<HTMLElement>('[data-globe-jump]')!;
+    const jumpLabel = jump.querySelector('.globe-jump-label')!;
     const caption = root.querySelector<HTMLElement>('[data-globe-caption]')!;
     const osm = root.querySelector<HTMLElement>('[data-globe-osm]')!;
     const osmLink = root.querySelector<HTMLElement>('[data-globe-osm-link]')!;
@@ -182,7 +197,7 @@ const rank: Record<Tag['kind'], number> = { office: 0, landmark: 1, pill: 2, 'ci
     let shown = '';
     const renderNav = (id: string) => {
       if (id === shown) return;
-      const hadFocus = root.contains(document.activeElement) && (crumbs.contains(document.activeElement) || next.contains(document.activeElement));
+      const hadFocus = root.contains(document.activeElement) && (crumbs.contains(document.activeElement) || next.contains(document.activeElement) || jump.contains(document.activeElement));
       shown = id;
       const trail = pathTo(id);
       crumbs.replaceChildren(...trail.map((s, i) => {
@@ -207,16 +222,22 @@ const rank: Record<Tag['kind'], number> = { office: 0, landmark: 1, pill: 2, 'ci
       // Where you can go next: children, or for a leaf its siblings.
       const here = byId[id];
       const options = kidsOf(id).length ? kidsOf(id) : here.parent ? kidsOf(here.parent).filter((s) => s.id !== id) : [];
-      next.replaceChildren(...options.map((s, i) => {
+      const chip = (s: S, i: number, extra = '') => {
         const b = document.createElement('button');
         b.type = 'button';
-        b.className = 'globe-chip';
+        b.className = `globe-chip${extra}`;
         b.dataset.go = s.id;
         if (s.office) b.dataset.office = 'true';
         b.tabIndex = i === 0 ? 0 : -1;
         b.textContent = s.label;
         return b;
-      }));
+      };
+      next.replaceChildren(...options.map((s, i) => chip(s, i)));
+      // Jump anywhere: the other countries and the Acmetel offices, minus the current trail and the row above.
+      const skip = new Set([...trail.map((s) => s.id), ...options.map((s) => s.id)]);
+      const jumps = stops.filter((s) => (s.parent === 'global' || s.office) && !skip.has(s.id));
+      jump.replaceChildren(jumpLabel, ...jumps.map((s, i) => chip(s, i, ' globe-chip-jump')));
+      jump.hidden = jumps.length === 0;
       // Keep keyboard users in the controls after the list changes.
       if (hadFocus) (next.querySelector<HTMLElement>('[tabindex="0"]') ?? crumbs.querySelector<HTMLElement>('button'))?.focus({ preventScroll: true });
     };
@@ -224,9 +245,9 @@ const rank: Record<Tag['kind'], number> = { office: 0, landmark: 1, pill: 2, 'ci
       const b = (e.target as Element).closest<HTMLElement>('[data-go]');
       if (b && root.contains(b)) go(b.dataset.go!);
     });
-    // Roving focus in the chip toolbar.
-    next.addEventListener('keydown', (e) => {
-      const items = [...next.querySelectorAll<HTMLElement>('button')];
+    // Roving focus in each chip toolbar.
+    for (const bar of [next, jump]) bar.addEventListener('keydown', (e) => {
+      const items = [...bar.querySelectorAll<HTMLElement>('button')];
       const i = items.indexOf(document.activeElement as HTMLElement);
       if (i < 0) return;
       const k = { ArrowRight: i + 1, ArrowDown: i + 1, ArrowLeft: i - 1, ArrowUp: i - 1, Home: 0, End: items.length - 1 }[e.key];

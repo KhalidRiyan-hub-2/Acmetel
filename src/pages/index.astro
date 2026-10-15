@@ -51,10 +51,13 @@ const services = [
   { icon: 'search', title: 'MNP Lookup', image: '/images/services/mnp.jpg', imagePos: '50% 50%', text: 'Exclusive partner for Pakistan’s MNP database and verification services for international traffic.' },
 ] as const;
 
+// PLACEHOLDER: event images are hotlinked from acmetel.com (the live site's own event banners, 385×250); copy them
+// into the project or serve them from the CMS before launch. The banners carry the name, dates and city in the
+// artwork, so they're shown uncropped and the same details repeat as real text under each image.
 const events = [
-  { name: 'Capacity Europe', date: 'Oct 13–15, 2026', place: 'London, England' },
-  { name: 'GCCM Middle East', date: 'Nov 1–4, 2026', place: 'Muscat, Oman' },
-  { name: 'Africa Tech Festival', date: 'Nov 17–19, 2026', place: 'Cape Town, South Africa' },
+  { name: 'Capacity Europe', date: 'Oct 13–15, 2026', place: 'London, England', image: 'https://acmetel.com/wp-content/uploads/2026/04/05-Capacity-Europe.jpg' },
+  { name: 'GCCM Middle East', date: 'Nov 1–4, 2026', place: 'Muscat, Oman', image: 'https://acmetel.com/wp-content/uploads/2026/04/06-GCCM-Oman.jpg' },
+  { name: 'Africa Tech Festival', date: 'Nov 17–19, 2026', place: 'Cape Town, South Africa', image: 'https://acmetel.com/wp-content/uploads/2026/04/07-Africa-tech.jpg' },
 ];
 ---
 
@@ -141,23 +144,30 @@ const events = [
   <!-- 8b. Upcoming events -->
   <Section id="events" tone="glow">
     <SectionHeading eyebrow="Events" title="Meet us at" highlight="upcoming events" />
-    <div class="mt-10 max-w-4xl">
-      <ul class="divide-y divide-line overflow-hidden rounded-2xl border border-line" data-stagger>
-        {events.map((e) => (
-          <li>
-            <a href="/contact" class="group flex items-center gap-5 bg-white/[0.02] px-5 py-4 transition-colors hover:bg-teal-500/[0.06]">
-              <span class="w-24 shrink-0 font-mono text-xs text-teal-300">{e.date}</span>
-              <span class="min-w-0 flex-1">
-                <span class="block font-display font-semibold text-ink">{e.name}</span>
-                <span class="mt-0.5 flex items-center gap-1.5 text-sm text-ink-muted"><Icon name="map-pin" size={14} />{e.place}</span>
+    <!-- Three event cards: the event's own banner (uncropped, 77:50), then date, name, city and the meeting link. -->
+    <ul class="mt-10 grid gap-6 md:grid-cols-3" data-stagger>
+      {events.map((e) => (
+        <li>
+          <article class="glass spotlight group relative flex h-full flex-col overflow-hidden outline-offset-3 has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-teal-400">
+            <div class="relative aspect-[77/50] overflow-hidden bg-navy-950">
+              <img src={e.image} width="385" height="250" alt={`${e.name}, ${e.date}, ${e.place}`} loading="lazy" decoding="async"
+                class="size-full object-cover transition-transform duration-700 group-hover:scale-[1.03]" />
+            </div>
+            <div class="flex flex-1 flex-col p-5 sm:p-6">
+              <p class="flex items-center gap-2 font-mono text-xs text-teal-300"><Icon name="calendar" size={14} />{e.date}</p>
+              <h3 class="mt-3 font-display text-lg font-semibold leading-snug text-ink transition-colors group-hover:text-teal-300">
+                <!-- Stretched link: the whole card opens the contact page. -->
+                <a href="/contact" class="after:absolute after:inset-0 after:z-10 focus-visible:outline-none">{e.name}</a>
+              </h3>
+              <p class="mt-1.5 flex items-center gap-1.5 text-sm text-ink-muted"><Icon name="map-pin" size={14} />{e.place}</p>
+              <span class="mt-auto inline-flex items-center gap-2 pt-5 text-sm font-semibold text-teal-300" aria-hidden="true">
+                Book a meeting<Icon name="arrow-right" size={16} class="transition-transform group-hover:translate-x-1" />
               </span>
-              <span class="hidden text-sm font-semibold text-teal-300 sm:inline">Book a meeting</span>
-              <Icon name="arrow-right" size={16} class="shrink-0 text-teal-300 transition-transform group-hover:translate-x-1" />
-            </a>
-          </li>
-        ))}
-      </ul>
-    </div>
+            </div>
+          </article>
+        </li>
+      ))}
+    </ul>
   </Section>
 
   <!-- 9. Contact -->

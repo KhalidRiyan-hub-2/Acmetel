@@ -17,11 +17,17 @@ const bullets = [
   'AI-powered fraud detection and traffic filtering',
   'Real-time analytics and threat intelligence',
 ];
+// The rest of the source list, behind the expand toggle.
+const more = [
+  'End-to-end SMS monetization and network protection',
+  'International revenue assurance',
+  'Enterprise-grade security and compliance',
+];
 ---
 <Section id={id} tone={tone} rain={rain}>
   <SplitSection>
     <SectionHeading eyebrow="SMS Firewall" title="Firewall &" highlight="security solutions" lede="Protect operator networks while maximizing international messaging revenues through AI-driven security and monetization platforms." />
     <div class="mt-8"><Button href="/services/messaging#firewall" variant="outline">Explore SMS Firewall</Button></div>
-    <CheckList slot="visual" items={bullets} />
+    <CheckList slot="visual" items={bullets} more={more} />
   </SplitSection>
 </Section>

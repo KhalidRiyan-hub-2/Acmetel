@@ -3,7 +3,7 @@
 // A silk ribbon of threads (src/scripts/silk/scene.ts, three.js) flows in as the band enters, then fans out into
 // rows that oscillate inside the letters, so the threads spell the name. While the band is on screen it cycles by
 // itself (ribbon → name → ribbon …). The canvas also sits in a toggle button (aria-pressed): a click or Enter/Space
-// tweens to the other state at once (~2.2 s), mid-tween it reverses from where it is, and the cycle restarts from
+// tweens to the other state at once (~1.4 s), mid-tween it reverses from where it is, and the cycle restarts from
 // there. The canvas spans the full viewport width.
 // three.js loads only when the band nears the viewport and shares the globe's chunk. Reduced motion, no WebGL or
 // a lost context: one static settled frame in Canvas 2D (still.ts), and the button is disabled with no hint.
@@ -29,7 +29,7 @@ const { text, highlight, word = 'Acmetel', srWord = true, tone = 'glow', bg, cla
     <!-- Full-bleed: viewport-wide, centred by the flex column so it overflows the container evenly on both sides
          (the glow Section clips the scrollbar-width excess). -->
     <button type="button" class="signal-toggle block w-screen max-w-none shrink-0 cursor-pointer outline-offset-4 focus-visible:outline-2 focus-visible:outline-teal-400 disabled:cursor-default" aria-pressed="false" aria-label={`Draw “${word}” in signal threads`} disabled data-signal-toggle>
-      <canvas class="block aspect-[2/1] w-full sm:aspect-[3/1]" aria-hidden="true"></canvas>
+      <canvas class="block aspect-[16/10] w-full sm:aspect-[12/5]" aria-hidden="true"></canvas>
     </button>
     <h2 class="mt-6 max-w-4xl font-display text-[1.65rem] font-semibold leading-[1.15] text-ink sm:mt-8 sm:text-4xl lg:text-5xl">
       {srWord && <span class="sr-only">{word}. </span>}{text}{highlight && <> <span class="text-gradient">{highlight}</span></>}
@@ -82,8 +82,8 @@ const { text, highlight, word = 'Acmetel', srWord = true, tone = 'glow', bg, cla
     // Ribbon ↔ name. One tween at a time: a new change overwrites the running one from the current value.
     // While the band is on screen it cycles by itself (ribbon, then the name, then back); a click toggles at once
     // and restarts the cycle from there.
-    const TWEEN = 2.2;                           // s, ribbon ↔ name
-    const HOLD = { ribbon: 2500, name: 4500 };   // ms each state stays put after its tween
+    const TWEEN = 1.4;                           // s, ribbon ↔ name
+    const HOLD = { ribbon: 1800, name: 3800 };   // ms each state stays put after its tween
     const state = { s: 0 };
     let silk: Silk | null = null, revealed = false, inView = false, timer = 0;
     toggle.disabled = false;
@@ -105,7 +105,7 @@ const { text, highlight, word = 'Acmetel', srWord = true, tone = 'glow', bg, cla
     new IntersectionObserver(([e]) => {
       const entering = e.isIntersecting && !inView;
       inView = e.isIntersecting;
-      schedule(entering ? 1200 : undefined);
+      schedule(entering ? 450 : undefined);
     }, { threshold: 0.35 }).observe(toggle);
 
     onVisible(canvas, async () => {

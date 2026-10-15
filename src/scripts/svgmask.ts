@@ -39,7 +39,7 @@ export function initSvgMask(root: HTMLElement) {
     const v = { n: 0 };
     tweens[i]?.kill();
     tweens[i] = gsap.to(v, {
-      n: Number(el.dataset.countTo), duration: 1.9, ease: EASE.inOut,
+      n: Number(el.dataset.countTo), duration: 1.4, ease: EASE.inOut,
       onUpdate: () => { el.textContent = String(Math.round(v.n)); },
     });
   };

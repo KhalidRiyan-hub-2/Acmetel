@@ -17,11 +17,17 @@ const bullets = [
   'International traffic bypass analysis',
   'SIM box detection',
 ];
+// The rest of the source list, behind the expand toggle.
+const more = [
+  'Firewall performance validation',
+  'Customized operator security assessments',
+  'Actionable reporting and remediation recommendations',
+];
 ---
 <Section id={id} tone={tone} rain>
   <SplitSection>
     <SectionHeading eyebrow="Probe Testing" title="Network" highlight="penetration testing" lede="Identify vulnerabilities before fraudsters do through comprehensive telecom security testing." />
     <div class="mt-8"><Button href="/services/messaging#penetration-testing" variant="outline">Explore Probe Testing</Button></div>
-    <CheckList slot="visual" items={bullets} />
+    <CheckList slot="visual" items={bullets} more={more} />
   </SplitSection>
 </Section>

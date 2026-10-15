@@ -1,14 +1,102 @@
 ---
+// Check-mark list. Optional expandable tail: `more` items (and/or a `detail` paragraph) sit behind a toggle row that
+// unfolds them in place (height + staggered fade, GSAP) and folds them back. Without JS everything is shown; with
+// reduced motion the toggle switches instantly.
 import Icon from './Icon.astro';
-interface Props { items: string[]; columns?: 1 | 2 | 3; class?: string }
-const { items, columns = 1, class: className = '' } = Astro.props;
+interface Props {
+  items: string[];
+  columns?: 1 | 2 | 3;
+  class?: string;
+  /** Extra items revealed by the toggle. */
+  more?: string[];
+  /** A short paragraph revealed by the toggle (after any `more` items). */
+  detail?: string;
+  /** Toggle label when collapsed; defaults to "+N more capabilities" (or "More about this" with only `detail`). */
+  moreLabel?: string;
+}
+const { items, columns = 1, class: className = '', more = [], detail, moreLabel } = Astro.props;
 const cols = { 1: '', 2: 'sm:grid-cols-2', 3: 'sm:grid-cols-2 lg:grid-cols-3' }[columns];
+const expandable = more.length > 0 || !!detail;
+const openLabel = moreLabel ?? (more.length ? `+${more.length} more capabilities` : 'More about this');
+const regionId = `more-${Math.random().toString(36).slice(2, 8)}`;
+const row = 'flex items-start gap-3 rounded-xl border border-line bg-white/[0.02] px-4 py-3.5 text-sm text-ink';
+const tick = 'mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-teal-500/20 text-teal-300';
 ---
-<ul class:list={['grid gap-3', cols, className]} data-stagger>
-  {items.map((i) => (
-    <li class="flex items-start gap-3 rounded-xl border border-line bg-white/[0.02] px-4 py-3.5 text-sm text-ink">
-      <span class="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-teal-500/20 text-teal-300" data-pop><Icon name="check" size={13} /></span>
-      {i}
-    </li>
-  ))}
-</ul>
+<div class:list={[expandable && 'checklist-expand', className]} data-checklist={expandable ? '' : undefined}>
+  <ul class:list={['grid gap-3', cols]} data-stagger>
+    {items.map((i) => (
+      <li class={row}>
+        <span class={tick} data-pop><Icon name="check" size={13} /></span>
+        {i}
+      </li>
+    ))}
+  </ul>
+  {expandable && (
+    <>
+      <div id={regionId} class="checklist-more" data-checklist-more>
+        <div class="pt-3">
+          {more.length > 0 && (
+            <ul class:list={['grid gap-3', cols]}>
+              {more.map((i) => (
+                <li class={row} data-checklist-item>
+                  <span class={tick}><Icon name="check" size={13} /></span>
+                  {i}
+                </li>
+              ))}
+            </ul>
+          )}
+          {detail && <p class:list={['rounded-xl border border-teal-500/25 bg-teal-500/[0.06] px-4 py-3.5 text-sm leading-relaxed text-ink-muted', more.length > 0 && 'mt-3']} data-checklist-item>{detail}</p>}
+        </div>
+      </div>
+      <!-- Hidden until JS runs (no JS: everything above is already visible). -->
+      <button type="button" class="checklist-toggle group mt-3 hidden w-full items-center justify-between gap-3 rounded-xl border border-dashed border-teal-500/40 px-4 py-3 text-left text-sm font-semibold text-teal-300 transition-colors hover:border-teal-400 hover:bg-teal-500/[0.06]"
+        aria-expanded="false" aria-controls={regionId} data-checklist-toggle data-open-label={openLabel}>
+        <span data-checklist-label>{openLabel}</span>
+        <Icon name="chevron-down" size={16} class="checklist-chevron transition-transform duration-300" />
+      </button>
+    </>
+  )}
+</div>
+
+<style>
+  .checklist-more { overflow: hidden; }
+  .checklist-toggle[aria-expanded='true'] :global(.checklist-chevron) { transform: rotate(180deg); }
+</style>
+
+<script>
+  import { gsap, ScrollTrigger, prefersReducedMotion, EASE } from '../scripts/motion';
+
+  const reduced = prefersReducedMotion();
+  document.querySelectorAll<HTMLElement>('[data-checklist]').forEach((root) => {
+    const region = root.querySelector<HTMLElement>('[data-checklist-more]')!;
+    const toggle = root.querySelector<HTMLButtonElement>('[data-checklist-toggle]')!;
+    const label = toggle.querySelector<HTMLElement>('[data-checklist-label]')!;
+    const items = [...region.querySelectorAll<HTMLElement>('[data-checklist-item]')];
+    const openLabel = toggle.dataset.openLabel!;
+
+    // Collapse now that JS can bring it back.
+    region.hidden = true;
+    toggle.classList.remove('hidden');
+    toggle.classList.add('flex');
+
+    let open = false;
+    // Layout below changed height: let ScrollTrigger / ScrollSmoother re-measure.
+    const remeasure = () => ScrollTrigger.refresh();
+
+    toggle.addEventListener('click', () => {
+      open = !open;
+      toggle.setAttribute('aria-expanded', String(open));
+      label.textContent = open ? 'Show less' : openLabel;
+      gsap.killTweensOf([region, ...items]);
+      if (reduced) { region.hidden = !open; gsap.set(region, { clearProps: 'height' }); remeasure(); return; }
+      if (open) {
+        region.hidden = false;
+        gsap.fromTo(region, { height: 0 }, { height: 'auto', duration: 0.55, ease: EASE.out, onComplete: () => { gsap.set(region, { clearProps: 'height' }); remeasure(); } });
+        gsap.fromTo(items, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.45, ease: EASE.out, stagger: 0.07, delay: 0.08 });
+      } else {
+        gsap.to(region, { height: 0, duration: 0.4, ease: EASE.inOut, onComplete: () => { region.hidden = true; gsap.set(region, { clearProps: 'height' }); remeasure(); } });
+        gsap.to(items, { opacity: 0, duration: 0.2 });
+      }
+    });
+  });
+</script>
