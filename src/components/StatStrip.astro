@@ -6,12 +6,41 @@
 // overlaid, so the strip never reflows. Screen readers always get the plain figure; with reduced motion or no JS the
 // figures are simply there.
 interface Stat { value: number; prefix?: string; suffix?: string; label: string }
-interface Props { stats: Stat[]; matrix?: boolean; class?: string }
-const { stats, matrix = false, class: className = '' } = Astro.props;
+// `mask` (homepage hero): the figures are hidden until the pointer moves over the strip, where a blob-shaped mask
+// follows the cursor and reveals them (src/scripts/svgmask.ts, [data-svg-mask]). The real <dl> stays in the DOM; the
+// revealed copy is aria-hidden. Touch, reduced motion and no-JS show the figures plainly.
+interface Props { stats: Stat[]; matrix?: boolean; mask?: boolean; class?: string }
+const { stats, matrix = false, mask = false, class: className = '' } = Astro.props;
 const lgCols = { 2: 'lg:grid-cols-2', 3: 'lg:grid-cols-3', 4: 'lg:grid-cols-4', 5: 'lg:grid-cols-5', 6: 'lg:grid-cols-6' }[Math.min(Math.max(stats.length, 2), 6)];
 const figure = (s: Stat) => `${s.prefix ?? ''}${s.value}${s.suffix ?? ''}`;
 ---
-{matrix ? (
+{mask ? (
+  <div class:list={['svg-mask relative', className]} data-svg-mask>
+    <dl class:list={['mask-base relative grid grid-cols-2 gap-x-8 text-center', lgCols]}>
+      {stats.map((s, i) => (
+        <div class="py-6 sm:py-7">
+          <dt class="text-sm text-ink-muted">{s.label}</dt>
+          <dd class="relative mt-2 font-display text-3xl font-semibold tabular-nums text-ink sm:text-4xl">
+            {figure(s)}<span class="mask-dot" aria-hidden="true" style={`--d:${i * 0.35}s`}></span>
+          </dd>
+        </div>
+      ))}
+    </dl>
+    <!-- Bleeds 10rem past the strip (padding puts the figures back in place) so the blob is never cut flat. -->
+    <div class="mask-reveal pointer-events-none absolute -inset-40 bg-teal-400 p-40" aria-hidden="true" data-mask-reveal>
+      <dl class:list={['grid grid-cols-2 gap-x-8 text-center', lgCols]}>
+        {stats.map((s) => (
+          <div class="py-6 sm:py-7">
+            <dt class="text-sm font-medium text-navy-950">{s.label}</dt>
+            <dd class="mt-2 font-display text-3xl font-semibold tabular-nums text-navy-950 sm:text-4xl">
+              {s.prefix}<span data-count-to={s.value}>{s.value}</span>{s.suffix}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  </div>
+) : matrix ? (
   <div class:list={['relative', className]} data-stat-rain>
     <!-- No box: the figures sit on the hero, and the rain fades out towards every edge instead of ending at a border. -->
     <canvas class="stat-rain-canvas pointer-events-none absolute inset-0 size-full" aria-hidden="true"></canvas>
@@ -43,6 +72,43 @@ const figure = (s: Stat) => `${s.prefix ?? ''}${s.value}${s.suffix ?? ''}`;
 )}
 
 <style>
+  /* Pre-state (the `motion` class is set in <head>; fine pointer only): base copy fully hidden, reveal copy (navy
+     figures on a teal fill) masked to a blob that follows the cursor. Size 0 until svgmask.ts sets --mask-size, so
+     nothing shows before the pointer arrives. */
+  .mask-reveal, .mask-dot { display: none; }
+  @media (hover: hover) and (pointer: fine) {
+    :global(.motion) .svg-mask { cursor: crosshair; }
+    /* Text made transparent (not opacity 0) so the dot inside each figure stays visible, centred on the number. */
+    :global(.motion) .svg-mask .mask-base :is(dt, dd) { color: transparent; }
+    /* A blinking teal dot marks where each hidden figure sits; the teal reveal layer covers it on hover. */
+    :global(.motion) .svg-mask .mask-dot {
+      display: block; position: absolute; left: 50%; top: 50%;
+      width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 9999px;
+      background: var(--color-teal-400);
+      box-shadow: 0 0 12px var(--color-teal-400);
+      animation: mask-dot-blink 1.6s ease-in-out var(--d, 0s) infinite;
+    }
+    :global(.motion) .svg-mask .mask-dot::after {
+      content: ''; position: absolute; inset: 0; border-radius: inherit;
+      border: 1px solid var(--color-teal-400);
+      animation: mask-dot-ring 1.6s var(--ease-out-expo) var(--d, 0s) infinite;
+    }
+  }
+  @keyframes mask-dot-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+  @keyframes mask-dot-ring { from { transform: scale(1); opacity: 0.8; } to { transform: scale(3.2); opacity: 0; } }
+  @media (hover: hover) and (pointer: fine) {
+    :global(.motion) .svg-mask .mask-reveal {
+      display: block;
+      mask-image: url('/images/mask-blob.svg');
+      -webkit-mask-image: url('/images/mask-blob.svg');
+      mask-repeat: no-repeat; -webkit-mask-repeat: no-repeat;
+      mask-size: var(--mask-size, 0px) var(--mask-size, 0px);
+      -webkit-mask-size: var(--mask-size, 0px) var(--mask-size, 0px);
+      mask-position: calc(var(--mask-x, -999px) - var(--mask-size, 0px) / 2) calc(var(--mask-y, -999px) - var(--mask-size, 0px) / 2);
+      -webkit-mask-position: calc(var(--mask-x, -999px) - var(--mask-size, 0px) / 2) calc(var(--mask-y, -999px) - var(--mask-size, 0px) / 2);
+    }
+  }
+
   .slot { position: relative; display: inline-block; }
   .slot-size { visibility: hidden; }
   /* Out of flow, so a wider rain glyph never changes the slot's width. */

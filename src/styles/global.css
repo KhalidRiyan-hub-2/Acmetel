@@ -80,17 +80,7 @@
     -webkit-background-clip: text; background-clip: text; color: transparent;
   }
 
-  /* Retype pattern (data-retype in patterns.ts): the not-yet-typed text stays laid out but hidden. The caret is an
-     absolutely positioned bar outside the heading's text (placed by the script), so it can never re-wrap the line. */
-  .rt-rest { visibility: hidden; }
-  .rt-caret {
-    position: absolute; z-index: 1; pointer-events: none;
-    background: var(--color-teal-300); border-radius: 1px;
-  }
-  .rt-caret[data-state='blink'] { animation: rt-blink 1.06s steps(1, end) infinite; }
-  .rt-caret[data-state='out'] { opacity: 0; transition: opacity 500ms var(--ease-out-expo); }
-  @keyframes rt-blink { 0%, 55% { opacity: 1; } 56%, 100% { opacity: 0; } }
-  /* Blur Fade In for typed letters (retype pattern and the hero headline): a soft teal blur that sharpens, then the
+  /* Blur Fade In for typed letters (hero headline only): a soft teal blur that sharpens, then the
      letter drops back into the highlight's gradient. No fill-mode forwards, so the filter is gone once it ends. */
   .rt-fresh { animation: rt-blur-in 460ms var(--ease-out-expo) backwards; }
   @keyframes rt-blur-in {
@@ -138,6 +128,17 @@
   #smooth-wrapper { position: relative; z-index: 1; }
 
   /* Fixed background layers, faded in by sections with [data-bg] (src/scripts/patterns.ts). */
+  /* Cursor glare (Base.astro): a soft teal light centred on the pointer, above the page but under the header.
+     `screen` blending only ever lightens, so text and images stay crisp underneath. */
+  .cursor-glow {
+    position: fixed; left: 0; top: 0; z-index: 40; pointer-events: none;
+    width: 44rem; height: 44rem; margin: -22rem 0 0 -22rem; border-radius: 9999px;
+    background: radial-gradient(circle, color-mix(in srgb, var(--color-teal-500) 16%, transparent), transparent 65%);
+    mix-blend-mode: screen; opacity: 0; transition: opacity 600ms var(--ease-out-expo);
+  }
+  .cursor-glow.is-on { opacity: 1; }
+  .has-cursor-glow .section-glow { display: none; }
+
   .bg-layers { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
   .bg-layer { position: absolute; inset: -6% 0; opacity: 0; }
   .bg-layer-glow {

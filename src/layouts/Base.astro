@@ -37,9 +37,13 @@ const fullTitle = title === 'Home' ? 'Acmetel | Onward, Forward' : `${title} | A
         <Footer />
       </div>
     </div>
+    <!-- Cursor glare: a soft teal light that follows the pointer over the whole page (mouse/trackpad only, never
+         with reduced motion). Fixed, so it lives outside the smoothed content; click-through. -->
+    <div aria-hidden="true" class="cursor-glow" data-cursor-glow></div>
 
     <script>
       import '../scripts/patterns';
+      import { gsap, EASE, finePointer } from '../scripts/motion';
 
       // Scroll reveal for [data-reveal]; children of [data-stagger] get incremental delays.
       document.querySelectorAll<HTMLElement>('[data-stagger]').forEach((group) => {
@@ -62,6 +66,23 @@ const fullTitle = title === 'Home' ? 'Acmetel | Onward, Forward' : `${title} | A
         card.style.setProperty('--mx', `${ev.clientX - r.left}px`);
         card.style.setProperty('--my', `${ev.clientY - r.top}px`);
       }, { passive: true });
+
+      // Cursor glare ([data-cursor-glow]): eases after the pointer; fades out when the pointer leaves the window.
+      // While it's on, the static centred glows of `glow` sections are hidden (html.has-cursor-glow).
+      if (!matchMedia('(prefers-reduced-motion: reduce)').matches && finePointer()) {
+        const glow = document.querySelector<HTMLElement>('[data-cursor-glow]');
+        if (glow) {
+          document.documentElement.classList.add('has-cursor-glow');
+          const x = gsap.quickTo(glow, 'x', { duration: 0.6, ease: EASE.out });
+          const y = gsap.quickTo(glow, 'y', { duration: 0.6, ease: EASE.out });
+          let shown = false;
+          document.addEventListener('pointermove', (e) => {
+            if (!shown) { gsap.set(glow, { x: e.clientX, y: e.clientY }); glow.classList.add('is-on'); shown = true; }
+            x(e.clientX); y(e.clientY);
+          }, { passive: true });
+          document.documentElement.addEventListener('pointerleave', () => { glow.classList.remove('is-on'); shown = false; });
+        }
+      }
 
       // Count-up for [data-count] (value in attribute, formatted with optional suffix in data-suffix).
       const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;

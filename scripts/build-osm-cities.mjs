@@ -1,6 +1,7 @@
 // Builds the street-level city layers for the hero globe from OpenStreetMap: roads, rail, waterways, water and
 // (Dubai) 3D buildings. Run with `npm run build:osm-cities` (needs network the first time; every Overpass
-// response is cached in .cache/osm-cities/, so later runs work offline; REFRESH=1 refetches).
+// response is cached in .cache/osm-cities/, so later runs work offline; REFRESH=1 refetches; ONLY=<id,...> limits
+// the run to those cities).
 //
 // Data © OpenStreetMap contributors, available under the Open Database License (ODbL 1.0):
 // https://www.openstreetmap.org/copyright. The globe shows that attribution whenever these layers are on screen,
@@ -205,7 +206,10 @@ async function lakeWater(c) {
 
 const lines = (els, box) => stitch(els.filter((e) => e.geometry?.length > 1).flatMap((e) => clipPolyline(geomOf(e), box))).map((l) => simplify(l, TOL)).filter((l) => l.length > 1);
 
+// ONLY=rak,lahore rebuilds just those cities (the others' files are left as they are).
+const only = process.env.ONLY?.split(',');
 for (const c of cities) {
+  if (only && !only.includes(c.id)) continue;
   console.log(`${c.id}:`);
   const B = c.box;
   const hw = (re) => [`way["highway"~"^(${re})$"]`];

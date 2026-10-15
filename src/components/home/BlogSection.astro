@@ -1,0 +1,98 @@
+---
+// "Latest insights": one prominent featured article, then a grid of the next posts. Data and the featured rules:
+// src/data/blog.ts (local list, or WordPress at build time with WP_API_URL). Every card links to the full article on
+// acmetel.com (new tab). Images keep one 16:9 frame everywhere, cropped with object-cover, so cards line up.
+import Section from '../Section.astro';
+import SectionHeading from '../SectionHeading.astro';
+import Button from '../Button.astro';
+import Icon from '../Icon.astro';
+import { getPosts, arrangePosts, formatDate, blogIndexUrl } from '../../data/blog';
+
+interface Props { id?: string; tone?: 'base' | 'raised' | 'glow' }
+const { id = 'blog', tone = 'base' } = Astro.props;
+
+const { lead, grid } = arrangePosts(await getPosts());
+const newTab = '(opens in a new tab)';
+---
+
+<Section id={id} tone={tone}>
+  <div class="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+    <SectionHeading eyebrow="Insights" title="Latest" highlight="insights"
+      lede="Guides and analysis on eSIM, messaging, voice and security from the Acmetel team." />
+    <div class="shrink-0" data-reveal>
+      <Button href={blogIndexUrl} variant="outline" external>View all articles</Button>
+    </div>
+  </div>
+
+  {lead && (
+    <article class="glass spotlight group relative mt-12 overflow-hidden lg:grid lg:grid-cols-[1.15fr_1fr]" data-reveal>
+      <div class="relative aspect-[16/9] overflow-hidden lg:aspect-auto lg:min-h-[22rem]">
+        <img src={lead.image.src} width={lead.image.width} height={lead.image.height} alt={lead.image.alt} loading="lazy" decoding="async"
+          class="absolute inset-0 size-full object-cover object-left transition-transform duration-700 group-hover:scale-[1.03]" />
+        <div aria-hidden="true" class="absolute inset-0 bg-gradient-to-t from-navy-950/60 via-transparent to-transparent lg:bg-gradient-to-r lg:from-transparent lg:via-transparent lg:to-navy-950/40"></div>
+        {lead.featured && (
+          <span class="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-teal-500 px-3 py-1 font-mono text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-navy-950 shadow-[0_0_24px_color-mix(in_srgb,var(--color-teal-500)_45%,transparent)]">
+            <Icon name="star" size={13} />Featured
+          </span>
+        )}
+      </div>
+      <div class="flex flex-col p-6 sm:p-8 lg:p-10">
+        <p class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-faint">
+          {lead.topic && <span class="eyebrow">{lead.topic}</span>}
+          <time datetime={lead.date} class="flex items-center gap-1.5"><Icon name="calendar" size={14} />{formatDate(lead.date)}</time>
+        </p>
+        <h3 class="mt-4 font-display text-2xl font-semibold leading-snug text-ink transition-colors group-hover:text-teal-300 sm:text-3xl">
+          <!-- The whole card is the link: the anchor's ::after covers the card (stretched link). -->
+          <a href={lead.url} target="_blank" rel="noopener" class="after:absolute after:inset-0 after:z-10 focus-visible:outline-none">
+            {lead.title}<span class="sr-only"> {newTab}</span>
+          </a>
+        </h3>
+        <p class="mt-4 leading-relaxed text-ink-muted">{lead.summary}</p>
+        <span class="mt-auto inline-flex items-center gap-2 pt-6 text-sm font-semibold text-teal-300" aria-hidden="true">
+          Read article<Icon name="arrow-up-right" size={16} class="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+        </span>
+      </div>
+    </article>
+  )}
+
+  {grid.length > 0 && (
+    <ul class="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3" data-stagger>
+      <!-- Two columns (tablet) show two cards, so no card sits alone on a row; three columns show three. -->
+      {grid.map((p, i) => (
+        <li class:list={[i === 2 && 'sm:max-lg:hidden']}>
+          <article class="glass spotlight group relative flex h-full flex-col overflow-hidden">
+            <div class="relative aspect-[16/9] overflow-hidden">
+              <img src={p.image.src} width={p.image.width} height={p.image.height} alt={p.image.alt} loading="lazy" decoding="async"
+                class="size-full object-cover transition-transform duration-700 group-hover:scale-[1.04]" />
+              {p.featured && (
+                <span class="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-teal-500 px-2.5 py-0.5 font-mono text-[0.625rem] font-semibold uppercase tracking-[0.12em] text-navy-950">
+                  <Icon name="star" size={11} />Featured
+                </span>
+              )}
+            </div>
+            <div class="flex flex-1 flex-col p-5 sm:p-6">
+              <p class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-faint">
+                {p.topic && <span class="eyebrow">{p.topic}</span>}
+                <time datetime={p.date}>{formatDate(p.date)}</time>
+              </p>
+              <h3 class="mt-3 font-display text-lg font-semibold leading-snug text-ink transition-colors group-hover:text-teal-300">
+                <a href={p.url} target="_blank" rel="noopener" class="after:absolute after:inset-0 after:z-10 focus-visible:outline-none">
+                  {p.title}<span class="sr-only"> {newTab}</span>
+                </a>
+              </h3>
+              <p class="mt-3 line-clamp-3 text-sm leading-relaxed text-ink-muted">{p.summary}</p>
+              <span class="mt-auto inline-flex items-center gap-2 pt-5 text-sm font-semibold text-teal-300" aria-hidden="true">
+                Read article<Icon name="arrow-up-right" size={15} class="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+              </span>
+            </div>
+          </article>
+        </li>
+      ))}
+    </ul>
+  )}
+</Section>
+
+<style>
+  /* Stretched links: show the keyboard focus ring on the whole card rather than on the title text. */
+  article:has(a:focus-visible) { outline: 2px solid var(--color-teal-400); outline-offset: 3px; }
+</style>

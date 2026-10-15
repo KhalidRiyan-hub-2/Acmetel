@@ -9,8 +9,9 @@ const { id, tone = 'base', bg, rain = false, class: className = '', tight = fals
 const terminal = tone === 'terminal';
 ---
 <section id={id} data-bg={bg} class:list={['relative', tight ? 'py-12 sm:py-14' : 'py-16 sm:py-20', tone === 'raised' && 'bg-navy-800 border-y border-line', (tone === 'glow' || rain) && 'overflow-hidden', terminal && 'terminal overflow-hidden border-y border-teal-500/20 bg-navy-950 sm:py-24', className]}>
+  <!-- glow: static centred glow; with a mouse the page-wide cursor glare (Base.astro) replaces it. -->
   {tone === 'glow' && (
-    <div aria-hidden="true" class="pointer-events-none absolute inset-0">
+    <div aria-hidden="true" class="section-glow pointer-events-none absolute inset-0">
       <div class="absolute left-1/2 top-1/2 h-[36rem] w-[36rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-teal-500/10 blur-3xl"></div>
     </div>
   )}

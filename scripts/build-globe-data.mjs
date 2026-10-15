@@ -78,8 +78,22 @@ function clipRing(ring, b) {
 // --- land test for dots (50m) --------------------------------------------------------------------
 const land50 = atlas('land-50m');
 const landPolys = [];
+// Rings that cross the antimeridian (Eurasia via Chukotka) jump from +180 to -180. A planar test then sees an
+// edge spanning the whole map and flips everything north of it (Arctic Russia lost most of its dots), so each
+// ring is unwrapped to continuous longitudes (they may run past ±180) and onLand also tries lon ± 360.
+const unwrap = (ring) => {
+  const out = [ring[0]];
+  let shift = 0;
+  for (let i = 1; i < ring.length; i++) {
+    const d = ring[i][0] - ring[i - 1][0];
+    if (d > 180) shift -= 360; else if (d < -180) shift += 360;
+    out.push([ring[i][0] + shift, ring[i][1]]);
+  }
+  return out;
+};
 for (const g of geomsOf(feature(land50, land50.objects.land))) {
-  for (const rings of polysOf(g)) {
+  for (const raw of polysOf(g)) {
+    const rings = raw.map(unwrap);
     let minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9;
     for (const [x, y] of rings[0]) { minX = Math.min(minX, x); maxX = Math.max(maxX, x); minY = Math.min(minY, y); maxY = Math.max(maxY, y); }
     landPolys.push({ rings, bbox: [minX, minY, maxX, maxY] });
@@ -93,7 +107,8 @@ function inRing(x, y, ring) {
   }
   return inside;
 }
-function onLand(lon, lat) {
+const onLand = (lon, lat) => onLandAt(lon, lat) || onLandAt(lon + 360, lat) || onLandAt(lon - 360, lat);
+function onLandAt(lon, lat) {
   for (const p of landPolys) {
     const [a, b, c, d] = p.bbox;
     if (lon < a || lon > c || lat < b || lat > d) continue;

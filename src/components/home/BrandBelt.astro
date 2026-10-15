@@ -1,7 +1,6 @@
 ---
-// Two infinite logo rows moving in opposite directions. Speed reacts to scroll velocity.
+// Two infinite logo rows moving in opposite directions, never pausing. Speed reacts to scroll velocity.
 // Reduced motion: a static wrapped grid. Logo data: src/data/logos.ts.
-import PauseButton from '../PauseButton.astro';
 import { operators, partners, logoStyle, type BeltLogo } from '../../data/logos';
 
 // Each half of a track repeats its set so one half is wider than any viewport; the track holds two halves.
@@ -42,7 +41,6 @@ const imgClass = (l: BeltLogo) => [
         </ul>
       </div>
     ))}
-    <PauseButton class="absolute -top-12 right-0" />
   </div>
 
   <!-- Reduced-motion fallback: static grid of every logo once. -->
@@ -63,7 +61,7 @@ const imgClass = (l: BeltLogo) => [
 </style>
 
 <script>
-  import { gsap, ScrollTrigger, prefersReducedMotion, bindPauseButton } from '../../scripts/motion';
+  import { gsap, ScrollTrigger, prefersReducedMotion } from '../../scripts/motion';
 
   document.querySelectorAll<HTMLElement>('[data-belt]').forEach((belt) => {
     if (prefersReducedMotion()) return;
@@ -74,10 +72,6 @@ const imgClass = (l: BeltLogo) => [
       const dir = Number(track.dataset.dir);
       return gsap.fromTo(track, { xPercent: dir < 0 ? 0 : -50 }, { xPercent: dir < 0 ? -50 : 0, duration: 45, ease: 'none', repeat: -1 });
     });
-
-    let userPaused = false;
-    let hoverPaused = false;
-    const apply = () => tweens.forEach((t) => (userPaused || hoverPaused ? t.pause() : t.resume()));
 
     // Scroll velocity briefly speeds the belts up, then they settle back to 1x.
     const boost = { v: 1 };
@@ -93,17 +87,6 @@ const imgClass = (l: BeltLogo) => [
           onComplete: () => gsap.to(boost, { v: 1, duration: 1.2, ease: 'power2.out', onUpdate: () => tweens.forEach((t) => t.timeScale(boost.v)) }),
         });
       },
-    });
-
-    belt.querySelectorAll('.belt-track').forEach((track) => {
-      track.addEventListener('mouseenter', () => { hoverPaused = true; apply(); });
-      track.addEventListener('mouseleave', () => { hoverPaused = false; apply(); });
-      track.addEventListener('focusin', () => { hoverPaused = true; apply(); });
-      track.addEventListener('focusout', () => { hoverPaused = false; apply(); });
-    });
-    bindPauseButton(belt.querySelector('[data-pause]'), {
-      pause: () => { userPaused = true; apply(); },
-      play: () => { userPaused = false; apply(); },
     });
   });
 </script>

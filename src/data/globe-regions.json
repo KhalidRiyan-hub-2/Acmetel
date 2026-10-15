@@ -30,6 +30,14 @@
       "landmarkWays": []
     },
     {
+      "id": "rak", "file": "globe-rak-city.bin", "buildingsFile": "globe-rak-buildings.bin",
+      "anchor": { "lat": 25.6747019, "lon": 55.7782595 },
+      "box": { "lon0": 55.62, "lon1": 56.07, "lat0": 25.55, "lat1": 25.89 },
+      "minorBox": { "lon0": 55.74, "lon1": 55.98, "lat0": 25.63, "lat1": 25.82 },
+      "buildingsBox": { "lon0": 55.766, "lon1": 55.792, "lat0": 25.666, "lat1": 25.683 },
+      "landmarkWays": []
+    },
+    {
       "id": "chicago", "file": "globe-chicago-city.bin", "buildingsFile": "globe-chicago-buildings.bin",
       "anchor": { "lat": 41.849514, "lon": -87.974663 },
       "box": { "lon0": -88.15, "lon1": -87.52, "lat0": 41.72, "lat1": 42.05 },

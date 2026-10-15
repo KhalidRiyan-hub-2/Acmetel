@@ -1,0 +1,53 @@
+---
+// Internal review page (not in the nav): every brand-belt logo in both treatments, so the client can pick
+// `logoStyle` in src/data/logos.ts. PLACEHOLDER: delete this page once the choice is made.
+import Base from '../layouts/Base.astro';
+import PageHero from '../components/PageHero.astro';
+import Section from '../components/Section.astro';
+import SectionHeading from '../components/SectionHeading.astro';
+import { operators, partners, logoStyle, type BeltLogo } from '../data/logos';
+
+const groups = [
+  { title: 'Operators', note: 'Row 1 of the belt (moves left).', logos: operators },
+  { title: 'Partners and carriers', note: 'Row 2 of the belt (moves right).', logos: partners },
+];
+const options = [
+  { id: 'color', label: 'Full colour', text: 'Official colours on light tiles. Brand-accurate; stc purple and Sinch black need the light ground to read.' },
+  { id: 'mono', label: 'Monochrome', text: 'Every logo in ink on the dark UI, dimmed until hover. Calm and consistent with the rest of the site.' },
+] as const;
+const file = (l: BeltLogo, mode: 'color' | 'mono') => (mode === 'color' ? l.src : (l.mono ?? l.src));
+---
+
+<Base title="Logo review" description="Internal review of the brand belt logos in full colour and monochrome.">
+  <PageHero eyebrow="Internal review" title="Brand belt" highlight="logos"
+    lede={`Pick one treatment for the homepage logo belt. Currently live: ${logoStyle === 'color' ? 'full colour' : 'monochrome'}.`} />
+
+  {options.map((opt, i) => (
+    <Section tone={i % 2 === 0 ? 'raised' : 'base'}>
+      <SectionHeading eyebrow={`Option ${i + 1}`} title={opt.label} lede={opt.text} />
+      {groups.map((g) => (
+        <div class="mt-12">
+          <h3 class="font-display text-lg font-semibold text-ink">{g.title}</h3>
+          <p class="mt-1 text-sm text-ink-faint">{g.note}</p>
+          <ul class="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5" data-stagger>
+            {g.logos.map((l) => (
+              <li class="flex flex-col gap-2">
+                <div class:list={[
+                  'group grid h-24 place-items-center rounded-2xl border px-6 transition-colors duration-300',
+                  opt.id === 'color' ? 'border-transparent bg-ink/95 hover:bg-ink' : 'border-line bg-white/[0.03] hover:border-teal-500/50 hover:bg-teal-500/[0.06]',
+                ]}>
+                  {file(l, opt.id)
+                    ? <img src={file(l, opt.id)} alt={l.name} width="160" height="48" loading="lazy"
+                        class:list={['w-auto max-w-full transition duration-300', l.square ? 'h-12' : 'h-9',
+                          opt.id === 'mono' && (l.mono ? 'opacity-60 group-hover:opacity-100' : 'opacity-60 grayscale group-hover:opacity-100 group-hover:grayscale-0')]} />
+                    : <span class="font-display text-xl font-semibold text-ink-faint">{l.name}</span>}
+                </div>
+                <span class="text-xs text-ink-faint">{l.name}{opt.id === 'mono' && !l.mono ? ' (no mono file: greyscale fallback)' : ''}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </Section>
+  ))}
+</Base>

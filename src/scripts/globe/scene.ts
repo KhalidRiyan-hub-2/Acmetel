@@ -12,7 +12,7 @@ import {
 } from 'three';
 import { gsap, visibleLoop, bindPauseButton, scrollKick } from '../motion';
 import {
-  type Box, type CityLayer, type Stop, chinaRoute, childrenOf, cityLayers, cityStops, focus, latLonToVec3, markets, osmRegion, pathTo,
+  type Box, type CityLayer, type Stop, arcLinks, arcOrigin, chinaRoute, childrenOf, cityLayers, cityStops, focus, latLonToVec3, markets, osmRegion, pathTo,
   regionCities, regions, stopById, stops, worldCities,
 } from '../../data/globe';
 import { decodeBoxed, decodeBuildings, decodeDots, decodeLines, linesToSegments, ringsToCoast, type Lines } from './data';
@@ -73,7 +73,7 @@ const yawFor = (lon: number) => -Math.PI / 2 - lon * DEG;
 const boxVec = (b: Box) => new Vector4(b.lon0, b.lon1, b.lat0, b.lat1);
 
 // Zoom level from altitude: 0 = orbit, 1 = country (alt 0.62), 2 = city (alt 0.07), continuous on a log scale
-// (Dubai street map ≈ 2.4, Downtown ≈ 4.1, Burj Khalifa rooftop ≈ 4.7).
+// (Dubai street map ≈ 2.4, Downtown ≈ 4.1, Burj Khalifa rooftop ≈ 4.7, an office at street level ≈ 4.9).
 const L_ORBIT = Math.log(3.8), L_COUNTRY = Math.log(0.62), L_CITY = Math.log(0.07);
 const levelOf = (alt: number) => {
   const a = Math.log(alt);
@@ -934,12 +934,12 @@ export function initGlobe(container: HTMLElement, opts: GlobeOptions): GlobeApi 
   groundLine.frustumCulled = false;
   globe.add(groundLine);
 
-  // Core → market arcs: 1px great-circle lines, so they stay crisp at every zoom level.
-  // Illustrative links between the core network and the markets already shown, not specific routes.
+  // Network arcs from the Ras Al Khaimah HQ out to Lahore and Illinois (arcOrigin/arcLinks in data/globe.ts):
+  // 1px great-circle lines with a dash flowing away from the HQ, so they stay crisp at every zoom level.
   const arcMat = flowMat({ reps: 3, speed: 0.22, base: 0.16 });
   flowMats.push(arcMat);
-  for (const m of markets) {
-    const a = latLonToVec3(focus.lat, focus.lon, 1), b = latLonToVec3(m.lat, m.lon, 1);
+  for (const m of arcLinks) {
+    const a = latLonToVec3(arcOrigin.lat, arcOrigin.lon, 1), b = latLonToVec3(m.lat, m.lon, 1);
     const ang = a.angleTo(b);
     const N = 96;
     const pos = new Float32Array((N + 1) * 3), u = new Float32Array(N + 1);
@@ -948,7 +948,8 @@ export function initGlobe(container: HTMLElement, opts: GlobeOptions): GlobeApi 
     for (let i = 0; i <= N; i++) {
       const t = i / N;
       qi.identity().slerp(q, t);
-      const p = a.clone().applyQuaternion(qi).multiplyScalar(1.001 + Math.sin(Math.PI * t) * (0.02 + ang * 0.13));
+      // Height grows with distance but is capped, so the long Illinois arc hugs the globe instead of leaving the disc.
+      const p = a.clone().applyQuaternion(qi).multiplyScalar(1.001 + Math.sin(Math.PI * t) * Math.min(0.02 + ang * 0.13, 0.09));
       pos.set([p.x, p.y, p.z], i * 3);
       u[i] = t;
     }
@@ -984,8 +985,9 @@ export function initGlobe(container: HTMLElement, opts: GlobeOptions): GlobeApi 
     markerList.push({ mesh, size: o.fixed ? -1 : size });
     return m;
   };
-  const coreMarker = addMarker(focus.lat, focus.lon, 0.105, 0.9, { period: 2.4, core: 0.15 });
-  const marketMats = markets.slice(1).map((m, i) => addMarker(m.lat, m.lon, 0.048, 0.62, { phase: i * 0.19, period: 3.4, rings: 0.55, core: 0.26 }));
+  // The big pulsing marker sits on the HQ the arcs start from; each arc end gets a market-style marker.
+  const coreMarker = addMarker(arcOrigin.lat, arcOrigin.lon, 0.105, 0.9, { period: 2.4, core: 0.15 });
+  const marketMats = [...markets.slice(1), ...arcLinks].map((m, i) => addMarker(m.lat, m.lon, 0.048, 0.62, { phase: i * 0.19, period: 3.4, rings: 0.55, core: 0.26 }));
   // Route waypoints between the cities (the cities themselves get city markers below).
   const waypointMats = chinaRoute.filter((p) => !cityStops.some((s) => s.lat === p.lat && s.lon === p.lon))
     .map((p) => addMarker(p.lat, p.lon, 0.03, 0, { rings: 0, core: 0.3 }));
@@ -1534,7 +1536,7 @@ export function initGlobe(container: HTMLElement, opts: GlobeOptions): GlobeApi 
     coreMarker.uniforms.uOpacity.value = 1 - smooth(0.3, 0.9, L);
     marketMats.forEach((m) => { m.uniforms.uOpacity.value = 1 - smooth(0.6, 1.3, L); });
     // City markers and range rings step aside once the street-level layers are down at the ground.
-    const street = 1 - smooth(3.05, 3.45, L); // after Lahore (level ≈ 3.0), before Downtown Dubai (≈ 4.1)
+    const street = 1 - smooth(3.05, 3.45, L); // after Lahore (level ≈ 3.0), before Downtown Dubai (≈ 4.1) and the office stops (≈ 4.9)
     for (const c of cities) {
       const n = nearness(c.dir, 1.5);
       c.ring.uniforms.uOpacity.value = 0.38 * deep * n * street;
